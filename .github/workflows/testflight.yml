@@ -33,7 +33,7 @@ jobs:
       - run: npm ci
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-      - run: npm run build && npx cap sync ios
+      - run: npx cap sync ios
       - name: Write API key
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}

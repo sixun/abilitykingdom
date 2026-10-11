@@ -191,17 +191,19 @@ npm run test:e2e     # dev 서버 실행 중에 브라우저 자동 검증 (Play
 
 내려받기: https://github.com/sixun/abilitykingdom/releases/latest (안드로이드 APK, 아이폰 서명 없는 IPA·시뮬레이터용)
 
-웹 빌드를 [Capacitor](https://capacitorjs.com) 8로 감싼 앱입니다. 게임 파일이 앱 안에 들어 있어 오프라인에서도 실행됩니다(본문 글꼴 Noto Sans KR만 인터넷에서 받음).
+웹 빌드를 [Capacitor](https://capacitorjs.com) 8로 감싼 앱입니다. **테스트 기간에는 앱이 공개 웹(https://sixun.github.io/abilitykingdom/)을 직접 불러옵니다.** 웹만 배포하면 설치된 앱도 다음 실행 때 바뀌므로 앱을 다시 빌드할 필요가 없습니다(GitHub Pages 캐시 때문에 최대 10분 정도 늦을 수 있음). 앱 아이콘·이름·권한처럼 앱 자체를 바꿀 때만 다시 빌드합니다.
+- 인터넷이 없으면 앱 안의 안내 화면(`native-shell/offline.html`)이 나옵니다.
+- 앱스토어 정식 출시 전에는 `capacitor.config.ts`의 `server` 항목을 지우고 `webDir`을 `dist`로 바꿔 웹 파일을 앱 안에 넣는 방식으로 되돌려야 합니다(웹사이트를 감싸기만 한 앱은 심사에서 거절될 수 있음).
 
 | 항목 | 값 |
 | - | - |
 | 앱 이름 / ID | 어빌리티킹덤 / `com.wakamonlabs.abilitykingdom` (임시) |
-| 버전 | 0.4.0 (빌드 5) |
+| 버전 | 0.4.1 (빌드 6) — 앱 껍데기 버전. 화면 내용은 웹 배포를 따름 |
 | 아이콘 | 리온 전신 이미지에서 얼굴 쪽을 잘라 만든 임시 아이콘(`app-icons/`, `npm run icons`로 재생성). 안드로이드는 적응형 아이콘 |
 | 화면 | 가로 고정, 상태바·내비게이션 바 숨김, 검정 시작 화면 + 아이콘 |
 
 **안드로이드**
-- `npm run android:apk` → `android/app/build/outputs/apk/debug/app-debug.apk` (Android SDK·JDK 21 필요)
+- `npm run android:apk` → `android/app/build/outputs/apk/debug/app-debug.apk` (Android SDK·JDK 21 필요, 약 6MB)
 - 저장소의 공용 디버그 키(`android/app/debug-shared.keystore`)로 서명합니다. 어디서 빌드해도 같은 키라 새 버전을 덮어 설치할 수 있습니다. **Play 스토어 출시에는 별도 비공개 릴리스 키가 필요합니다.**
 - 설치: APK를 휴대폰에서 열고 "출처를 알 수 없는 앱 설치"를 허용합니다.
 
