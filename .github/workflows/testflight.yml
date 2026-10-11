@@ -1,0 +1,72 @@
+name: iOS TestFlight
+# App Store Connect API 키로 서명·업로드합니다(Apple ID 비밀번호 불필요).
+# 필요한 저장소 Secrets:
+#   APPLE_TEAM_ID                 개발자 팀 ID(10자리)
+#   ASC_KEY_ID                    App Store Connect API 키 ID
+#   ASC_ISSUER_ID                 발급자(Issuer) ID
+#   ASC_KEY_P8                    .p8 파일 내용 전체(-----BEGIN PRIVATE KEY----- 포함)
+# 사전 준비: App Store Connect에 번들 ID com.wakamonlabs.abilitykingdom 으로 앱 레코드 생성
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  testflight:
+    runs-on: macos-15
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - name: Check secrets
+        run: |
+          for v in ASC_KEY_ID ASC_ISSUER_ID TEAM_ID; do [ -n "${!v}" ] || { echo "::error::Secret for $v is missing"; exit 1; }; done
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Select newest Xcode
+        run: |
+          X=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          echo "Using $X"; sudo xcode-select -s "$X"; xcodebuild -version
+      - run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - run: npm run build && npx cap sync ios
+      - name: Write API key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/keys"
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8"
+          echo "KEY_PATH=$RUNNER_TEMP/keys/AuthKey_${ASC_KEY_ID}.p8" >> "$GITHUB_ENV"
+      - name: Archive (automatic signing via API key)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            archive
+      - name: Upload to TestFlight
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+      - name: Clean up key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keys"
