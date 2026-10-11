@@ -1,0 +1,134 @@
+import type { CharacterDefinition } from '../types'
+
+// 샘플 캐릭터 데이터. 이름·역할·속성·희귀도는 확정 데이터가 아니다.
+// 이미지: AI 생성 임시 에셋(정적 1장 × 포즈 2종). 제작용 리깅/애니메이션 에셋 아님.
+
+const a = (id: string) => ({
+  portrait: `assets/chars/${id}_portrait.webp`,
+  stand: `assets/chars/${id}_stand.webp`,
+  action: `assets/chars/${id}_action.webp`,
+})
+
+export const CHARACTERS: CharacterDefinition[] = [
+  {
+    id: 'jian', name: '지안', nameEn: 'JIAN', role: 'attack', attribute: 'blade', rarity: 5, accent: '#2ee6d6',
+    tagline: '먼저 베고, 설명은 나중에.',
+    profile: { affiliation: '성수 구역 · 독립 능력자', ability: '공간의 틈을 따라 베어내는 참격', note: '말수가 적고 지하철 2호선을 좋아한다.' },
+    skills: [
+      { name: '틈새 베기', kind: '기본', desc: '전방의 적 하나를 빠르게 벤다.' },
+      { name: '역방향 발도', kind: '스킬', desc: '짧게 돌진한 뒤 적의 방어를 무시하는 일격을 가한다.' },
+      { name: '종착역', kind: '궁극기', desc: '경로 위의 모든 적을 가르는 청록색 참격을 남긴다.' },
+    ],
+    baseStats: { hp: 1180, atk: 312, def: 140 },
+    assets: a('jian'),
+    formation: { scale: 1.0, offsetX: 0, offsetY: 0, faceY: 0.07 },
+    lobby: { entrance: 'slash', idle: 'sway' },
+    idleSeed: 0.1,
+  },
+  {
+    id: 'yujin', name: '유진', nameEn: 'YUJIN', role: 'defense', attribute: 'barrier', rarity: 4, accent: '#7fb6ff',
+    tagline: '내 뒤라면 괜찮아.',
+    profile: { affiliation: '도시 안전국 협력 요원', ability: '육각형 방벽을 펼쳐 충격을 흩뜨린다', note: '장갑을 고쳐 끼는 버릇이 있다.' },
+    skills: [
+      { name: '손등 막기', kind: '기본', desc: '적을 밀쳐내며 자신에게 보호막을 건다.' },
+      { name: '육각 방벽', kind: '스킬', desc: '아군 전체에 일정 시간 피해 감소 방벽을 펼친다.' },
+      { name: '정지선', kind: '궁극기', desc: '전장에 선을 그어 적의 전진을 막는다.' },
+    ],
+    baseStats: { hp: 1620, atk: 188, def: 260 },
+    assets: a('yujin'),
+    formation: { scale: 1.0, offsetX: 0, offsetY: 0, faceY: 0.07 },
+    lobby: { entrance: 'barrier', idle: 'breath' },
+    idleSeed: 0.55,
+  },
+  {
+    id: 'harin', name: '하린', nameEn: 'HARIN', role: 'ability', attribute: 'pulse', rarity: 3, accent: '#ff5a4e',
+    tagline: '볼륨, 더 올려도 되지?',
+    profile: { affiliation: '부평 구역 · 공연팀', ability: '심장 박동을 증폭해 폭발적인 충격파를 낸다', note: '헤드폰은 늘 목에 건다.' },
+    skills: [
+      { name: '비트 펀치', kind: '기본', desc: '박자에 맞춰 연속 타격한다.' },
+      { name: '드롭', kind: '스킬', desc: '지정 범위에 충격파를 떨어뜨린다.' },
+      { name: '앙코르', kind: '궁극기', desc: '직전 스킬을 강화해 한 번 더 발동한다.' },
+    ],
+    baseStats: { hp: 1050, atk: 298, def: 120 },
+    assets: a('harin'),
+    formation: { scale: 0.98, offsetX: 0, offsetY: 0, faceY: 0.07 },
+    lobby: { entrance: 'burst', idle: 'bob' },
+    idleSeed: 0.3,
+  },
+  {
+    id: 'doyun', name: '도윤', nameEn: 'DOYUN', role: 'support', attribute: 'vital', rarity: 3, accent: '#b7e36a',
+    tagline: '다음 열차까진 3분. 충분해.',
+    profile: { affiliation: '주안 구역 · 대학생', ability: '생명력을 빛으로 나눠 동료를 회복시킨다', note: '휴대전화로 노선도를 자주 확인한다.' },
+    skills: [
+      { name: '응급 처치', kind: '기본', desc: '체력이 가장 낮은 아군을 회복한다.' },
+      { name: '환승 신호', kind: '스킬', desc: '아군 하나의 스킬 대기시간을 줄인다.' },
+      { name: '첫차', kind: '궁극기', desc: '아군 전체를 크게 회복하고 해로운 효과를 해제한다.' },
+    ],
+    baseStats: { hp: 1240, atk: 170, def: 180 },
+    assets: a('doyun'),
+    formation: { scale: 1.04, offsetX: 0, offsetY: 0, faceY: 0.06 },
+    lobby: { entrance: 'heal', idle: 'breath' },
+    idleSeed: 0.8,
+  },
+  {
+    id: 'sein', name: '세인', nameEn: 'SEIN', role: 'ability', attribute: 'gravity', rarity: 5, accent: '#a97bff',
+    tagline: '귀찮게 하지 마. 무거워질 테니까.',
+    profile: { affiliation: '강남 구역 · 소속 불명', ability: '주변의 중력을 압축해 구체로 만든다', note: '후드를 벗는 일이 드물다.' },
+    skills: [
+      { name: '압축', kind: '기본', desc: '적 하나에게 중력 피해를 준다.' },
+      { name: '낙하점', kind: '스킬', desc: '범위 내 적을 한 점으로 끌어모은다.' },
+      { name: '사건의 지평선', kind: '궁극기', desc: '거대한 중력구를 터뜨려 범위 피해를 준다.' },
+    ],
+    baseStats: { hp: 1010, atk: 330, def: 110 },
+    assets: a('sein'),
+    formation: { scale: 1.04, offsetX: 0, offsetY: 0, faceY: 0.06 },
+    lobby: { entrance: 'warp', idle: 'sway' },
+    idleSeed: 0.42,
+  },
+  {
+    id: 'narin', name: '나린', nameEn: 'NARIN', role: 'support', attribute: 'vital', rarity: 3, accent: '#6fe3b8',
+    tagline: '다친 사람, 손!',
+    profile: { affiliation: '학원도시 · 보건부', ability: '회복 캡슐을 만들어 던진다', note: '모자를 거꾸로 쓰는 게 포인트.' },
+    skills: [
+      { name: '캡슐 토스', kind: '기본', desc: '아군에게 회복 캡슐을 던진다.' },
+      { name: '스파클 존', kind: '스킬', desc: '바닥에 지속 회복 구역을 만든다.' },
+    ],
+    baseStats: { hp: 980, atk: 150, def: 150 },
+    assets: a('narin'),
+    formation: { scale: 0.95, offsetX: 0, offsetY: 0, faceY: 0.08 },
+    lobby: { entrance: 'spin', idle: 'bob' },
+    idleSeed: 0.66,
+  },
+  {
+    id: 'rion', name: '리온', nameEn: 'RION', role: 'attack', attribute: 'sound', rarity: 5, accent: '#c8f53b',
+    tagline: '자, 어디까지 들리니?',
+    profile: { affiliation: '해적 방송국 · 진행자', ability: '음파를 칼날처럼 다듬어 멀리까지 보낸다', note: '방송 중엔 절대 헤드폰을 벗지 않는다.' },
+    skills: [
+      { name: '하울링', kind: '기본', desc: '직선 위의 적에게 음파 피해를 준다.' },
+      { name: '온 에어', kind: '스킬', desc: '아군 전체 공격력을 잠시 올린다.' },
+      { name: '주파수 너머', kind: '궁극기', desc: '전장 전체에 음파 폭발을 일으킨다.' },
+    ],
+    baseStats: { hp: 1100, atk: 320, def: 125 },
+    assets: a('rion'),
+    formation: { scale: 0.97, offsetX: 0, offsetY: 0, faceY: 0.07 },
+    lobby: { entrance: 'wave', idle: 'sway' },
+    idleSeed: 0.2,
+  },
+  {
+    id: 'seoha', name: '서하', nameEn: 'SEOHA', role: 'defense', attribute: 'barrier', rarity: 4, accent: '#ff9a3c',
+    tagline: '물러서지 않아. 그게 내 일이야.',
+    profile: { affiliation: '도시 안전국 · 현장 대응팀', ability: '접이식 방패에 능력을 실어 전개한다', note: '야근이 잦다.' },
+    skills: [
+      { name: '방패 밀치기', kind: '기본', desc: '적을 밀치고 잠시 기절시킨다.' },
+      { name: '전개', kind: '스킬', desc: '방패를 펼쳐 받는 피해를 크게 줄인다.' },
+      { name: '최후 저지선', kind: '궁극기', desc: '일정 시간 아군이 받는 피해를 대신 받는다.' },
+    ],
+    baseStats: { hp: 1550, atk: 200, def: 240 },
+    assets: a('seoha'),
+    formation: { scale: 0.99, offsetX: 0, offsetY: 0, faceY: 0.07 },
+    lobby: { entrance: 'slam', idle: 'breath' },
+    idleSeed: 0.9,
+  },
+]
+
+export const CHAR_BY_ID: Record<string, CharacterDefinition> = Object.fromEntries(CHARACTERS.map((c) => [c.id, c]))
