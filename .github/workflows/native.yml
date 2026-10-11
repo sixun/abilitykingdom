@@ -4,6 +4,11 @@ name: Native builds (Android APK / iOS)
 # - iOS: 시뮬레이터용 .app + 서명 없는 .ipa(아이폰 설치에는 Apple 계정 서명 필요)
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: '릴리스 태그(예: v0.3.2). 비우면 파일만 Actions에 올림'
+        required: false
+        default: ''
   push:
     tags: ['v*']
 permissions:
@@ -31,9 +36,12 @@ jobs:
         with:
           name: android-apk
           path: AbilityKingdom-android.apk
-      - if: startsWith(github.ref, 'refs/tags/')
+      - if: startsWith(github.ref, 'refs/tags/') || inputs.release_tag != ''
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
+          name: 어빌리티킹덤 ${{ inputs.release_tag || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           files: AbilityKingdom-android.apk
 
   ios:
@@ -69,9 +77,12 @@ jobs:
           path: |
             AbilityKingdom-ios-unsigned.ipa
             AbilityKingdom-ios-simulator.zip
-      - if: startsWith(github.ref, 'refs/tags/')
+      - if: startsWith(github.ref, 'refs/tags/') || inputs.release_tag != ''
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
+          name: 어빌리티킹덤 ${{ inputs.release_tag || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           files: |
             AbilityKingdom-ios-unsigned.ipa
             AbilityKingdom-ios-simulator.zip
