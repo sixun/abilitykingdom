@@ -9,7 +9,7 @@ import {
 } from '../app/openingVideo'
 import { CrownMark } from './Boot'
 
-// 오프닝: 사용자가 선택한 15초 영상 + 오프닝 노래. 노래가 먼저 시작되고 0.6초 뒤 영상이 시작된다(영상 원래 소리는 끔).
+// 오프닝: 사용자가 선택한 15초 영상 + 오프닝 노래. 노래가 먼저 시작되고 0.6초 뒤 영상이 시작된다(영상 원래 소리와 겹쳐 재생).
 // 영상 속 타이틀(13초~)부터 입력을 받는다.
 // 영상이 끝나도 자동으로 로비에 들어가지 않고 마지막 장면(정지 타이틀)을 유지한다.
 // 영상 재생 실패 시 정적 타이틀로 대체한다.
@@ -34,7 +34,8 @@ export default function Opening({ params }: { params: Record<string, unknown> })
     if (mode !== 'video') return
     const v = getOpeningVideo(s.settings.quality === 'low')
     host.current?.appendChild(v)
-    v.muted = true // 영상 소리 대신 오프닝 노래
+    v.muted = false // 영상 원래 소리 + 오프닝 노래를 함께 재생
+    v.volume = Math.max(0, Math.min(1, s.settings.bgm))
     v.pause()
     if (startAt) v.currentTime = startAt // 연출 감소: 타이틀부터
     let started = false
@@ -48,7 +49,11 @@ export default function Opening({ params }: { params: Record<string, unknown> })
     v.addEventListener('error', onError)
     // 노래 시작 0.6초 뒤 영상 시작
     const go = window.setTimeout(() => {
-      v.play().then(() => syncSongTo(v.currentTime)).catch(() => setMode('static'))
+      v.play().then(() => syncSongTo(v.currentTime)).catch(() => {
+        // 소리 있는 재생이 막히면 음소거로 재생하고 SOUND ON 버튼을 보여준다
+        v.muted = true
+        v.play().then(() => { syncSongTo(v.currentTime); setNeedTap(true) }).catch(() => setMode('static'))
+      })
     }, msUntilVideo())
     // 일정 시간 안에 재생이 시작되지 않으면 정적 타이틀로 대체
     const stall = window.setTimeout(() => { if (!started && v.currentTime <= startAt) setMode('static') }, 6000 + SONG.videoDelay * 1000)
@@ -122,6 +127,7 @@ export default function Opening({ params }: { params: Record<string, unknown> })
         <button className="op-sound" onPointerUp={(e) => {
           e.stopPropagation()
           const v = mode === 'video' ? getOpeningVideo() : null
+          if (v) v.muted = false
           startOpeningSong(s.settings.bgm, v ? v.currentTime + SONG.videoDelay : 0).then((ok) => setNeedTap(!ok))
         }}>SOUND ON</button>
       )}
