@@ -22,6 +22,8 @@ def masks(img, rect, kind, th=170):
         m = (mx > th).astype(np.uint8)
     elif kind == 'level':  # 흰 숫자, 회색 상한, 파란 경험치 막대
         m = ((mn > th) | ((b > 180) & (r < 90))).astype(np.uint8)
+    elif kind == 'lime':  # 라임색 그래픽(영입 파형)
+        m = ((g > 110) & (g - b > 40)).astype(np.uint8)
     elif kind == 'identity':  # 흰 글자 + 파란 사선
         m = ((mn > th) | ((b > 140) & (r < 100) & (b - r > 60))).astype(np.uint8)
     return m
@@ -84,6 +86,7 @@ DETAIL = {
 for k, (x, y, w, h) in STAT_ROWS.items():
     DETAIL[f'stat-{k}'] = {'rect': [x + 190, y + 6, w - 200, h - 12], 'masks': [([x + 192, y + 8, w - 204, h - 16], 'value', 170)], 'dilate': 2}
 
-meta = {'station': build('station', STATION), 'detail': build('detail', DETAIL)}
+RECRUIT = {'wave': {'rect': [542, 242, 80, 44], 'masks': [([544, 244, 76, 40], 'lime')], 'dilate': 3}}
+meta = {'station': build('station', STATION), 'detail': build('detail', DETAIL), 'recruitment': build('recruitment', RECRUIT)}
 json.dump(meta, open('src/game/data/ref-textless.json', 'w'), indent=0)
 print('ok', sum(len(v) for v in meta.values()))

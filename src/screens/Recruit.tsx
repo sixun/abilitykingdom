@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import '../styles/recruit.css'
 import { useNav } from '../app/nav'
 import { audio } from '../app/audio'
@@ -7,8 +7,14 @@ import { BANNERS, BANNER_BY_ID } from '../game/data/catalog'
 import { CHAR_BY_ID } from '../game/data/characters'
 import { GAME_CONFIG, ROLE_LABEL, ATTRIBUTE_LABEL } from '../game/config'
 import { Btn, Modal, fmt, useAction, ErrorBanner, ProvisionalTag } from '../ui/components'
-import { RefStage, RefLayers, Hit, Patch, rectOf, boxStyle, SKIN, type RefLayout } from '../ui/ref'
+import { RefStage, RefLayers, Hit, Patch, TextlessPatch, rectOf, boxStyle, SKIN, type RefLayout, type TextlessMeta } from '../ui/ref'
 import layoutJson from '../game/data/ref-recruitment.json'
+import fitJson from '../game/data/motion-fit.json'
+import matteJson from '../game/data/ref-matte.json'
+import textlessJson from '../game/data/ref-textless.json'
+import cutJson from '../game/data/recruit-cut.json'
+import { MotionVideo } from '../ui/motion'
+import '../styles/motion.css'
 
 // 방송 콘셉트 영입 원본(1456×819)을 원본 조각 24개로 재현.
 // 원본 키비주얼은 '주파수 너머(리온)'만 있다. 다른 배너를 고르면 복원 배경 + 임시 캐릭터 + 실제 텍스트로 대체 표시한다(원본 아님).
@@ -17,6 +23,10 @@ const REF = { diamond: 12800, ticket: 24, points: 120 }
 const BANNER_SLICES = ['banner-limited', 'banner-standard', 'banner-rhythm', 'banner-reunion']
 const BANNER_IDS = ['b_rion', 'b_daily', 'b_rhythm', 'b_reunion']
 const PILL = '#323840'
+const FIT = fitJson as unknown as Record<string, { s: number; x: number; y: number }>
+// 리온 배너에서 쓰는 조각: 알약 버튼은 둥근 매트, 리온과 겹치는 제목·클로즈업은 겹친 부분만 투명(tools/build_motion_plates.py)
+const MATTE_R = { ...(matteJson as Record<string, Record<string, string>>).recruitment, ...(cutJson as Record<string, string>) }
+const TL = (textlessJson as Record<string, Record<string, TextlessMeta>>).recruitment
 const IVORY = '#f5ede4'
 
 export default function Recruit({ params }: { params: Record<string, unknown> }) {
@@ -29,6 +39,9 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
   const b = BANNER_BY_ID[bannerId]
   const f = CHAR_BY_ID[b.featuredId]
   const isRefBanner = bannerId === 'b_rion'
+  // 리온 배너로 들어올 때마다 전환 효과를 다시 재생(다른 배너에서는 리온 영상을 그리지 않음)
+  const [enterKey, setEnterKey] = useState(0)
+  useEffect(() => { if (isRefBanner) setEnterKey((k) => k + 1) }, [isRefBanner])
 
   const pull = async (count: number) => {
     const res = await run(`pull${count}`, (rid) => game.recruit(bannerId, count, rid))
@@ -49,7 +62,29 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
     <div className="scr">
       <RefStage canvas={L.canvas}>
         <img className="ref-bg" src="ref/restored/recruitment-bg.webp" alt="" />
-        <RefLayers layout={L} z={1} />
+        {isRefBanner ? (
+          <>
+            {/* 리온 배너: 원본 장면에서 리온을 지운 배경판 → 리온 대기 영상(배경 제거) → 원본 UI 조각 */}
+            <RefLayers layout={L} ids={['scene-remainder']} z={1} files={{ 'scene-remainder': 'ref/recruitment/motion/scene-plate.webp' }} />
+            <div className="cdx rcx-rion" key={`rion-${enterKey}`}>
+              <MotionVideo src="motion/recruit.webm" poster="motion/recruit-poster.webp" alpha className="char" style={{ left: FIT.recruit.x, top: FIT.recruit.y, width: 1080 * FIT.recruit.s, height: 1080 * FIT.recruit.s, clipPath: `inset(0 0 ${1080 * FIT.recruit.s - (716 - FIT.recruit.y)}px 0)` }} />
+            </div>
+            <RefLayers layout={L} hide={new Set(['scene-remainder', 'promo-title'])} z={1} files={MATTE_R} />
+            {/* 제목: 리온보다 100ms 늦게 안착(조각 크기 이상으로만 변해 원래 자리가 비지 않게 함) */}
+            <div className="cdx rcx-title" key={`title-${enterKey}`}><RefLayers layout={L} ids={['promo-title']} z={1} files={MATTE_R} /></div>
+            {/* 파형: 0.8~1.6초 간격으로 막대 높이가 바뀌는 장식(실제 소리 분석 아님) */}
+            <TextlessPatch m={TL.wave} z={2}>
+              <span className="rc-wave">{[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => <i key={i} style={{ animationDuration: `${0.8 + ((i * 37) % 9) / 10}s`, animationDelay: `${-(i * 0.23)}s` }} />)}</span>
+            </TextlessPatch>
+            {/* ON AIR 띠: 느린 광택 흐름(글자는 고정) */}
+            <div className="rc-onair" aria-hidden />
+            {/* REC 점: 1.6초 느린 점멸 */}
+            <div className="rc-rec" aria-hidden />
+            {/* 배너 선택 전환: 사선 wipe 160ms → 리온 → 제목(+100ms) → 하단 클로즈업(+80ms) */}
+            <div className="rcx-wipe" key={`wipe-${enterKey}`} aria-hidden />
+            <div className="rcx-strip" key={`strip-${enterKey}`} aria-hidden />
+          </>
+        ) : <RefLayers layout={L} z={1} />}
 
         {/* 다른 배너의 키비주얼(원본 없음 → 대체 표시) */}
         {!isRefBanner && (

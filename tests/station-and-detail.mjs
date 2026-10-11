@@ -109,7 +109,7 @@ check(await page.evaluate(() => document.activeElement?.tagName === 'BUTTON'), '
 const p2 = await (await browser.newContext({ viewport: { width: 1672, height: 941 }, reducedMotion: 'reduce' })).newPage()
 await p2.goto(BASE + '?screen=lobby'); await p2.waitForTimeout(1500)
 await p2.evaluate(() => window.__AK__.setLobbyTheme('station')); await p2.waitForTimeout(600)
-check(await p2.evaluate(() => getComputedStyle(document.querySelector('.rs-in')).animationName === 'none'), '동작 줄이기: 역 로비 진입 효과 끔')
+check(await p2.evaluate(() => getComputedStyle(document.querySelector('.mg')).animationName === 'none' && !document.querySelector('video.mv')), '동작 줄이기: 진입 효과 끔·영상 대신 정지 포스터')
 
 console.log('errors:', errs.length ? errs : 'none')
 console.log('FAILS', fails)

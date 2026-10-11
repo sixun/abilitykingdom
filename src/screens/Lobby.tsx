@@ -8,13 +8,29 @@ import { GAME_CONFIG } from '../game/config'
 import { Modal, Btn, ConfirmDialog } from '../ui/components'
 import { RoleGlyph, IconGrid } from '../ui/icons'
 import { RefStage, RefLayers, Hit, Patch, rectOf, type RefLayout } from '../ui/ref'
+import { MotionVideo, fitBox } from '../ui/motion'
+import fitJson from '../game/data/motion-fit.json'
+import matteJson from '../game/data/ref-matte.json'
+import '../styles/motion.css'
 import layoutJson from '../game/data/ref-lobby.json'
 import LobbyStation from './LobbyStation'
 
 // 소파 로비 원본(1456×818)을 원본 조각 23개로 재현.
 // 재화·레벨은 원본 값과 같으면 원본 조각 그대로, 바뀌면 숫자 영역만 덮어 실제 텍스트로 표시한다.
-// 로비 캐릭터는 원본 장면(누운 지안)에 합쳐져 있어 다른 캐릭터의 로비 포즈는 아직 없다.
+// 장면은 UI 없는 지안 소파 대기 영상(motion/sofa.mp4)이고, 원본 UI 조각은 배경을 걷어낸 매트로 그 위에 올린다.
+// 로비 캐릭터는 지안 장면만 있다(다른 캐릭터 로비 포즈 없음 → 선택 불가).
 const L = layoutJson as RefLayout
+const FIT = fitJson as unknown as Record<string, { s: number; x: number; y: number }>
+const MATTE = (matteJson as Record<string, Record<string, string>>).lobby
+const NAV_IDS = ['nav-story', 'nav-explore', 'nav-wanted', 'nav-training', 'nav-arena', 'nav-raid', 'nav-characters', 'nav-formation', 'nav-shop', 'nav-recruit']
+const GROUP = {
+  top: ['topbar-remainder', 'back', 'profile', 'stamina', 'currency-coins', 'currency-gems'],
+  left: ['character-switch'],
+  right: ['event-terminal', 'event-story', 'event-explore', 'event-wanted'],
+  bottom: ['navbar-remainder', ...NAV_IDS],
+}
+// 진입: 장면 0ms → 상단 80 → 좌 130 → 우 170 → 하단 220ms (각 240ms, 0.46초 안에 정착)
+const DELAY = { top: 80, left: 130, right: 170, bottom: 220 }
 const REF = { stamina: 187, staminaMax: 240, credit: 388434, medal: 1443, level: 15, name: '마유' }
 const PILL_BG = '#070707'
 
@@ -65,49 +81,65 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
     </Patch>
   )
 
-  if (viewing) {
-    // 감상 모드: UI 조각을 숨기고, UI가 덮고 있던 자리는 복원 배경으로 채운다
-    return (
-      <div className="scr" onClick={() => { audio.sfx('tap'); setViewing(false) }}>
-        <RefStage canvas={L.canvas}>
-          <img className="ref-bg" src="ref/restored/lobby-bg.webp" alt="" />
-          <RefLayers layout={L} ids={['scene-remainder']} z={1} />
-          <Hit r={{ x: 0, y: 0, w: 1456, h: 818 }} label="UI 다시 표시" onClick={() => setViewing(false)} />
-        </RefStage>
-      </div>
-    )
-  }
-
+  const g = (k: keyof typeof DELAY) => ({ animationDelay: `${DELAY[k]}ms` })
   return (
     <div className="scr">
       <RefStage canvas={L.canvas}>
-        <img className="ref-bg" src="ref/restored/lobby-bg.webp" alt="" />
-        <RefLayers layout={L} z={1} />
+        {/* 장면: UI 없는 지안 소파 영상(배경+인물 한 장면). 감상 모드에서도 같은 영상을 그대로 쓴다 */}
+        <MotionVideo src="motion/sofa.mp4" poster="motion/sofa-poster.webp" style={fitBox(FIT.sofa, L.canvas)} />
 
-        {/* 동적 수치: 원본 값과 다를 때만 숫자 영역을 덮는다 */}
-        {W.stamina !== REF.stamina && pillPatch(912, 98, <>{W.stamina} / {GAME_CONFIG.staminaMax}</>, 'st')}
-        {W.credit !== REF.credit && pillPatch(1075, 100, <Padded n={W.credit} />, 'cr')}
-        {W.exchangeMedal !== REF.medal && pillPatch(1247, 100, <Padded n={W.exchangeMedal} />, 'md')}
-        {(s.playerLevel !== REF.level || s.playerName !== REF.name) && (
-          <Patch r={{ x: 192, y: 19, w: 180, h: 44 }} bg="#141414" z={30}>
-            <b style={{ position: 'absolute', left: 6, top: 3, fontSize: 19, fontWeight: 900 }}>{s.playerName}</b>
-            <span style={{ position: 'absolute', right: 14, top: 4, fontFamily: 'Anton, sans-serif', fontSize: 30 }}>{s.playerLevel}</span>
-          </Patch>
-        )}
+        <div className={`mg-wrap ${viewing ? 'hide' : ''}`} aria-hidden={viewing}>
+          {/* 상단 띠 */}
+          <div className="mg mg-top" style={g('top')}>
+            <RefLayers layout={L} ids={GROUP.top} z={1} />
+            {W.stamina !== REF.stamina && pillPatch(912, 98, <>{W.stamina} / {GAME_CONFIG.staminaMax}</>, 'st')}
+            {W.credit !== REF.credit && pillPatch(1075, 100, <Padded n={W.credit} />, 'cr')}
+            {W.exchangeMedal !== REF.medal && pillPatch(1247, 100, <Padded n={W.exchangeMedal} />, 'md')}
+            {(s.playerLevel !== REF.level || s.playerName !== REF.name) && (
+              <Patch r={{ x: 192, y: 19, w: 180, h: 44 }} bg="#141414" z={30}>
+                <b style={{ position: 'absolute', left: 6, top: 3, fontSize: 19, fontWeight: 900 }}>{s.playerName}</b>
+                <span style={{ position: 'absolute', right: 14, top: 4, fontFamily: 'Anton, sans-serif', fontSize: 30 }}>{s.playerLevel}</span>
+              </Patch>
+            )}
+            {/* 추가 메뉴(원본에 없는 보조 메뉴 진입점: 가방·우편·미션·공지·이벤트·출석·설정) */}
+            <Patch r={{ x: 822, y: 20, w: 50, h: 44 }} bg="#141414" z={30} style={{ borderRadius: 10, display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px #3a3a3a' }}>
+              <IconGrid size={24} />
+              {(b.mail || b.mission || b.notice || b.attendance) && <span style={{ position: 'absolute', right: 5, top: 5, width: 9, height: 9, borderRadius: 5, background: '#ff4d4f' }} />}
+            </Patch>
+            {/* 로비 테마 전환(원본에 없는 추가 버튼) */}
+            <Patch r={{ x: 700, y: 20, w: 112, h: 44 }} bg="#141414" z={30} className="rl-theme" style={{ borderRadius: 10, boxShadow: 'inset 0 0 0 1px #3a3a3a' }}>
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden><rect x="5" y="3" width="14" height="14" rx="3" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M5 11h14M8 21l2-4M16 21l-2-4" stroke="currentColor" strokeWidth="2" /><circle cx="9" cy="14" r="1" fill="currentColor" /><circle cx="15" cy="14" r="1" fill="currentColor" /></svg>
+              <span>역 로비</span>
+            </Patch>
+            <Hit r={{ x: 822, y: 20, w: 50, h: 44 }} label="더보기 메뉴" onClick={() => setMore((v) => !v)} />
+            <Hit r={{ x: 700, y: 20, w: 112, h: 44 }} label="로비 테마 변경: 역 승강장 로비로" sfx="none" onClick={() => { audio.sfx('swap'); onTheme() }} />
+            <Hit r={rectOf(L, 'back')} label="타이틀 화면으로" onClick={() => setToTitle(true)} />
+            <Hit r={rectOf(L, 'profile')} label="프로필" onClick={() => go('profile')} />
+            <Hit r={rectOf(L, 'stamina')} label={`행동력 ${W.stamina} / ${GAME_CONFIG.staminaMax}, 충전`} onClick={() => go('shop', { tab: 'currency' })} />
+            <Hit r={rectOf(L, 'currency-coins')} label={`크레딧 ${W.credit}`} onClick={() => go('shop', { tab: 'currency' })} />
+            <Hit r={rectOf(L, 'currency-gems')} label={`교환 메달 ${W.exchangeMedal}`} onClick={() => go('shop', { tab: 'exchange' })} />
+          </div>
+          {/* 왼쪽: 로비 캐릭터 변경 */}
+          <div className="mg mg-left" style={g('left')}>
+            <RefLayers layout={L} ids={GROUP.left} z={1} files={MATTE} />
+            <Hit r={rectOf(L, 'character-switch')} label="로비 캐릭터 변경" onClick={() => setPicker(true)} />
+          </div>
+          {/* 오른쪽: 이벤트 패널 */}
+          <div className="mg mg-right" style={g('right')}>
+            <RefLayers layout={L} ids={GROUP.right} z={1} files={MATTE} />
+            <Hit r={rectOf(L, 'event-story')} label="이벤트: 스토리" onClick={() => go('story')} />
+            <Hit r={rectOf(L, 'event-explore')} label="이벤트: 도시 탐색" onClick={() => go('explore')} />
+            <Hit r={rectOf(L, 'event-wanted')} label="이벤트: 현상수배" onClick={() => go('wanted')} />
+          </div>
+          {/* 하단 메뉴 띠 */}
+          <div className="mg mg-bottom" style={g('bottom')}>
+            <RefLayers layout={L} ids={GROUP.bottom} z={1} files={MATTE} />
+            {NAV.map((n) => <Hit key={n.id} r={rectOf(L, n.id)} label={n.label} onClick={() => go(n.screen)} className={`lb-nav-${n.screen}`} />)}
+          </div>
+        </div>
 
-        {/* 추가 메뉴(원본에 없는 보조 메뉴 진입점: 가방·우편·미션·공지·이벤트·출석·설정) */}
-        <Patch r={{ x: 822, y: 20, w: 50, h: 44 }} bg="#141414" z={30} style={{ borderRadius: 10, display: 'grid', placeItems: 'center', boxShadow: 'inset 0 0 0 1px #3a3a3a' }}>
-          <IconGrid size={24} />
-          {(b.mail || b.mission || b.notice || b.attendance) && <span style={{ position: 'absolute', right: 5, top: 5, width: 9, height: 9, borderRadius: 5, background: '#ff4d4f' }} />}
-        </Patch>
-        <Hit r={{ x: 822, y: 20, w: 50, h: 44 }} label="더보기 메뉴" onClick={() => setMore((v) => !v)} />
-        {/* 로비 테마 전환(원본에 없는 추가 버튼) */}
-        <Patch r={{ x: 700, y: 20, w: 112, h: 44 }} bg="#141414" z={30} className="rl-theme" style={{ borderRadius: 10, boxShadow: 'inset 0 0 0 1px #3a3a3a' }}>
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden><rect x="5" y="3" width="14" height="14" rx="3" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M5 11h14M8 21l2-4M16 21l-2-4" stroke="currentColor" strokeWidth="2" /><circle cx="9" cy="14" r="1" fill="currentColor" /><circle cx="15" cy="14" r="1" fill="currentColor" /></svg>
-          <span>역 로비</span>
-        </Patch>
-        <Hit r={{ x: 700, y: 20, w: 112, h: 44 }} label="로비 테마 변경: 역 승강장 로비로" sfx="none" onClick={() => { audio.sfx('swap'); onTheme() }} />
-        {more && (
+        {viewing && <Hit r={{ x: 0, y: 0, w: 1456, h: 818 }} z={70} label="UI 다시 표시" onClick={() => setViewing(false)} />}
+        {more && !viewing && (
           <div className="rl-more" style={{ left: 450, top: 72 }} onClick={(e) => e.stopPropagation()}>
             {([
               ['가방', 'bag', false], ['우편함', 'mail', b.mail], ['미션', 'missions', b.mission], ['공지', 'notices', b.notice],
@@ -119,18 +151,6 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
             <button onClick={() => { audio.sfx('swap'); setMore(false); onTheme() }}>역 로비로</button>
           </div>
         )}
-
-        {/* 조작 영역 */}
-        <Hit r={rectOf(L, 'back')} label="타이틀 화면으로" onClick={() => setToTitle(true)} />
-        <Hit r={rectOf(L, 'profile')} label="프로필" onClick={() => go('profile')} />
-        <Hit r={rectOf(L, 'stamina')} label={`행동력 ${W.stamina} / ${GAME_CONFIG.staminaMax}, 충전`} onClick={() => go('shop', { tab: 'currency' })} />
-        <Hit r={rectOf(L, 'currency-coins')} label={`크레딧 ${W.credit}`} onClick={() => go('shop', { tab: 'currency' })} />
-        <Hit r={rectOf(L, 'currency-gems')} label={`교환 메달 ${W.exchangeMedal}`} onClick={() => go('shop', { tab: 'exchange' })} />
-        <Hit r={rectOf(L, 'event-story')} label="이벤트: 스토리" onClick={() => go('story')} />
-        <Hit r={rectOf(L, 'event-explore')} label="이벤트: 도시 탐색" onClick={() => go('explore')} />
-        <Hit r={rectOf(L, 'event-wanted')} label="이벤트: 현상수배" onClick={() => go('wanted')} />
-        <Hit r={rectOf(L, 'character-switch')} label="로비 캐릭터 변경" onClick={() => setPicker(true)} />
-        {NAV.map((n) => <Hit key={n.id} r={rectOf(L, n.id)} label={n.label} onClick={() => go(n.screen)} className={`lb-nav-${n.screen}`} />)}
       </RefStage>
 
       {picker && (

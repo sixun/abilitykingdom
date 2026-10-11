@@ -44,14 +44,14 @@ export function RefStage({ canvas, children, className = '', onPointerUp }: { ca
 }
 
 /** layout의 조각을 원위치에 그린다. hide에 있는 조각은 숨긴다(그 자리는 아래층이 보인다) */
-export function RefLayers({ layout, ids, hide, z = 1, className = '', style }: { layout: RefLayout; ids?: string[]; hide?: Set<string>; z?: number; className?: string; style?: CSSProperties }) {
+export function RefLayers({ layout, ids, hide, z = 1, className = '', style, files }: { layout: RefLayout; ids?: string[]; hide?: Set<string>; z?: number; className?: string; style?: CSSProperties; files?: Record<string, string> }) {
   const list = ids ? layout.layers.filter((l) => ids.includes(l.id)) : layout.layers
   return (
     <>
       {list.map((l) => (
         <img
           key={l.id}
-          src={l.file}
+          src={files?.[l.id] ?? l.file}
           alt=""
           draggable={false}
           className={`ref-layer ${className}`}

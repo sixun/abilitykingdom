@@ -14,6 +14,9 @@ import { RefStage, RefLayers, Hit, TextlessPatch, rectOf, type RefLayout, type T
 import layoutJson from '../game/data/ref-detail.json'
 import textless from '../game/data/ref-textless.json'
 import artJson from '../game/data/ref-detail-art.json'
+import fitJson from '../game/data/motion-fit.json'
+import { MotionVideo } from '../ui/motion'
+import '../styles/motion.css'
 
 // 캐릭터 상세 원본(지안, 1672×941)을 원본 조각 29개로 재현.
 // - 지안 Lv.40 기본 상태는 원본 조각 그대로. 값이 달라진 칸만 글자를 지운 근사 패치 + 실제 텍스트.
@@ -45,6 +48,13 @@ const STAT_ROWS: { key: StatKey; patch: string; right: number }[] = [
 ]
 const pct = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(1)}%`
 const blank = (id: string): OwnedCharacter => ({ id, level: 1, obtainedAt: 0, dupes: 0, equipment: { weapon: null, gear: null, accessory: null } })
+const STAT_LAYERS = ['stat-hp', 'stat-atk', 'stat-def', 'stat-crit-dmg', 'stat-crit-rate', 'stat-speed']
+const TAB_X: Record<'stats' | 'skills' | 'gear', [number, number]> = { stats: [0, 241], skills: [241, 223], gear: [464, 229] }
+const FIT = fitJson as unknown as Record<string, { s: number; x: number; y: number }>
+// 인물을 지운 원본 배경판(tools/build_motion_plates.py)
+const PLATE: Record<string, string> = { 'hero-artwork': 'ref/detail/motion/hero-artwork-plate.webp', 'background-remainder': 'ref/detail/motion/background-remainder-plate.webp' }
+// 영상 좌표 기준 잘라내기: 왼쪽 인물 영역(오른쪽 아래 머리카락 번짐 포함)만 보이게
+const HERO_CLIP = `polygon(0 0, ${914 - 13.9}px 0, ${914 - 13.9}px ${640 - 7.2}px, ${990 - 13.9}px ${640 - 7.2}px, ${990 - 13.9}px 100%, 0 100%)`
 const kindEn = (k: string) => (k === '기본' ? 'BASIC' : k === '스킬' ? 'SKILL' : k === '궁극기' ? 'ULT' : 'PASSIVE')
 
 export default function CharacterDetail({ params }: { params: Record<string, unknown> }) {
@@ -54,6 +64,7 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
   const [id, setId] = useState((params.id as string) ?? 'jian')
   const [offset, setOffset] = useState(() => Math.max(0, Math.min(roster.indexOf((params.id as string) ?? 'jian') - VISIBLE + 1, roster.length - VISIBLE)))
   const [tab, setTab] = useState<Tab>('stats')
+  const [tabTouched, setTabTouched] = useState(false)
   const [pop, setPop] = useState<null | 'growth' | 'role' | 'profile' | 'faction'>(null)
   const [skillPick, setSkillPick] = useState<number | null>(null)
   const [slotPick, setSlotPick] = useState<keyof EquipmentSlots | null>(null)
@@ -111,14 +122,24 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
   return (
     <div className="scr cd2">
       <RefStage canvas={L.canvas}>
-        {/* 왼쪽 인물: 지안 외에는 임시 아트. 원본 배경 조각에 번진 지안 머리카락 영역(오른쪽 아래)까지 덮고, UI 조각은 그 위에 그린다 */}
-        {isRef ? <RefLayers layout={L} z={1} /> : (
-          <>
-            <RefLayers layout={L} ids={['background-remainder']} z={1} />
-            <HeroFallback key={id} cid={id} />
-            <RefLayers layout={L} hide={new Set([...hide, 'background-remainder'])} z={1} />
-          </>
-        )}
+        {/* 왼쪽 인물
+            - 지안: 인물을 지운 원본 배경판 + 대기 영상(배경 제거 알파) + 원본 UI 조각
+            - 그 외: 원본 상세 일러스트가 없어 임시 아트(배경 그래픽 + 기존 전신)
+            원본 배경 조각에 번진 지안 머리카락 영역(오른쪽 아래)까지 덮고, UI 조각은 그 위에 그린다 */}
+        <RefLayers layout={L} ids={['background-remainder']} z={1} files={isRef ? PLATE : undefined} />
+        {isRef && <RefLayers layout={L} ids={['hero-artwork']} z={1} files={PLATE} />}
+        <div className="cdx cdx-hero" key={`hero-${id}`}>
+          {isRef
+            ? <MotionVideo src="motion/detail.webm" poster="motion/detail-poster.webp" alpha className="char" style={{ left: FIT.detail.x, top: FIT.detail.y, width: 1080 * FIT.detail.s, height: 1080 * FIT.detail.s, clipPath: HERO_CLIP }} />
+            : <HeroFallback cid={id} />}
+        </div>
+        <div className="cdx-wipe" key={`wipe-${id}`} aria-hidden />
+        <RefLayers layout={L} hide={new Set([...hide, 'hero-artwork', 'background-remainder', 'identity-title', ...STAT_LAYERS])} z={1} />
+        {/* 이름·능력치 순차 등장(조각을 띄우는 동안 비는 자리는 패널 색으로 채움) */}
+        <div className="cd2-fill" style={{ left: 930, top: 161, width: 445, height: 202 }} />
+        <div className="cd2-fill" style={{ left: 926, top: 480, width: 690, height: 164 }} />
+        <div className="cdx cdx-name" key={`name-${id}`}><RefLayers layout={L} ids={['identity-title']} z={1} /></div>
+        {STAT_LAYERS.map((sl, i) => <div key={`${sl}-${id}`} className="cdx cdx-stat" style={{ animationDelay: `${220 + i * 40}ms` }}><RefLayers layout={L} ids={[sl]} z={1} /></div>)}
         {!isRef && (
           <>
             <div className="cd2-pill" style={{ left: 44, top: 20, width: 122, height: 64 }}><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden><path d="M15 4 7 12l8 8" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /></svg></div>
@@ -145,7 +166,7 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
 
         {/* 이름·소속·소개 */}
         {!isRef && (
-          <TextlessPatch m={T.identity} key={`id-${id}`} className="cd2-x">
+          <TextlessPatch m={T.identity} key={`id-${id}`} className="cdx-name">
             <span className="abs cd2-name" style={{ left: 3, bottom: 85, fontSize: Math.min(124, Math.round(300 / (c.nameEn.length * 0.62))) }}>{c.nameEn}<i className="cd2-stripes" /></span>
             <span className="abs cd2-unit" style={{ left: 6, top: 103 }}>{c.en.unit}</span>
             <span className="abs cd2-motto" style={{ left: 7, top: 143 }}>{c.en.motto.split('|').map((l) => <span key={l}>{l}</span>)}</span>
@@ -179,7 +200,7 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
           if (isRef && v === REF[r.key] && !flash) return null
           const isPct = r.key === 'critRate' || r.key === 'critDmg'
           return (
-            <TextlessPatch key={r.key} m={T[r.patch]}>
+            <TextlessPatch key={`${r.key}-${id}`} m={T[r.patch]} className="cdx-stat" style={{ animationDelay: `${220 + STAT_LAYERS.indexOf(r.patch) * 40}ms` }}>
               <span className={`abs cd2-val ${isPct ? 'pct' : ''} ${flash ? 'flash' : ''}`} style={{ right: r.right, top: 12 }}>{isPct ? pct(v) : v}</span>
             </TextlessPatch>
           )
@@ -204,9 +225,10 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
             })}
           </div>
         )}
-        {/* 탭: 원본 조각은 STATS 선택 상태. 다른 탭 선택 시 같은 배치의 탭 막대를 덮는다 */}
-        {tab !== 'stats' && (
+        {/* 탭: 처음에는 원본 조각(STATS 선택). 탭을 한 번 누르면 같은 배치의 탭 막대로 바꾸고 선택 배경이 180ms 동안 이동한다 */}
+        {tabTouched && (
           <div className="cd2-tabs" style={{ left: 926, top: 670, width: 693, height: 77 }} aria-hidden>
+            <i className="hl" style={{ left: TAB_X[tab][0], width: TAB_X[tab][1] }} />
             {(['stats', 'skills', 'gear'] as Tab[]).map((t) => <span key={t} className={t === tab ? 'on' : ''}>{t.toUpperCase()}</span>)}
           </div>
         )}
@@ -225,9 +247,9 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
         <Hit r={{ x: 925, y: 383, w: 279, h: 84 }} label={`레벨 ${level} / ${maxLv}, 성장`} disabled={!o} onClick={() => setPop('growth')} />
         <Hit r={rectOf(L, 'level-up-arrow')} label="성장 창 열기" disabled={!o} onClick={() => setPop('growth')} />
         <Hit r={rectOf(L, 'role')} label={`역할 ${ROLE_EN[c.role]}`} onClick={() => setPop('role')} />
-        <Hit r={rectOf(L, 'tab-stats')} label={`STATS${tab === 'stats' ? ' (선택됨)' : ''}`} onClick={() => setTab('stats')} />
-        <Hit r={rectOf(L, 'tab-skills')} label={`SKILLS${tab === 'skills' ? ' (선택됨)' : ''}`} onClick={() => setTab('skills')} />
-        <Hit r={rectOf(L, 'tab-gear')} label={`GEAR${tab === 'gear' ? ' (선택됨)' : ''}`} onClick={() => setTab('gear')} />
+        <Hit r={rectOf(L, 'tab-stats')} label={`STATS${tab === 'stats' ? ' (선택됨)' : ''}`} onClick={() => { setTab('stats'); setTabTouched(true) }} />
+        <Hit r={rectOf(L, 'tab-skills')} label={`SKILLS${tab === 'skills' ? ' (선택됨)' : ''}`} onClick={() => { setTab('skills'); setTabTouched(true) }} />
+        <Hit r={rectOf(L, 'tab-gear')} label={`GEAR${tab === 'gear' ? ' (선택됨)' : ''}`} onClick={() => { setTab('gear'); setTabTouched(true) }} />
         <Hit r={rectOf(L, 'upgrade')} label="UPGRADE (성장)" disabled={!o} onClick={() => setPop('growth')} className="cd2-up" />
         <Hit r={rectOf(L, 'set-as-lobby')} label={isLobby ? 'LOBBY ACTIVE (현재 로비 캐릭터)' : LOBBY_ART.has(id) ? '로비 캐릭터로 설정' : '로비 캐릭터로 설정 (로비 그림 없음)'} disabled={!o || isLobby || !LOBBY_ART.has(id)} onClick={setLobby} />
       </RefStage>

@@ -185,5 +185,14 @@
 "h": 42,
 "file": "ref/detail/textless/stat-speed.webp"
 }
+},
+"recruitment": {
+"wave": {
+"x": 542,
+"y": 242,
+"w": 80,
+"h": 44,
+"file": "ref/recruitment/textless/wave.webp"
+}
 }
 }

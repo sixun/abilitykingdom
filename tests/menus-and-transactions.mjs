@@ -34,8 +34,10 @@ for (const [btn, scr] of targets) {
 }
 
 // 감상 모드
+await page.evaluate(() => { window.__v = document.querySelector('.screen-active video.mv') })
 await page.click(LOBBY); await W(200); await page.click('.rl-more button:has-text("감상 모드")'); await W(500)
-check(await page.locator(LOBBY).count() === 0 && await page.locator('button[aria-label="UI 다시 표시"]').count() === 1, 'UI 숨김 감상 모드')
+check(await page.locator('.screen-active .mg-wrap.hide').count() === 1 && await page.locator('button[aria-label="UI 다시 표시"]').count() === 1, 'UI 숨김 감상 모드')
+check(await page.evaluate(() => !window.__v || window.__v === document.querySelector('.screen-active video.mv')), '감상 모드에서도 같은 장면 영상 유지(재시작 없음)')
 await page.mouse.click(700, 300); await W(400)
 check(await page.locator(LOBBY).count() === 1, '감상 모드 해제')
 
