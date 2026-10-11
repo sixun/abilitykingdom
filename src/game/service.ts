@@ -2,7 +2,7 @@
 // 운영 전 재화·영입·구매·보상은 같은 인터페이스의 서버 구현으로 교체해야 한다(기획서 14항).
 
 import type {
-  GameState, TeamPreset, RecruitmentTransaction, Reward, Settings, EquipmentSlots,
+  GameState, TeamPreset, RecruitmentTransaction, Reward, Settings, EquipmentSlots, LobbyTheme,
 } from './types'
 
 export type ServiceError =
@@ -25,6 +25,7 @@ export interface GameService {
   saveTeam(team: TeamPreset, expectedVersion: number): Promise<Result<TeamPreset>>
   setActiveTeam(teamId: string): Promise<Result<true>>
   setLobbyCharacter(characterId: string): Promise<Result<true>>
+  setLobbyTheme(theme: LobbyTheme): void
   markLobbyEntrance(characterId: string): void
 
   recruit(bannerId: string, count: number, requestId: string): Promise<Result<RecruitmentTransaction>>

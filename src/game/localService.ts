@@ -1,5 +1,5 @@
 import type {
-  GameState, TeamPreset, RecruitmentTransaction, Reward, Settings, EquipmentSlots, CurrencyId,
+  GameState, TeamPreset, RecruitmentTransaction, Reward, Settings, EquipmentSlots, LobbyTheme, CurrencyId,
   RecruitResultEntry, MissionMetric, OwnedCharacter,
 } from './types'
 import type { GameService, Result, ServiceError, BattleSession } from './service'
@@ -221,6 +221,9 @@ export class LocalGameService implements GameService {
     if (!this.state.owned[characterId]) return fail<true>({ code: 'INVALID', message: '보유하지 않은 캐릭터입니다.' })
     this.commit((s) => { s.lobby.characterId = characterId })
     return ok(true as const)
+  }
+  setLobbyTheme(theme: LobbyTheme) {
+    this.commit((s) => { s.lobby.theme = theme })
   }
   markLobbyEntrance(characterId: string) {
     this.commit((s) => { s.lobby.lastEntranceFor = characterId })

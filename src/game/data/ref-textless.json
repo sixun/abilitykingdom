@@ -1,0 +1,189 @@
+{
+"station": {
+"gems-num": {
+"x": 700,
+"y": 26,
+"w": 86,
+"h": 40,
+"file": "ref/station/textless/gems-num.webp"
+},
+"coins-num": {
+"x": 900,
+"y": 26,
+"w": 146,
+"h": 40,
+"file": "ref/station/textless/coins-num.webp"
+},
+"profile-lv": {
+"x": 24,
+"y": 67,
+"w": 54,
+"h": 27,
+"file": "ref/station/textless/profile-lv.webp"
+},
+"profile-name": {
+"x": 34,
+"y": 89,
+"w": 80,
+"h": 31,
+"file": "ref/station/textless/profile-name.webp"
+},
+"quest-text": {
+"x": 1362,
+"y": 124,
+"w": 170,
+"h": 36,
+"file": "ref/station/textless/quest-text.webp"
+},
+"attendance-timer": {
+"x": 1561,
+"y": 258,
+"w": 74,
+"h": 30,
+"file": "ref/station/textless/attendance-timer.webp"
+},
+"badge-profile": {
+"x": 92,
+"y": 8,
+"w": 45,
+"h": 42,
+"file": "ref/station/textless/badge-profile.webp"
+},
+"badge-notice": {
+"x": 1443,
+"y": 19,
+"w": 29,
+"h": 29,
+"file": "ref/station/textless/badge-notice.webp",
+"sprite": "ref/station/textless/badge-notice-sprite.png"
+},
+"badge-menu": {
+"x": 1616,
+"y": 19,
+"w": 29,
+"h": 29,
+"file": "ref/station/textless/badge-menu.webp"
+},
+"badge-events": {
+"x": 98,
+"y": 356,
+"w": 29,
+"h": 28,
+"file": "ref/station/textless/badge-events.webp"
+},
+"badge-exploration": {
+"x": 1583,
+"y": 498,
+"w": 46,
+"h": 44,
+"file": "ref/station/textless/badge-exploration.webp"
+},
+"badge-training": {
+"x": 401,
+"y": 696,
+"w": 26,
+"h": 25,
+"file": "ref/station/textless/badge-training.webp"
+},
+"badge-formation": {
+"x": 700,
+"y": 810,
+"w": 28,
+"h": 28,
+"file": "ref/station/textless/badge-formation.webp"
+},
+"badge-recruitment": {
+"x": 1131,
+"y": 810,
+"w": 27,
+"h": 28,
+"file": "ref/station/textless/badge-recruitment.webp"
+},
+"badge-story": {
+"x": 1592,
+"y": 680,
+"w": 43,
+"h": 43,
+"file": "ref/station/textless/badge-story.webp"
+}
+},
+"detail": {
+"identity": {
+"x": 930,
+"y": 185,
+"w": 445,
+"h": 178,
+"file": "ref/detail/textless/identity.webp"
+},
+"level-text": {
+"x": 950,
+"y": 390,
+"w": 245,
+"h": 66,
+"file": "ref/detail/textless/level-text.webp"
+},
+"role-content": {
+"x": 1318,
+"y": 392,
+"w": 290,
+"h": 66,
+"file": "ref/detail/textless/role-content.webp"
+},
+"emblem": {
+"x": 1335,
+"y": 158,
+"w": 288,
+"h": 208,
+"file": "ref/detail/textless/emblem.webp"
+},
+"lobby-text": {
+"x": 66,
+"y": 834,
+"w": 236,
+"h": 52,
+"file": "ref/detail/textless/lobby-text.webp"
+},
+"stat-hp": {
+"x": 1116,
+"y": 486,
+"w": 140,
+"h": 45,
+"file": "ref/detail/textless/stat-hp.webp"
+},
+"stat-atk": {
+"x": 1461,
+"y": 486,
+"w": 145,
+"h": 45,
+"file": "ref/detail/textless/stat-atk.webp"
+},
+"stat-def": {
+"x": 1116,
+"y": 543,
+"w": 140,
+"h": 41,
+"file": "ref/detail/textless/stat-def.webp"
+},
+"stat-crit-dmg": {
+"x": 1461,
+"y": 543,
+"w": 145,
+"h": 41,
+"file": "ref/detail/textless/stat-crit-dmg.webp"
+},
+"stat-crit-rate": {
+"x": 1116,
+"y": 596,
+"w": 140,
+"h": 42,
+"file": "ref/detail/textless/stat-crit-rate.webp"
+},
+"stat-speed": {
+"x": 1461,
+"y": 596,
+"w": 145,
+"h": 42,
+"file": "ref/detail/textless/stat-speed.webp"
+}
+}
+}

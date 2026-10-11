@@ -1,162 +1,316 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import '../styles/screens.css'
 import { useNav } from '../app/nav'
 import { audio } from '../app/audio'
-import { game, useGame, charPower } from '../game/store'
+import { game, useGame } from '../game/store'
 import { CHARACTERS, CHAR_BY_ID } from '../game/data/characters'
 import { ITEMS, ITEM_BY_ID } from '../game/data/catalog'
-import { ROLE_LABEL, ATTRIBUTE_LABEL, GAME_CONFIG } from '../game/config'
-import { statsOf, powerOf, RULES_ARE_PROVISIONAL } from '../game/rules'
-import type { EquipmentSlots } from '../game/types'
-import { TopBar, Stars, fmt, Tabs, Btn, useAction, ErrorBanner, Modal, ProvisionalTag } from '../ui/components'
-import { RoleGlyph, IconChevron, IconChevronL, ItemGlyph, IconPlus } from '../ui/icons'
+import { GAME_CONFIG } from '../game/config'
+import { statsOf, RULES_ARE_PROVISIONAL } from '../game/rules'
+import type { EquipmentSlots, OwnedCharacter } from '../game/types'
+import { fmt, Btn, useAction, ErrorBanner, Modal, ProvisionalTag } from '../ui/components'
+import { RoleGlyph, ItemGlyph, IconPlus, IconChevron } from '../ui/icons'
+import { RefStage, RefLayers, Hit, TextlessPatch, rectOf, type RefLayout, type TextlessMeta } from '../ui/ref'
+import layoutJson from '../game/data/ref-detail.json'
+import textless from '../game/data/ref-textless.json'
+import artJson from '../game/data/ref-detail-art.json'
 
-type Tab = 'info' | 'skill' | 'equip' | 'growth'
-const SLOT_LABEL: Record<keyof EquipmentSlots, string> = { weapon: '무기', gear: '의상', accessory: '장신구' }
+// 캐릭터 상세 원본(지안, 1672×941)을 원본 조각 29개로 재현.
+// - 지안 Lv.40 기본 상태는 원본 조각 그대로. 값이 달라진 칸만 글자를 지운 근사 패치 + 실제 텍스트.
+// - 다른 캐릭터는 원본 상세 일러스트가 없어 왼쪽 인물 영역을 임시 아트로 대체한다(화면에 표시).
+// - 표기는 원본대로 영문. SKILLS/GEAR는 확정 시안이 없어 오른쪽 능력치 칸만 기존 기능 목록으로 바꾼다.
+const L = layoutJson as RefLayout
+const T = textless.detail as Record<string, TextlessMeta>
+const ART = artJson as Record<string, { src: string; kind: string; w: number; h: number; top: number; bodyH: number; headX: number }>
+const REF = { id: 'jian', level: 40, hp: 18600, atk: 3240, def: 1280, critRate: 22.5, critDmg: 150, speed: 108, role: 'attack' }
+const ROLE_EN: Record<string, string> = { attack: 'ATTACK', defense: 'DEFENSE', ability: 'ABILITY', support: 'SUPPORT' }
+const ROLE_DESC: Record<string, string> = {
+  attack: '적에게 큰 피해를 주는 역할입니다.', defense: '피해를 대신 받고 아군을 지키는 역할입니다.',
+  ability: '범위 효과와 상태 변화로 전황을 바꾸는 역할입니다.', support: '회복과 강화로 아군을 돕는 역할입니다.',
+}
+const SLOT_LABEL: Record<keyof EquipmentSlots, string> = { weapon: 'WEAPON', gear: 'GEAR', accessory: 'ACCESSORY' }
+const LOBBY_ART = new Set(['jian']) // 로비 장면 그림이 있는 캐릭터
+const VISIBLE = 6
+// 상단 목록 칸(원본 초상 위치). 0번은 원본에서 선택 표시가 그려진 칸
+const SLOT_CX = [949, 1073, 1197, 1321, 1445, 1569]
+type Tab = 'stats' | 'skills' | 'gear'
+type StatKey = 'hp' | 'atk' | 'def' | 'critDmg' | 'critRate' | 'speed'
+const STAT_ROWS: { key: StatKey; patch: string; right: number }[] = [
+  { key: 'hp', patch: 'stat-hp', right: 17 },
+  { key: 'atk', patch: 'stat-atk', right: 20 },
+  { key: 'def', patch: 'stat-def', right: 17 },
+  { key: 'critDmg', patch: 'stat-crit-dmg', right: 20 },
+  { key: 'critRate', patch: 'stat-crit-rate', right: 17 },
+  { key: 'speed', patch: 'stat-speed', right: 20 },
+]
+const pct = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(1)}%`
+const blank = (id: string): OwnedCharacter => ({ id, level: 1, obtainedAt: 0, dupes: 0, equipment: { weapon: null, gear: null, accessory: null } })
+const kindEn = (k: string) => (k === '기본' ? 'BASIC' : k === '스킬' ? 'SKILL' : k === '궁극기' ? 'ULT' : 'PASSIVE')
 
-// 탭별로 카메라(구도)와 포즈를 바꾼다: 기본=상반신, 스킬=동작 포즈, 장비=전신, 성장=중간
 export default function CharacterDetail({ params }: { params: Record<string, unknown> }) {
   const s = useGame()
   const nav = useNav()
-  const [id, setId] = useState(params.id as string)
-  const [tab, setTab] = useState<Tab>((params.tab as Tab) ?? 'info')
+  const roster = useMemo(() => [...CHARACTERS.filter((c) => s.owned[c.id]), ...CHARACTERS.filter((c) => !s.owned[c.id])].map((c) => c.id), [s.owned])
+  const [id, setId] = useState((params.id as string) ?? 'jian')
+  const [offset, setOffset] = useState(() => Math.max(0, Math.min(roster.indexOf((params.id as string) ?? 'jian') - VISIBLE + 1, roster.length - VISIBLE)))
+  const [tab, setTab] = useState<Tab>('stats')
+  const [pop, setPop] = useState<null | 'growth' | 'role' | 'profile' | 'faction'>(null)
+  const [skillPick, setSkillPick] = useState<number | null>(null)
   const [slotPick, setSlotPick] = useState<keyof EquipmentSlots | null>(null)
   const [levels, setLevels] = useState(1)
+  const [flash, setFlash] = useState(false) // 성장 성공 직후 수치 강조
+  const [toast, setToast] = useState<string | null>(null)
+  const timers = useRef<number[]>([])
   const { run, pending, failed, clearFailed } = useAction()
+  useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), [])
+  const later = (fn: () => void, ms: number) => { timers.current.push(window.setTimeout(fn, ms)) }
+
   const c = CHAR_BY_ID[id]
   const o = s.owned[id]
-  const order = CHARACTERS.map((x) => x.id)
-
-  const stats = o ? statsOf(c, o, ITEM_BY_ID) : statsOf(c, { id, level: 1, obtainedAt: 0, dupes: 0, equipment: { weapon: null, gear: null, accessory: null } }, ITEM_BY_ID)
+  const isRef = id === REF.id
+  const base = statsOf(c, o ?? blank(id), ITEM_BY_ID)
+  const st: Record<StatKey, number> = { ...base, ...c.subStats }
+  const level = o?.level ?? 1
+  const maxLv = GAME_CONFIG.maxLevel
   const plan = useMemo(() => (o ? game.planLevelUp(id, levels) : null), [o, id, levels, s])
   const after = o && plan ? statsOf(c, o, ITEM_BY_ID, plan.to) : null
+  const isLobby = s.lobby.characterId === id
+  const maxOffset = Math.max(0, roster.length - VISIBLE)
 
-  const step = (d: number) => {
-    audio.sfx('swap')
-    const i = (order.indexOf(id) + d + order.length) % order.length
-    setId(order[i]); setLevels(1)
+  const select = (cid: string) => {
+    if (cid === id) return
+    audio.sfx('select'); setId(cid); setLevels(1); setSkillPick(null); setSlotPick(null)
   }
+  const scroll = (d: number) => { audio.sfx('tap'); setOffset((v) => Math.max(0, Math.min(maxOffset, v + d))) }
+  const showToast = (m: string) => { setToast(m); later(() => setToast(null), 1500) }
 
   const doLevel = async () => {
     const res = await run('lv', (rid) => game.levelUp(id, levels, rid))
-    if (res?.ok) { audio.sfx('save'); nav.toast(`${c.name} Lv.${res.value.from} → Lv.${res.value.to}`, 'ok'); setLevels(1) }
+    if (res?.ok) {
+      audio.sfx('save'); setPop(null); setLevels(1)
+      setFlash(true); later(() => setFlash(false), 600)
+      showToast(`LV. ${res.value.from} → ${res.value.to}`)
+    } else audio.sfx('error')
+  }
+  const setLobby = async () => {
+    const res = await game.setLobbyCharacter(id)
+    if (res.ok) { audio.sfx('save'); showToast('LOBBY ACTIVE') } else { audio.sfx('error'); showToast('저장 실패 · 기존 로비 캐릭터 유지') }
   }
   const equip = async (slot: keyof EquipmentSlots, itemId: string | null) => {
     const res = await run('eq', () => game.equip(id, slot, itemId))
     if (res?.ok) { audio.sfx('select'); setSlotPick(null) }
   }
 
-  const cam = { info: 'cam-info', skill: 'cam-skill', equip: 'cam-equip', growth: 'cam-growth' }[tab]
+  // 원본과 다른 칸만 덮는다
+  const hide = new Set<string>()
+  if (!isRef) hide.add('hero-artwork').add('back').add('set-as-lobby')
+  const visible = roster.slice(offset, offset + VISIBLE)
+  const slot0Original = offset === 0 && visible[0] === REF.id && id === REF.id
+  const lvPct = Math.round((level / maxLv) * 1000) / 10
 
   return (
-    <div className="scr cd" style={{ ['--a' as string]: c.accent }}>
-      <div className="cd-bg" aria-hidden>
-        <div className="cd-bg-name" key={id}>{c.nameEn}</div>
-        <div className="cd-bg-stripe" />
-      </div>
-      <div className={`cd-stage ${cam}`} key={id}>
-        <img className="cd-stand" src={c.assets.stand} alt="" />
-        <img className="cd-action" src={c.assets.action} alt="" />
-      </div>
-      <TopBar title="캐릭터 상세" sub={c.nameEn} right={<Btn size="sm" variant="dark" disabled={!o || s.lobby.characterId === id} onClick={() => { game.setLobbyCharacter(id); nav.toast(`${c.name}을(를) 로비 대표 캐릭터로 설정했습니다.`, 'ok') }}>{s.lobby.characterId === id ? '로비 대표' : '로비 대표로 설정'}</Btn>} />
-      <button className="cd-nav l" onClick={() => step(-1)} aria-label="이전 캐릭터"><IconChevronL size="3rem" /></button>
-      <button className="cd-nav r" onClick={() => step(1)} aria-label="다음 캐릭터"><IconChevron size="3rem" /></button>
+    <div className="scr cd2">
+      <RefStage canvas={L.canvas}>
+        {/* 왼쪽 인물: 지안 외에는 임시 아트. 원본 배경 조각에 번진 지안 머리카락 영역(오른쪽 아래)까지 덮고, UI 조각은 그 위에 그린다 */}
+        {isRef ? <RefLayers layout={L} z={1} /> : (
+          <>
+            <RefLayers layout={L} ids={['background-remainder']} z={1} />
+            <HeroFallback key={id} cid={id} />
+            <RefLayers layout={L} hide={new Set([...hide, 'background-remainder'])} z={1} />
+          </>
+        )}
+        {!isRef && (
+          <>
+            <div className="cd2-pill" style={{ left: 44, top: 20, width: 122, height: 64 }}><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden><path d="M15 4 7 12l8 8" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /></svg></div>
+            <div className={`cd2-pill cd2-lobby ${isLobby ? 'on' : ''} ${!o || !LOBBY_ART.has(id) ? 'off' : ''}`} style={{ left: 40, top: 827, width: 268, height: 64 }}>
+              <span className="star">★</span><span>{isLobby ? 'LOBBY ACTIVE' : LOBBY_ART.has(id) ? 'SET AS LOBBY' : 'NO LOBBY ART'}</span>
+            </div>
+          </>
+        )}
+        {isRef && isLobby && (
+          <TextlessPatch m={T['lobby-text']}>
+            <span className="abs cd2-lobby-t" style={{ left: 12, top: 9 }}><span className="star">★</span>LOBBY ACTIVE</span>
+          </TextlessPatch>
+        )}
 
-      <section className="cd-panel">
-        <div className="cd-head">
-          <span className="cd-role"><RoleGlyph role={c.role} size="2.6rem" /></span>
-          <div>
-            <h2>{c.name} <Stars n={c.rarity} /></h2>
-            <p>{ROLE_LABEL[c.role]} · {ATTRIBUTE_LABEL[c.attribute]} · {o ? `Lv.${o.level}` : '미보유'}</p>
+        {/* 상단 캐릭터 목록 */}
+        {!slot0Original && <div className="cd2-slot0-cover" style={{ left: 878, top: 14, width: 143, height: 100 }} />}
+        {visible.map((cid, i) => (i === 0 && slot0Original) ? null : (
+          <div key={cid} className={`cd2-face ${cid === id ? 'on' : ''} ${s.owned[cid] ? '' : 'locked'}`} style={{ left: SLOT_CX[i] - 56, top: 26 }}>
+            <div className="in"><img src={CHAR_BY_ID[cid].assets.portrait} alt="" /></div>
           </div>
-          <div className="cd-power"><small>전투력</small><strong className="num">{fmt(o ? charPower(s, id) : powerOf(stats))}</strong></div>
-        </div>
-        <Tabs<Tab> tone="light" value={tab} onChange={(t) => { setTab(t); setSlotPick(null) }} items={[{ id: 'info', label: '기본 정보' }, { id: 'skill', label: '스킬' }, { id: 'equip', label: '장비' }, { id: 'growth', label: '성장' }]} />
+        ))}
+        {offset === 0 && <div className="cd2-dim" style={{ left: 833, top: 38, width: 46, height: 58, borderRadius: 30 }} />}
+        {offset >= maxOffset && <div className="cd2-dim" style={{ left: 1627, top: 36, width: 38, height: 60, borderRadius: 30 }} />}
 
-        <div className="cd-body scroll-y" key={tab}>
-          {tab === 'info' && (
-            <>
-              <p className="cd-quote">“{c.tagline}”</p>
-              <dl className="cd-dl">
-                <dt>소속</dt><dd>{c.profile.affiliation}</dd>
-                <dt>능력</dt><dd>{c.profile.ability}</dd>
-                <dt>메모</dt><dd>{c.profile.note}</dd>
-              </dl>
-              <StatRows stats={stats} />
-              {o && o.dupes > 0 && <p className="cd-note">중복 획득 {o.dupes}회 기록됨 · 중복 처리 규칙은 미정</p>}
-            </>
-          )}
-          {tab === 'skill' && (
-            <ul className="cd-skills">
-              {c.skills.map((sk) => (
-                <li key={sk.name}>
-                  <span className={`cd-skind k-${sk.kind}`}>{sk.kind}</span>
-                  <div><strong>{sk.name}</strong><p>{sk.desc}</p></div>
-                </li>
+        {/* 이름·소속·소개 */}
+        {!isRef && (
+          <TextlessPatch m={T.identity} key={`id-${id}`} className="cd2-x">
+            <span className="abs cd2-name" style={{ left: 3, bottom: 85, fontSize: Math.min(124, Math.round(300 / (c.nameEn.length * 0.62))) }}>{c.nameEn}<i className="cd2-stripes" /></span>
+            <span className="abs cd2-unit" style={{ left: 6, top: 103 }}>{c.en.unit}</span>
+            <span className="abs cd2-motto" style={{ left: 7, top: 143 }}>{c.en.motto.split('|').map((l) => <span key={l}>{l}</span>)}</span>
+          </TextlessPatch>
+        )}
+        {!isRef && (
+          <TextlessPatch m={T.emblem} className="cd2-x">
+            <span className="abs cd2-emblem"><RoleGlyph role={c.role} size={120} /></span>
+          </TextlessPatch>
+        )}
+
+        {/* 레벨 */}
+        {(!isRef || level !== REF.level || !o) && (
+          <TextlessPatch m={T['level-text']} key={`lv-${id}`}>
+            {o
+              ? <span className={`abs cd2-lv ${flash ? 'flash' : ''}`} style={{ left: 13, top: 5 }}><small>Lv.</small><b>{level}</b><em>/ {maxLv}</em></span>
+              : <span className="abs cd2-lv" style={{ left: 14, top: 14 }}><small>NOT OWNED</small></span>}
+            <span className="abs cd2-bar" style={{ left: 12, top: 51 }}><i style={{ width: `${o ? lvPct : 0}%` }} /></span>
+          </TextlessPatch>
+        )}
+        {/* 역할 */}
+        {c.role !== REF.role && (
+          <TextlessPatch m={T['role-content']}>
+            <span className="abs cd2-role-ic"><RoleGlyph role={c.role} size={50} /></span>
+            <span className="abs cd2-role" style={{ left: 157, top: 15 }}>{ROLE_EN[c.role]}</span>
+          </TextlessPatch>
+        )}
+        {/* 능력치 */}
+        {tab === 'stats' && STAT_ROWS.map((r) => {
+          const v = st[r.key]
+          if (isRef && v === REF[r.key] && !flash) return null
+          const isPct = r.key === 'critRate' || r.key === 'critDmg'
+          return (
+            <TextlessPatch key={r.key} m={T[r.patch]}>
+              <span className={`abs cd2-val ${isPct ? 'pct' : ''} ${flash ? 'flash' : ''}`} style={{ right: r.right, top: 12 }}>{isPct ? pct(v) : v}</span>
+            </TextlessPatch>
+          )
+        })}
+
+        {/* SKILLS / GEAR: 능력치 칸만 바꾼다(확정 시안 없음) */}
+        {tab !== 'stats' && (
+          <div className="cd2-alt" style={{ left: 926, top: 478, width: 690, height: 168 }} key={`${tab}-${id}`}>
+            {tab === 'skills' && c.skills.map((sk, i) => (
+              <button key={sk.name} type="button" className="cd2-row" aria-label={`스킬 ${sk.name} 자세히`} onClick={() => { audio.sfx('tap'); setSkillPick(i) }}>
+                <b className="k">{kindEn(sk.kind)}</b><strong>{sk.name}</strong><span>{sk.desc}</span><IconChevron size={20} />
+              </button>
+            ))}
+            {tab === 'gear' && (Object.keys(SLOT_LABEL) as (keyof EquipmentSlots)[]).map((slot) => {
+              const iid = o?.equipment[slot]
+              const it = iid ? ITEM_BY_ID[iid] : null
+              return (
+                <button key={slot} type="button" className="cd2-row" disabled={!o} aria-label={`${SLOT_LABEL[slot]} 장비 ${it ? it.name : '비어 있음'}`} onClick={() => { audio.sfx('tap'); setSlotPick(slot) }}>
+                  <b className="k">{SLOT_LABEL[slot]}</b>{it ? <ItemGlyph icon={it.icon} size={26} /> : <IconPlus size={22} />}<strong>{it ? it.name : 'EMPTY'}</strong><span>{it ? it.desc : o ? '눌러서 장착' : '보유한 캐릭터만 장착할 수 있습니다'}</span><IconChevron size={20} />
+                </button>
+              )
+            })}
+          </div>
+        )}
+        {/* 탭: 원본 조각은 STATS 선택 상태. 다른 탭 선택 시 같은 배치의 탭 막대를 덮는다 */}
+        {tab !== 'stats' && (
+          <div className="cd2-tabs" style={{ left: 926, top: 670, width: 693, height: 77 }} aria-hidden>
+            {(['stats', 'skills', 'gear'] as Tab[]).map((t) => <span key={t} className={t === tab ? 'on' : ''}>{t.toUpperCase()}</span>)}
+          </div>
+        )}
+        {!o && <div className="cd2-dim" style={{ left: 1075, top: 788, width: 562, height: 108, borderRadius: 24 }} />}
+        {toast && <div className="cd2-toast" role="status">{toast}</div>}
+
+        {/* 조작 영역 */}
+        <Hit r={rectOf(L, 'back')} label="뒤로" onClick={() => nav.back()} />
+        <Hit r={rectOf(L, 'roster-prev')} label="목록 앞으로" disabled={offset === 0} sfx="none" onClick={() => scroll(-1)} />
+        <Hit r={rectOf(L, 'roster-next')} label="목록 뒤로" disabled={offset >= maxOffset} sfx="none" onClick={() => scroll(1)} />
+        {visible.map((cid, i) => (
+          <Hit key={cid} r={{ x: SLOT_CX[i] - 62, y: 20, w: 124, h: 86 }} sfx="none" label={`${CHAR_BY_ID[cid].name}${s.owned[cid] ? '' : ' (미보유)'}${cid === id ? ', 선택됨' : ''}`} className="cd2-portrait" onClick={() => select(cid)} />
+        ))}
+        <Hit r={rectOf(L, 'identity-title')} label={`${c.name} 프로필`} onClick={() => setPop('profile')} />
+        <Hit r={rectOf(L, 'faction-emblem')} label="소속 정보" onClick={() => setPop('faction')} />
+        <Hit r={{ x: 925, y: 383, w: 279, h: 84 }} label={`레벨 ${level} / ${maxLv}, 성장`} disabled={!o} onClick={() => setPop('growth')} />
+        <Hit r={rectOf(L, 'level-up-arrow')} label="성장 창 열기" disabled={!o} onClick={() => setPop('growth')} />
+        <Hit r={rectOf(L, 'role')} label={`역할 ${ROLE_EN[c.role]}`} onClick={() => setPop('role')} />
+        <Hit r={rectOf(L, 'tab-stats')} label={`STATS${tab === 'stats' ? ' (선택됨)' : ''}`} onClick={() => setTab('stats')} />
+        <Hit r={rectOf(L, 'tab-skills')} label={`SKILLS${tab === 'skills' ? ' (선택됨)' : ''}`} onClick={() => setTab('skills')} />
+        <Hit r={rectOf(L, 'tab-gear')} label={`GEAR${tab === 'gear' ? ' (선택됨)' : ''}`} onClick={() => setTab('gear')} />
+        <Hit r={rectOf(L, 'upgrade')} label="UPGRADE (성장)" disabled={!o} onClick={() => setPop('growth')} className="cd2-up" />
+        <Hit r={rectOf(L, 'set-as-lobby')} label={isLobby ? 'LOBBY ACTIVE (현재 로비 캐릭터)' : LOBBY_ART.has(id) ? '로비 캐릭터로 설정' : '로비 캐릭터로 설정 (로비 그림 없음)'} disabled={!o || isLobby || !LOBBY_ART.has(id)} onClick={setLobby} />
+      </RefStage>
+
+      {pop === 'growth' && o && plan && after && (
+        <Modal onClose={() => { setPop(null); clearFailed() }} labelledBy="gr-title" className="cd2-modal">
+          <h2 id="gr-title">UPGRADE · {c.nameEn}</h2>
+          <div className="cd-growth">
+            <div className="cd-lv">
+              <span className="num">Lv.{plan.from}</span><IconChevron size="2.4rem" /><strong className="num">Lv.{plan.to}</strong>
+              <div className="cd-lv-step" role="group" aria-label="올릴 레벨">
+                {[1, 5, 10].map((n) => <button key={n} className={levels === n ? 'on' : ''} onClick={() => { audio.sfx('tap'); setLevels(n) }}>+{n}</button>)}
+              </div>
+            </div>
+            <table className="cd-compare">
+              <tbody>
+                <tr><th>HP</th><td className="num">{fmt(base.hp)}</td><td className="num up">{fmt(after.hp)}</td></tr>
+                <tr><th>ATK</th><td className="num">{fmt(base.atk)}</td><td className="num up">{fmt(after.atk)}</td></tr>
+                <tr><th>DEF</th><td className="num">{fmt(base.def)}</td><td className="num up">{fmt(after.def)}</td></tr>
+              </tbody>
+            </table>
+            <div className="cd-mats">
+              <h4>필요 재료 {RULES_ARE_PROVISIONAL && <ProvisionalTag>임시 공식</ProvisionalTag>}</h4>
+              {(['exp_l', 'exp_m', 'exp_s'] as const).map((mid) => plan.use[mid] > 0 && (
+                <div key={mid} className="cd-mat"><ItemGlyph icon="chip" size="2.2rem" /><span>{ITEM_BY_ID[mid].name}</span><b className="num">×{plan.use[mid]}</b><small className="num">보유 {s.inventory.find((x) => x.itemId === mid)?.qty ?? 0}</small></div>
               ))}
-              <li className="cd-note">스킬 수치와 전투 효과는 전투 규칙 확정 후 정합니다.</li>
-            </ul>
-          )}
-          {tab === 'equip' && (
-            o ? (
-              <div className="cd-equip">
-                {(Object.keys(SLOT_LABEL) as (keyof EquipmentSlots)[]).map((slot) => {
-                  const itemId = o.equipment[slot]
-                  const it = itemId ? ITEM_BY_ID[itemId] : null
-                  return (
-                    <button key={slot} className={`cd-eslot ${it ? 'filled' : ''}`} onClick={() => { audio.sfx('tap'); setSlotPick(slot) }}>
-                      <span className="cd-eicon">{it ? <ItemGlyph icon={it.icon} size="3.2rem" /> : <IconPlus size="2.4rem" />}</span>
-                      <span><small>{SLOT_LABEL[slot]}</small><strong>{it ? it.name : '비어 있음'}</strong>{it && <em>{it.desc}</em>}</span>
-                    </button>
-                  )
-                })}
-                <StatRows stats={stats} />
-              </div>
-            ) : <p className="cd-note">보유한 캐릭터만 장비를 바꿀 수 있습니다.</p>
-          )}
-          {tab === 'growth' && (
-            o && plan && after ? (
-              <div className="cd-growth">
-                <div className="cd-lv">
-                  <span className="num">Lv.{plan.from}</span><IconChevron size="2.4rem" /><strong className="num">Lv.{plan.to}</strong>
-                  <div className="cd-lv-step">
-                    {[1, 5, 10].map((n) => <button key={n} className={levels === n ? 'on' : ''} onClick={() => { audio.sfx('tap'); setLevels(n) }}>+{n}</button>)}
-                  </div>
-                </div>
-                <table className="cd-compare">
-                  <tbody>
-                    <tr><th>체력</th><td className="num">{fmt(stats.hp)}</td><td className="num up">{fmt(after.hp)}</td></tr>
-                    <tr><th>공격력</th><td className="num">{fmt(stats.atk)}</td><td className="num up">{fmt(after.atk)}</td></tr>
-                    <tr><th>방어력</th><td className="num">{fmt(stats.def)}</td><td className="num up">{fmt(after.def)}</td></tr>
-                  </tbody>
-                </table>
-                <div className="cd-mats">
-                  <h4>필요 재료 {RULES_ARE_PROVISIONAL && <ProvisionalTag>임시 공식</ProvisionalTag>}</h4>
-                  {(['exp_l', 'exp_m', 'exp_s'] as const).map((mid) => plan.use[mid] > 0 && (
-                    <div key={mid} className="cd-mat"><ItemGlyph icon="chip" size="2.2rem" /><span>{ITEM_BY_ID[mid].name}</span><b className="num">×{plan.use[mid]}</b><small className="num">보유 {s.inventory.find((x) => x.itemId === mid)?.qty ?? 0}</small></div>
-                  ))}
-                  <div className={`cd-mat ${plan.creditShort ? 'short' : ''}`}><span>크레딧</span><b className="num">{fmt(plan.credit)}</b><small className="num">보유 {fmt(s.wallet.credit)}</small></div>
-                  {plan.expShort > 0 && <div className="cd-mat short"><span>경험치 부족</span><b className="num">{fmt(plan.expShort)}</b><small>훈련에서 획득</small></div>}
-                </div>
-                {failed && <ErrorBanner error={failed.error} onRetry={doLevel} onClose={clearFailed} />}
-                <Btn variant="primary" size="lg" disabled={!plan.feasible || pending === 'lv'} onClick={doLevel}>{plan.to >= GAME_CONFIG.maxLevel && plan.from >= GAME_CONFIG.maxLevel ? '최대 레벨' : pending === 'lv' ? '처리 중…' : '레벨 업'}</Btn>
-              </div>
-            ) : <p className="cd-note">보유한 캐릭터만 성장시킬 수 있습니다. 영입에서 획득하세요.</p>
-          )}
-        </div>
-      </section>
-
+              <div className={`cd-mat ${plan.creditShort ? 'short' : ''}`}><span>크레딧</span><b className="num">{fmt(plan.credit)}</b><small className="num">보유 {fmt(s.wallet.credit)}</small></div>
+              {plan.expShort > 0 && <div className="cd-mat short"><span>경험치 부족</span><b className="num">{fmt(plan.expShort)}</b><small>훈련에서 획득</small></div>}
+            </div>
+            <p className="cd2-note">CONFIRM을 누르기 전에는 재료와 크레딧이 차감되지 않습니다.</p>
+            {failed && <ErrorBanner error={failed.error} onRetry={doLevel} onClose={clearFailed} />}
+          </div>
+          <div className="confirm-actions">
+            <Btn variant="ghost" onClick={() => { setPop(null); clearFailed() }}>CANCEL</Btn>
+            <Btn variant="primary" sfx="none" disabled={!plan.feasible || pending === 'lv'} onClick={doLevel}>{plan.from >= maxLv ? 'MAX LEVEL' : pending === 'lv' ? '처리 중…' : !plan.feasible ? '재료 부족' : 'CONFIRM'}</Btn>
+          </div>
+        </Modal>
+      )}
+      {pop === 'role' && (
+        <Modal onClose={() => setPop(null)} labelledBy="role-title">
+          <h2 id="role-title">{ROLE_EN[c.role]}</h2>
+          <p className="rs-pop-note">{ROLE_DESC[c.role]} 역할별 전투 효과는 전투 규칙 확정 후 정합니다.</p>
+          <div className="confirm-actions"><Btn variant="dark" onClick={() => setPop(null)}>닫기</Btn></div>
+        </Modal>
+      )}
+      {pop === 'profile' && (
+        <Modal onClose={() => setPop(null)} labelledBy="pf-title">
+          <h2 id="pf-title">{c.nameEn} · {c.name}</h2>
+          <dl className="cd-dl">
+            <dt>소속</dt><dd>{c.profile.affiliation}</dd>
+            <dt>능력</dt><dd>{c.profile.ability}</dd>
+            <dt>메모</dt><dd>{c.profile.note}</dd>
+          </dl>
+          <p className="rs-pop-note">“{c.tagline}” · 샘플 설정(세계관 문서와 아직 맞추지 않음)</p>
+          <div className="confirm-actions"><Btn variant="dark" onClick={() => setPop(null)}>닫기</Btn></div>
+        </Modal>
+      )}
+      {pop === 'faction' && (
+        <Modal onClose={() => setPop(null)} labelledBy="fc-title">
+          <h2 id="fc-title">{c.en.unit}</h2>
+          <p className="rs-pop-note">{c.profile.affiliation}</p>
+          <p className="rs-pop-note">소속 상세 자료는 아직 없습니다.</p>
+          <div className="confirm-actions"><Btn variant="dark" onClick={() => setPop(null)}>닫기</Btn></div>
+        </Modal>
+      )}
+      {skillPick !== null && c.skills[skillPick] && (
+        <Modal onClose={() => setSkillPick(null)} labelledBy="sk-title">
+          <h2 id="sk-title">{c.skills[skillPick].name}</h2>
+          <p className="rs-pop-note">{c.skills[skillPick].kind} · {c.skills[skillPick].desc}</p>
+          <p className="rs-pop-note">스킬 수치·강화는 전투 규칙 확정 후 연결합니다.</p>
+          <div className="confirm-actions"><Btn variant="dark" onClick={() => setSkillPick(null)}>닫기</Btn></div>
+        </Modal>
+      )}
       {slotPick && o && (
         <Modal onClose={() => setSlotPick(null)} labelledBy="eq-title">
-          <h2 id="eq-title">{SLOT_LABEL[slotPick]} 선택</h2>
+          <h2 id="eq-title">{SLOT_LABEL[slotPick]}</h2>
           <div className="eq-list">
             {ITEMS.filter((it) => it.equipSlot === slotPick).map((it) => {
               const have = s.inventory.find((x) => x.itemId === it.id)?.qty ?? 0
               const free = game.freeQty(it.id)
               const current = o.equipment[slotPick] === it.id
-              const disabled = !current && free < 1
               return (
-                <button key={it.id} className={`eq-row ${current ? 'on' : ''}`} disabled={disabled || have === 0} onClick={() => equip(slotPick, it.id)}>
+                <button key={it.id} className={`eq-row ${current ? 'on' : ''}`} disabled={(!current && free < 1) || have === 0} onClick={() => equip(slotPick, it.id)}>
                   <ItemGlyph icon={it.icon} size="2.6rem" /><strong>{it.name}</strong><span>{it.desc}</span><small className="num">{have === 0 ? '미보유' : current ? '장착 중' : `여분 ${free}`}</small>
                 </button>
               )
@@ -173,12 +327,18 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
   )
 }
 
-function StatRows({ stats }: { stats: { hp: number; atk: number; def: number } }) {
+/** 지안 외 캐릭터: 원본 상세 일러스트가 없어 임시 배경 + 기존 전신 아트로 왼쪽 영역을 채운다 */
+function HeroFallback({ cid }: { cid: string }) {
+  const c = CHAR_BY_ID[cid]
+  const a = ART[cid]
+  const sc = 2150 / a.bodyH
   return (
-    <div className="cd-stats">
-      <div><small>체력</small><strong className="num">{fmt(stats.hp)}</strong></div>
-      <div><small>공격력</small><strong className="num">{fmt(stats.atk)}</strong></div>
-      <div><small>방어력</small><strong className="num">{fmt(stats.def)}</strong></div>
+    <div className="cd2-hero" style={{ left: 0, top: 0, width: 990, height: 941, clipPath: 'polygon(0 0, 914px 0, 914px 640px, 990px 640px, 990px 941px, 0 941px)' }}>
+      <div className="bands"><i className="band" /><i className="band b2" /></div>
+      <b className="big">{c.nameEn}</b>
+      <div className="brand"><b>ABILITY<br />KINGDOM</b><small>PEOPLE<br />CITIES<br />RESPONSES<br />TOMORROW</small></div>
+      <img src={a.src} alt="" style={{ width: a.w * sc, height: a.h * sc, left: 540 - a.headX * sc, top: 28 - a.top * sc }} />
+      <span className="tag">TEMP ART · 원본 상세 일러스트 없음</span>
     </div>
   )
 }

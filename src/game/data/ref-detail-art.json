@@ -1,0 +1,65 @@
+{
+ "yujin": {
+  "src": "ref/detail-art/yujin.webp",
+  "kind": "restored",
+  "w": 1024,
+  "h": 1536,
+  "top": 21,
+  "bodyH": 1497,
+  "headX": 547.6
+ },
+ "harin": {
+  "src": "ref/detail-art/harin.webp",
+  "kind": "restored",
+  "w": 1024,
+  "h": 1536,
+  "top": 7,
+  "bodyH": 1513,
+  "headX": 546.5
+ },
+ "doyun": {
+  "src": "ref/detail-art/doyun.webp",
+  "kind": "restored",
+  "w": 1024,
+  "h": 1536,
+  "top": 13,
+  "bodyH": 1507,
+  "headX": 491.8
+ },
+ "sein": {
+  "src": "assets/chars/sein_stand.webp",
+  "kind": "temp",
+  "w": 476,
+  "h": 1500,
+  "top": 0,
+  "bodyH": 1499,
+  "headX": 219.6
+ },
+ "narin": {
+  "src": "assets/chars/narin_stand.webp",
+  "kind": "temp",
+  "w": 514,
+  "h": 1500,
+  "top": 0,
+  "bodyH": 1498,
+  "headX": 273.1
+ },
+ "rion": {
+  "src": "assets/chars/rion_stand.webp",
+  "kind": "temp",
+  "w": 643,
+  "h": 1500,
+  "top": 1,
+  "bodyH": 1497,
+  "headX": 343.8
+ },
+ "seoha": {
+  "src": "assets/chars/seoha_stand.webp",
+  "kind": "temp",
+  "w": 574,
+  "h": 1500,
+  "top": 1,
+  "bodyH": 1498,
+  "headX": 265.6
+ }
+}

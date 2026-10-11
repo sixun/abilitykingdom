@@ -175,7 +175,7 @@ h1, h2, h3, p { margin: 0; }
 
 /* ───────── 모달 ───────── */
 .modal-back { position: fixed; inset: 0; z-index: 100; background: rgba(5, 6, 8, 0.66); display: grid; place-items: center; animation: tFade 160ms ease both; backdrop-filter: blur(2px); }
-.modal { background: var(--ivory); color: var(--ink); min-width: 52rem; max-width: min(92vw, 110rem); max-height: 86dvh; overflow: auto; padding: 3.2rem 3.6rem; animation: modalIn 260ms var(--ease-snap) both; clip-path: polygon(1.6rem 0, 100% 0, 100% calc(100% - 1.6rem), calc(100% - 1.6rem) 100%, 0 100%, 0 1.6rem); }
+.modal { background: var(--ivory); color: var(--ink); min-width: 52rem; max-width: min(92vw, 110rem); max-height: 86dvh; overflow: auto; padding: 3.2rem 3.6rem; animation: modalIn 160ms var(--ease-snap) both; clip-path: polygon(1.6rem 0, 100% 0, 100% calc(100% - 1.6rem), calc(100% - 1.6rem) 100%, 0 100%, 0 1.6rem); }
 @keyframes modalIn { from { transform: translateY(2rem) scale(0.97); opacity: 0; } to { transform: none; opacity: 1; } }
 .modal h2 { font-family: var(--f-display); font-weight: 400; font-size: 2.8rem; margin-bottom: 1.4rem; }
 .confirm-body { font-size: 1.7rem; line-height: 1.6; color: var(--ink-2); margin-bottom: 2.4rem; }
@@ -219,3 +219,8 @@ h1, h2, h3, p { margin: 0; }
   html { font-size: max(5px, min(100dvh / 128, 100vw / 72)); }
   .stage { width: 100dvh; height: 100vw; inset: auto; top: 0; left: 0; transform-origin: top left; transform: rotate(90deg) translateY(-100%); }
 }
+/* Inter (SIL OFL 1.1): 캐릭터 상세·역 로비의 영문/숫자 표기용, 라틴 서브셋 */
+@font-face { font-family: 'Inter'; font-weight: 700; src: url('../assets/fonts/inter-bold-latin.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'Inter'; font-weight: 800; src: url('../assets/fonts/inter-extrabold-latin.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'Inter'; font-weight: 900; src: url('../assets/fonts/inter-black-latin.woff2') format('woff2'); font-display: swap; }
+@font-face { font-family: 'Inter'; font-weight: 900; font-style: italic; src: url('../assets/fonts/inter-blackitalic-latin.woff2') format('woff2'); font-display: swap; }

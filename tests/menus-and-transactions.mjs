@@ -10,7 +10,7 @@ const shot = (n) => page.screenshot({ path: `test-results/e2-${n}.png` })
 let fails = 0
 const check = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++ }
 const W = (ms = 600) => page.waitForTimeout(ms)
-const back = async () => { await page.click('.screen-active .back-btn, .screen-active button[aria-label="돌아가기"]'); await W(700) }
+const back = async () => { await page.click('.screen-active .back-btn, .screen-active button[aria-label="돌아가기"], .screen-active button[aria-label="뒤로"]'); await W(700) }
 
 await page.goto(BASE + '?screen=lobby'); await W(2500)
 
@@ -46,18 +46,24 @@ await page.click('.modal .btn-dark:has-text("닫기")'); await W(300)
 let s = await st()
 check(s.lobby.characterId === 'jian' && s.teams[0].leaderId === 'jian', '로비 캐릭터와 팀 리더는 별도 저장')
 
-// 캐릭터 상세: 탭 4개, 레벨업, 장비
+// 캐릭터 상세(원본 재현): 탭 3개, 성장 확인 창, 장비
 await page.click('.screen-active button[aria-label="캐릭터"]'); await W(700)
 await page.click('.ccard:has-text("하린")'); await W(700)
-for (const t of ['기본 정보', '스킬', '장비', '성장']) { await page.click(`.tabs button:has-text("${t}")`); await W(650); await shot('cd-' + t) }
+check((await page.locator('.cd2-name').innerText()).startsWith('HARIN'), '상세: 선택 캐릭터 이름 표시')
+for (const t of ['SKILLS', 'GEAR', 'STATS']) { await page.click(`.screen-active button[aria-label^="${t}"]`); await W(400); await shot('cd-' + t) }
+await page.click('.screen-active button[aria-label^="SKILLS"]'); await W(300)
+check(await page.locator('.cd2-row').count() === 3, 'SKILLS: 스킬 3개')
+await page.click('.screen-active button[aria-label^="STATS"]'); await W(300)
 const lv0 = (await st()).owned.harin.level
 const cr0 = (await st()).wallet.credit
+await page.click('.screen-active button[aria-label^="UPGRADE"]'); await W(400)
+check((await st()).wallet.credit === cr0, '성장 창을 열어도 차감 없음')
 await page.click('.cd-lv-step button:has-text("+5")'); await W(200)
-await page.click('.cd-growth .btn-primary'); await W(700)
+await page.click('.modal .btn-primary'); await W(700)
 s = await st()
-check(s.owned.harin.level === lv0 + 5 && s.wallet.credit < cr0, `레벨업 +5 (${lv0}→${s.owned.harin.level}), 크레딧 차감`)
-await page.click('.tabs button:has-text("장비")'); await W(400)
-await page.click('.cd-eslot >> nth=2'); await W(300)
+check(s.owned.harin.level === lv0 + 5 && s.wallet.credit < cr0, `CONFIRM 후 성장 +5 (${lv0}→${s.owned.harin.level}), 크레딧 차감`)
+await page.click('.screen-active button[aria-label^="GEAR"]'); await W(400)
+await page.click('.cd2-row >> nth=2'); await W(300)
 await page.click('.eq-row:has-text("노이즈캔슬")'); await W(500)
 s = await st()
 check(s.owned.harin.equipment.accessory === 'eq_phones', '장비 장착')

@@ -16,7 +16,12 @@ export interface CharacterDefinition {
   tagline: string
   profile: { affiliation: string; ability: string; note: string }
   skills: { name: string; kind: '기본' | '스킬' | '궁극기' | '패시브'; desc: string }[]
+  /** Lv.40 기준 수치(장비 제외). 다른 레벨은 rules.statsOf가 비례 계산. 샘플 값 */
   baseStats: { hp: number; atk: number; def: number }
+  /** 치명 확률·치명 피해(%)·속도. 샘플 값(밸런스 미정) */
+  subStats: { critRate: number; critDmg: number; speed: number }
+  /** 캐릭터 상세(영문 표기 화면)용 소속·한 줄 소개. 샘플 */
+  en: { unit: string; motto: string }
   assets: {
     portrait: string
     stand: string // 편성·상세(기본/장비/성장)용 전신
@@ -51,8 +56,12 @@ export interface TeamPreset {
   savedAt: number
 }
 
+export type LobbyTheme = 'sofa' | 'station'
+
 export interface LobbyPreference {
   characterId: string
+  /** 로비 테마(소파 카페 / 역 승강장). 없으면 sofa */
+  theme?: LobbyTheme
   background: 'lobby'
   entrancePolicy: 'first-and-change' | 'always' | 'never'
   lastEntranceFor: string | null

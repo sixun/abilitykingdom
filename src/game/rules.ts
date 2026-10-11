@@ -7,7 +7,8 @@ export const RULES_ARE_PROVISIONAL = true
 
 export function statsOf(def: CharacterDefinition, owned: OwnedCharacter, items: Record<string, ItemDefinition>, levelOverride?: number) {
   const lv = levelOverride ?? owned.level
-  const g = 1 + (lv - 1) * 0.045
+  // baseStats는 Lv.40 기준값. 레벨당 성장률은 같은 임시 곡선(1 + (lv-1)×0.045)을 Lv.40 대비로 적용
+  const g = growth(lv) / growth(40)
   let hp = Math.round(def.baseStats.hp * g)
   let atk = Math.round(def.baseStats.atk * g)
   let defn = Math.round(def.baseStats.def * g)
@@ -22,8 +23,10 @@ export function statsOf(def: CharacterDefinition, owned: OwnedCharacter, items: 
   return { hp, atk, def: defn }
 }
 
+const growth = (lv: number) => 1 + (lv - 1) * 0.045
+
 /** 표시 배율: 원본 편성 화면의 기본 팀(지안·유진·하린·도윤 Lv.40)이 24,680이 되도록 맞춘 임시 값 */
-const POWER_SCALE = 3.12456
+const POWER_SCALE = 0.795247
 export function powerOf(stats: { hp: number; atk: number; def: number }) {
   return Math.round((stats.hp * 0.1 + stats.atk * 1.6 + stats.def * 1.1) * POWER_SCALE)
 }

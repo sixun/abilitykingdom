@@ -44,7 +44,7 @@ export function RefStage({ canvas, children, className = '', onPointerUp }: { ca
 }
 
 /** layout의 조각을 원위치에 그린다. hide에 있는 조각은 숨긴다(그 자리는 아래층이 보인다) */
-export function RefLayers({ layout, ids, hide, z = 1, className = '' }: { layout: RefLayout; ids?: string[]; hide?: Set<string>; z?: number; className?: string }) {
+export function RefLayers({ layout, ids, hide, z = 1, className = '', style }: { layout: RefLayout; ids?: string[]; hide?: Set<string>; z?: number; className?: string; style?: CSSProperties }) {
   const list = ids ? layout.layers.filter((l) => ids.includes(l.id)) : layout.layers
   return (
     <>
@@ -56,7 +56,7 @@ export function RefLayers({ layout, ids, hide, z = 1, className = '' }: { layout
           draggable={false}
           className={`ref-layer ${className}`}
           data-layer={l.id}
-          style={{ left: l.x, top: l.y, width: l.width, height: l.height, zIndex: z, visibility: hide?.has(l.id) ? 'hidden' : undefined }}
+          style={{ left: l.x, top: l.y, width: l.width, height: l.height, zIndex: z, visibility: hide?.has(l.id) ? 'hidden' : undefined, ...style }}
         />
       ))}
     </>
@@ -88,6 +88,28 @@ export function Patch({ r, bg, skin, z = 30, className = '', children, style }: 
       {children}
     </div>
   )
+}
+
+/** 원본에서 글자·알림만 지운 근사 패치(tools/make_textless.py). show일 때만 덮고 children(실제 텍스트)을 올린다 */
+export interface TextlessMeta { x: number; y: number; w: number; h: number; file: string; sprite?: string }
+export function TextlessPatch({ m, z = 30, children, className = '', style }: { m: TextlessMeta; z?: number; children?: ReactNode; className?: string; style?: CSSProperties }) {
+  return (
+    <div className={`ref-patch ${className}`} style={boxStyle({ x: m.x, y: m.y, w: m.w, h: m.h }, { zIndex: z, ...style })}>
+      <img className="ref-skin" src={m.file} alt="" draggable={false} />
+      {children}
+    </div>
+  )
+}
+
+/** 사용자가 동작 줄이기를 켰는지(OS 설정 또는 앱 설정) */
+export function useReducedMotion(appSetting: boolean) {
+  const [os, setOs] = useState(() => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches)
+  useEffect(() => {
+    if (typeof matchMedia === 'undefined') return
+    const q = matchMedia('(prefers-reduced-motion: reduce)'); const f = () => setOs(q.matches)
+    q.addEventListener('change', f); return () => q.removeEventListener('change', f)
+  }, [])
+  return os || appSetting
 }
 
 export const SKIN = (n: string) => `ref/ui/skins/${n}.svg`

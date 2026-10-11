@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "fonts": "python3 tools/subset_font.py",
-    "test:e2e": "mkdir -p test-results && node tests/formation-flow.mjs && node tests/menus-and-transactions.mjs"
+    "test:e2e": "mkdir -p test-results && node tests/formation-flow.mjs && node tests/menus-and-transactions.mjs && node tests/station-and-detail.mjs"
   },
   "dependencies": {
     "@fontsource/anton": "^5.1.0",

@@ -7,12 +7,14 @@ import { StagePanel } from './common'
 import { IconCheck } from '../../ui/icons'
 
 // 스토리: 챕터 = 노선, 스테이지 = 역. 해금 규칙은 미정이므로 '이전 스테이지 클리어 시 다음 표시'만 임시 적용
-export default function Story(_: { params: Record<string, unknown> }) {
+export default function Story({ params }: { params: Record<string, unknown> }) {
   const s = useGame()
-  const [chId, setChId] = useState(STORY_CHAPTERS[0].id)
+  // 로비의 '메인 목표'에서 들어오면 해당 스테이지 상세를 연다(전투는 자동 시작하지 않음)
+  const target = STORY_CHAPTERS.find((c) => c.stages.some((st) => st.id === params.stageId))
+  const [chId, setChId] = useState(target?.id ?? STORY_CHAPTERS[0].id)
   const ch = STORY_CHAPTERS.find((c) => c.id === chId)!
   const firstOpen = ch.stages.find((st) => !s.content.storyCleared.includes(st.id))?.id ?? ch.stages[ch.stages.length - 1].id
-  const [stageId, setStageId] = useState(firstOpen)
+  const [stageId, setStageId] = useState(target ? (params.stageId as string) : firstOpen)
   const stage = ch.stages.find((st) => st.id === stageId) ?? ch.stages[0]
   const isOpen = (i: number) => i === 0 || s.content.storyCleared.includes(ch.stages[i - 1].id)
 

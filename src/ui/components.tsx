@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type ReactNode, type ButtonHTMLAttributes } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode, type ButtonHTMLAttributes } from 'react'
 import { useNav } from '../app/nav'
 import { audio } from '../app/audio'
 import { useGame } from '../game/store'
@@ -88,6 +88,13 @@ export function RewardChip({ r, compact }: { r: Reward; compact?: boolean }) {
 }
 
 export function Modal({ children, onClose, className = '', labelledBy }: { children: ReactNode; onClose?: () => void; className?: string; labelledBy?: string }) {
+  // Esc로 닫기(닫을 수 있는 창만)
+  const close = useRef(onClose); close.current = onClose
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape' && close.current) { e.stopPropagation(); close.current() } }
+    window.addEventListener('keydown', k)
+    return () => window.removeEventListener('keydown', k)
+  }, [])
   return (
     <div className="modal-back" onClick={(e) => { if (e.target === e.currentTarget && onClose) { audio.sfx('tap'); onClose() } }}>
       <div className={`modal ${className}`} role="dialog" aria-modal="true" aria-labelledby={labelledBy}>{children}</div>

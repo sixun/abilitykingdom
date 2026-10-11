@@ -1,0 +1,294 @@
+{
+"canvas": {
+"width": 1672,
+"height": 941
+},
+"layers": [
+{
+"id": "profile",
+"x": 15,
+"y": 5,
+"width": 124,
+"height": 121,
+"group": "",
+"file": "ref/station/profile.webp",
+"label": "프로필",
+"route": "profile"
+},
+{
+"id": "currency-gems",
+"x": 616,
+"y": 15,
+"width": 230,
+"height": 59,
+"group": "",
+"file": "ref/station/currency-gems.webp",
+"label": "유료 재화",
+"route": "shop/currency"
+},
+{
+"id": "currency-coins",
+"x": 846,
+"y": 15,
+"width": 212,
+"height": 59,
+"group": "",
+"file": "ref/station/currency-coins.webp",
+"label": "일반 재화",
+"route": "wallet"
+},
+{
+"id": "notice",
+"x": 1406,
+"y": 15,
+"width": 92,
+"height": 69,
+"group": "",
+"file": "ref/station/notice.webp",
+"label": "공지",
+"route": "notices"
+},
+{
+"id": "mail",
+"x": 1498,
+"y": 15,
+"width": 85,
+"height": 69,
+"group": "",
+"file": "ref/station/mail.webp",
+"label": "우편",
+"route": "mail"
+},
+{
+"id": "menu",
+"x": 1583,
+"y": 15,
+"width": 89,
+"height": 69,
+"group": "",
+"file": "ref/station/menu.webp",
+"label": "전체 메뉴",
+"route": "menu"
+},
+{
+"id": "pickup",
+"x": 27,
+"y": 124,
+"width": 353,
+"height": 133,
+"group": "",
+"file": "ref/station/pickup.webp",
+"label": "픽업 영입",
+"route": "recruitment/limited"
+},
+{
+"id": "quest",
+"x": 1287,
+"y": 106,
+"width": 385,
+"height": 68,
+"group": "",
+"file": "ref/station/quest.webp",
+"label": "메인 임무",
+"route": "story/current"
+},
+{
+"id": "attendance",
+"x": 1280,
+"y": 188,
+"width": 368,
+"height": 104,
+"group": "",
+"file": "ref/station/attendance.webp",
+"label": "출석 이벤트",
+"route": "events/attendance"
+},
+{
+"id": "messages",
+"x": 40,
+"y": 258,
+"width": 81,
+"height": 97,
+"group": "",
+"file": "ref/station/messages.webp",
+"label": "메시지",
+"route": "messages"
+},
+{
+"id": "events",
+"x": 36,
+"y": 357,
+"width": 93,
+"height": 110,
+"group": "",
+"file": "ref/station/events.webp",
+"label": "이벤트",
+"route": "events"
+},
+{
+"id": "coupon",
+"x": 33,
+"y": 469,
+"width": 96,
+"height": 89,
+"group": "",
+"file": "ref/station/coupon.webp",
+"label": "쿠폰 이벤트",
+"route": "events/coupon"
+},
+{
+"id": "costume",
+"x": 37,
+"y": 570,
+"width": 93,
+"height": 99,
+"group": "",
+"file": "ref/station/costume.webp",
+"label": "코스튬",
+"route": "costumes"
+},
+{
+"id": "arena",
+"x": 1354,
+"y": 327,
+"width": 139,
+"height": 137,
+"group": "",
+"file": "ref/station/arena.webp",
+"label": "아레나",
+"route": "arena"
+},
+{
+"id": "raid",
+"x": 1504,
+"y": 328,
+"width": 137,
+"height": 136,
+"group": "",
+"file": "ref/station/raid.webp",
+"label": "레이드",
+"route": "raid"
+},
+{
+"id": "wanted",
+"x": 134,
+"y": 550,
+"width": 240,
+"height": 88,
+"group": "",
+"file": "ref/station/wanted.webp",
+"label": "현상수배",
+"route": "wanted"
+},
+{
+"id": "shop",
+"x": 125,
+"y": 578,
+"width": 284,
+"height": 150,
+"group": "",
+"file": "ref/station/shop.webp",
+"label": "상점",
+"route": "shop"
+},
+{
+"id": "training",
+"x": 47,
+"y": 699,
+"width": 391,
+"height": 213,
+"group": "",
+"file": "ref/station/training.webp",
+"label": "훈련",
+"route": "training"
+},
+{
+"id": "exploration",
+"x": 1238,
+"y": 502,
+"width": 396,
+"height": 171,
+"group": "",
+"file": "ref/station/exploration.webp",
+"label": "도시 탐색",
+"route": "exploration"
+},
+{
+"id": "story",
+"x": 1195,
+"y": 665,
+"width": 440,
+"height": 233,
+"group": "",
+"file": "ref/station/story.webp",
+"label": "스토리",
+"route": "story"
+},
+{
+"id": "characters",
+"x": 500,
+"y": 806,
+"width": 93,
+"height": 118,
+"group": "",
+"file": "ref/station/characters.webp",
+"label": "캐릭터",
+"route": "characters"
+},
+{
+"id": "formation",
+"x": 641,
+"y": 805,
+"width": 91,
+"height": 119,
+"group": "",
+"file": "ref/station/formation.webp",
+"label": "편성",
+"route": "formation"
+},
+{
+"id": "home",
+"x": 779,
+"y": 793,
+"width": 112,
+"height": 134,
+"group": "",
+"file": "ref/station/home.webp",
+"label": "홈",
+"route": "home"
+},
+{
+"id": "bag",
+"x": 939,
+"y": 808,
+"width": 76,
+"height": 117,
+"group": "",
+"file": "ref/station/bag.webp",
+"label": "가방",
+"route": "inventory"
+},
+{
+"id": "recruitment",
+"x": 1079,
+"y": 805,
+"width": 85,
+"height": 120,
+"group": "",
+"file": "ref/station/recruitment.webp",
+"label": "영입",
+"route": "recruitment"
+},
+{
+"id": "scene-remainder",
+"x": 0,
+"y": 0,
+"width": 1672,
+"height": 941,
+"group": "",
+"file": "ref/station/scene-remainder.webp",
+"label": "원본 잔여 장면",
+"route": ""
+}
+]
+}

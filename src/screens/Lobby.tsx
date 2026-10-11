@@ -9,6 +9,7 @@ import { Modal, Btn, ConfirmDialog } from '../ui/components'
 import { RoleGlyph, IconGrid } from '../ui/icons'
 import { RefStage, RefLayers, Hit, Patch, rectOf, type RefLayout } from '../ui/ref'
 import layoutJson from '../game/data/ref-lobby.json'
+import LobbyStation from './LobbyStation'
 
 // 소파 로비 원본(1456×818)을 원본 조각 23개로 재현.
 // 재화·레벨은 원본 값과 같으면 원본 조각 그대로, 바뀌면 숫자 영역만 덮어 실제 텍스트로 표시한다.
@@ -36,7 +37,15 @@ function Padded({ n, digits = 8 }: { n: number; digits?: number }) {
   return <><span style={{ color: '#6d6d6d' }}>{s.slice(0, lead)}</span>{s.slice(lead)}</>
 }
 
-export default function Lobby(_: { params: Record<string, unknown> }) {
+/** 로비 테마 선택: 소파 카페(기존) / 역 승강장. 선택은 저장되고 두 로비 모두 버튼으로 오갈 수 있다 */
+export default function Lobby(p: { params: Record<string, unknown> }) {
+  const s = useGame()
+  const theme = s.lobby.theme ?? 'sofa'
+  const toggle = () => game.setLobbyTheme(theme === 'sofa' ? 'station' : 'sofa')
+  return theme === 'station' ? <LobbyStation key="station" onTheme={toggle} /> : <SofaLobby key="sofa" {...p} onTheme={toggle} />
+}
+
+function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () => void }) {
   const s = useGame()
   const nav = useNav()
   const b = badges(s)
@@ -92,6 +101,12 @@ export default function Lobby(_: { params: Record<string, unknown> }) {
           {(b.mail || b.mission || b.notice || b.attendance) && <span style={{ position: 'absolute', right: 5, top: 5, width: 9, height: 9, borderRadius: 5, background: '#ff4d4f' }} />}
         </Patch>
         <Hit r={{ x: 822, y: 20, w: 50, h: 44 }} label="더보기 메뉴" onClick={() => setMore((v) => !v)} />
+        {/* 로비 테마 전환(원본에 없는 추가 버튼) */}
+        <Patch r={{ x: 700, y: 20, w: 112, h: 44 }} bg="#141414" z={30} className="rl-theme" style={{ borderRadius: 10, boxShadow: 'inset 0 0 0 1px #3a3a3a' }}>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden><rect x="5" y="3" width="14" height="14" rx="3" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M5 11h14M8 21l2-4M16 21l-2-4" stroke="currentColor" strokeWidth="2" /><circle cx="9" cy="14" r="1" fill="currentColor" /><circle cx="15" cy="14" r="1" fill="currentColor" /></svg>
+          <span>역 로비</span>
+        </Patch>
+        <Hit r={{ x: 700, y: 20, w: 112, h: 44 }} label="로비 테마 변경: 역 승강장 로비로" sfx="none" onClick={() => { audio.sfx('swap'); onTheme() }} />
         {more && (
           <div className="rl-more" style={{ left: 450, top: 72 }} onClick={(e) => e.stopPropagation()}>
             {([
@@ -101,6 +116,7 @@ export default function Lobby(_: { params: Record<string, unknown> }) {
               <button key={sc} onClick={() => { audio.sfx('tap'); go(sc) }}>{label}{dot && <span className="dot" />}</button>
             ))}
             <button onClick={() => { audio.sfx('tap'); setMore(false); setViewing(true) }}>감상 모드</button>
+            <button onClick={() => { audio.sfx('swap'); setMore(false); onTheme() }}>역 로비로</button>
           </div>
         )}
 
