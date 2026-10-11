@@ -2,7 +2,7 @@ import { useCallback, useRef, useState, type ReactNode, type ButtonHTMLAttribute
 import { useNav } from '../app/nav'
 import { audio } from '../app/audio'
 import { useGame } from '../game/store'
-import { CURRENCY_LABEL } from '../game/config'
+import { CURRENCY_LABEL, GAME_CONFIG } from '../game/config'
 import { ITEM_BY_ID } from '../game/data/catalog'
 import { CHAR_BY_ID } from '../game/data/characters'
 import type { CurrencyId, Reward } from '../game/types'
@@ -44,7 +44,7 @@ export function CurrencyChip({ id, onAdd }: { id: CurrencyId; onAdd?: () => void
   return (
     <div className="cur-chip" title={CURRENCY_LABEL[id]}>
       <CurrencyGlyph id={id} size="1.9rem" />
-      <span className="cur-val">{fmt(v)}{id === 'stamina' ? <small>/120</small> : null}</span>
+      <span className="cur-val">{fmt(v)}{id === 'stamina' ? <small>/{GAME_CONFIG.staminaMax}</small> : null}</span>
       {onAdd && <button className="cur-add" aria-label={`${CURRENCY_LABEL[id]} 충전`} onClick={() => { audio.sfx('tap'); onAdd() }}><IconPlus size="1.4rem" /></button>}
     </div>
   )

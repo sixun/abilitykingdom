@@ -12,7 +12,7 @@ import {
 import { expToNext, creditCostForLevel } from './rules'
 
 const SAVE_KEY = 'ability-kingdom.save.v1'
-const SCHEMA = 1
+const SCHEMA = 2 // 원본 화면 기준 초기값으로 변경(v0.2)
 const LATENCY = 160
 
 const today = () => {
@@ -41,9 +41,10 @@ export function createInitialState(): GameState {
   return {
     schema: SCHEMA,
     playerName: '마유',
-    playerLevel: 32,
+    playerLevel: 15,
     createdAt: now,
-    wallet: { diamond: 3200, credit: 58000, ticket: 12, scoutPoint: 120, exchangeMedal: 40, stamina: 120 },
+    // 원본 화면(로비·영입)에 표시된 값과 일치시킨 초기값
+    wallet: { diamond: 12800, credit: 388434, ticket: 24, scoutPoint: 120, exchangeMedal: 1443, stamina: 187 },
     owned,
     teams: [
       emptyTeam('team1', '팀 01', ['jian', 'yujin', 'harin', 'doyun'], 'jian'),

@@ -1,7 +1,7 @@
 import { chromium } from 'playwright'
 const BASE = process.argv[2] || 'http://127.0.0.1:5173/'
 const browser = await chromium.launch()
-const page = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage()
+const page = await (await browser.newContext({ viewport: { width: 1456, height: 819 } })).newPage()
 const errs = []
 page.on('pageerror', e => errs.push('PAGEERR ' + e.message))
 page.on('console', m => { if (m.type() === 'error' && !m.text().includes('ERR_TUNNEL')) errs.push('CONSOLE ' + m.text()) })
@@ -10,43 +10,44 @@ const shot = (n) => page.screenshot({ path: `test-results/e2-${n}.png` })
 let fails = 0
 const check = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++ }
 const W = (ms = 600) => page.waitForTimeout(ms)
-const back = async () => { await page.click('.back-btn, .fm-back'); await W(700) }
+const back = async () => { await page.click('.screen-active .back-btn, .screen-active button[aria-label="돌아가기"]'); await W(700) }
 
 await page.goto(BASE + '?screen=lobby'); await W(2500)
 
-// 로비 링크 전부: 6 콘텐츠 + 관리 메뉴 + 보조 메뉴
+// 로비 링크 전부: 하단 10개 + 이벤트 3개 + 프로필 + 더보기 메뉴(원본에 없는 추가 진입점)
+const LOBBY = '.screen-active button[aria-label="더보기 메뉴"]'
 const targets = [
-  ['.lb-ct-story', '.ct-story'], ['.lb-ct-explore', '.ct-explore'], ['.lb-ct-wanted', '.ct-wanted'], ['.lb-ct-training', '.ct-training'], ['.lb-ct-arena', '.ct-arena'], ['.lb-ct-raid', '.ct-raid'],
-  ['.lb-m:has-text("캐릭터")', '.chars'], ['.lb-m:has-text("가방")', '.bag'], ['.lb-m:has-text("영입")', '.rc'], ['.lb-m:has-text("상점")', '.shop'],
-  ['button[aria-label="우편함"]', '.ops'], ['button[aria-label="미션"]', '.ops'], ['button[aria-label="공지"]', '.ops'], ['button[aria-label="설정"]', '.settings'],
-  ['.lb-profile', '.profile'], ['.lb-mini:has-text("출석")', '.att'], ['.lb-mini:has-text("이벤트")', '.ops'], ['.lb-event', '.ops'],
+  ['button[aria-label="스토리"]', '.ct-story'], ['button[aria-label="도시 탐색"]', '.ct-explore'], ['button[aria-label="현상수배"]', '.ct-wanted'],
+  ['button[aria-label="훈련"]', '.ct-training'], ['button[aria-label="아레나"]', '.ct-arena'], ['button[aria-label="레이드"]', '.ct-raid'],
+  ['button[aria-label="캐릭터"]', '.chars'], ['button[aria-label="상점"]', '.shop'], ['button[aria-label="소환(영입)"]', 'button.hit-pull10'],
+  ['button[aria-label="이벤트: 스토리"]', '.ct-story'], ['button[aria-label="이벤트: 도시 탐색"]', '.ct-explore'], ['button[aria-label="이벤트: 현상수배"]', '.ct-wanted'],
+  ['button[aria-label="프로필"]', '.profile'],
+  ['more:가방', '.bag'], ['more:우편함', '.ops'], ['more:미션', '.ops'], ['more:공지', '.ops'], ['more:이벤트', '.ops'], ['more:출석', '.att'], ['more:설정', '.settings'],
 ]
 for (const [btn, scr] of targets) {
-  await page.click(btn); await W(700)
-  const ok = await page.locator(`.screen-active ${scr}`).count() > 0
-  check(ok, `로비 → ${btn} → ${scr}`)
+  if (btn.startsWith('more:')) { await page.click(LOBBY); await W(200); await page.click(`.rl-more button:has-text("${btn.slice(5)}")`) }
+  else await page.click('.screen-active ' + btn)
+  await W(700)
+  check(await page.locator(`.screen-active ${scr}`).count() > 0, `로비 → ${btn} → ${scr}`)
   await back()
-  check(await page.locator('.screen-active .lb').count() === 1, `  ↩ 로비 복귀`)
+  check(await page.locator(LOBBY).count() === 1, `  ↩ 로비 복귀`)
 }
 
 // 감상 모드
-await page.click('.lb-mini:has-text("감상 모드")'); await W(500)
-check(await page.locator('.lb-contents').count() === 0 && await page.locator('.lb-show-ui').count() === 1, 'UI 숨김 감상 모드')
-await shot('viewing')
-await page.mouse.click(1000, 300); await W(400)
-check(await page.locator('.lb-contents').count() === 1, '감상 모드 해제')
+await page.click(LOBBY); await W(200); await page.click('.rl-more button:has-text("감상 모드")'); await W(500)
+check(await page.locator(LOBBY).count() === 0 && await page.locator('button[aria-label="UI 다시 표시"]').count() === 1, 'UI 숨김 감상 모드')
+await page.mouse.click(700, 300); await W(400)
+check(await page.locator(LOBBY).count() === 1, '감상 모드 해제')
 
-// 대표 캐릭터 변경 → 등장 연출, 팀 리더 불변
-await page.click('.lb-mini:has-text("대표 변경")'); await W(300)
-await page.click('.lb-picker-grid button:has-text("세인")'); await W(500)
-check(await page.locator('.lb-char.entrance').count() === 1, '대표 변경 시 등장 연출')
-await W(700); await shot('entrance-sein')
+// 로비 캐릭터 선택: 원본 장면 그림이 있는 지안만 선택 가능
+await page.click('.screen-active button[aria-label="로비 캐릭터 변경"]'); await W(300)
+check(await page.locator('.lb-picker-grid button:has-text("세인")').isDisabled(), '로비 그림 없는 캐릭터는 비활성')
+await page.click('.modal .btn-dark:has-text("닫기")'); await W(300)
 let s = await st()
-check(s.lobby.characterId === 'sein' && s.teams[0].leaderId === 'jian', '로비 대표 변경이 팀 리더를 바꾸지 않음')
-await W(1800)
+check(s.lobby.characterId === 'jian' && s.teams[0].leaderId === 'jian', '로비 캐릭터와 팀 리더는 별도 저장')
 
 // 캐릭터 상세: 탭 4개, 레벨업, 장비
-await page.click('.lb-m:has-text("캐릭터")'); await W(700)
+await page.click('.screen-active button[aria-label="캐릭터"]'); await W(700)
 await page.click('.ccard:has-text("하린")'); await W(700)
 for (const t of ['기본 정보', '스킬', '장비', '성장']) { await page.click(`.tabs button:has-text("${t}")`); await W(650); await shot('cd-' + t) }
 const lv0 = (await st()).owned.harin.level
@@ -65,8 +66,8 @@ await back(); await back()
 // 영입 10회 → 결과 → 스킵 → 요약 → 기록 재열람 동일
 s = await st()
 const t0 = s.wallet.ticket
-await page.click('.lb-m:has-text("영입")'); await W(800)
-await page.click('.rc-pull10'); await W(900)
+await page.click('.screen-active button[aria-label="소환(영입)"]'); await W(800)
+await page.click('.screen-active button.hit-pull10'); await W(900)
 await shot('rr-reveal')
 s = await st()
 const tx = s.recruitTx[0]
@@ -76,7 +77,7 @@ await shot('rr-summary')
 const names1 = await page.$$eval('.rr-cell strong', (e) => e.map((x) => x.textContent).join())
 check((await st()).recruitTx.length === 1 && (await st()).wallet.ticket === t0 - 10, '스킵해도 결과 재실행 없음')
 await page.click('.rr-actions button:has-text("확인")'); await W(700)
-await page.click('.rc-meta-btns button:has-text("기록")'); await W(700)
+await page.click('.screen-active button[aria-label="상세 정보"]'); await W(300); await page.click('.modal button:has-text("영입 기록")'); await W(700)
 await page.click('.rh-row >> nth=0'); await W(800)
 const names2 = await page.$$eval('.rr-cell strong', (e) => e.map((x) => x.textContent).join())
 check(names1 === names2, '기록에서 다시 열어도 같은 거래 결과')
@@ -84,7 +85,7 @@ await page.click('.rr-actions button:has-text("확인")'); await W(700)
 await back()
 // 1회 영입 연타
 s = await st(); const t1 = s.wallet.ticket, n1 = s.recruitTx.length
-await page.click('.rc-pull1'); await page.click('.rc-pull1', { force: true }).catch(() => {}); await page.click('.rc-pull1', { force: true }).catch(() => {})
+await page.click('.screen-active button.hit-pull1'); await page.click('.screen-active button.hit-pull1', { force: true }).catch(() => {}); await page.click('.screen-active button.hit-pull1', { force: true }).catch(() => {})
 await W(1000)
 s = await st()
 check(s.wallet.ticket === t1 - 1 && s.recruitTx.length === n1 + 1, `1회 영입 연타 → 1회만 차감 (${t1}→${s.wallet.ticket})`)
@@ -95,7 +96,7 @@ await back()
 // 상점: 응답 유실 시뮬레이션 + 재시도 → 1회만 차감·지급
 await page.evaluate(() => window.__AK__.setFailureRate(1.0)) // 절반 처리 전 실패, 절반 처리 후 유실
 s = await st(); const d0 = s.wallet.diamond, tk0 = s.wallet.ticket
-await page.click('.lb-m:has-text("상점")'); await W(700)
+await page.click('.screen-active button[aria-label="상점"]'); await W(700)
 await page.click('.pcard:has-text("영입 티켓") >> nth=0'); await W(300)
 for (let i = 0; i < 4; i++) {
   if (await page.locator('.modal .error-banner button:has-text("재시도")').count()) await page.click('.modal .error-banner button:has-text("재시도")')
@@ -116,30 +117,32 @@ await back()
 
 // 우편 모두 받기 → 알림 점 사라짐, 중복 수령 없음
 s = await st(); const dm = s.wallet.diamond
-await page.click('button[aria-label="우편함"]'); await W(600)
+await page.click(LOBBY); await W(200); await page.click('.rl-more button:has-text("우편함")'); await W(600)
 await page.click('.ops-actions button:has-text("모두 받기")'); await W(600)
 s = await st()
 check(s.mails.every((m) => m.claimed) && s.wallet.diamond === dm + 500, '우편 모두 받기')
 check(await page.locator('.ops-actions button:has-text("모두 받기 (0)")').isDisabled(), '받은 뒤 버튼 비활성')
 await back()
-check(await page.locator('button[aria-label="우편함"] .dot').count() === 0, '우편 알림 점 해제')
+await page.click(LOBBY); await W(200)
+check(await page.locator('.rl-more button:has-text("우편함") .dot').count() === 0, '우편 알림 점 해제')
+await page.click(LOBBY); await W(200)
 
 // 미션 보상(편성 저장·영입·레벨업 진행분)
-await page.click('button[aria-label="미션"]'); await W(600)
+await page.click(LOBBY); await W(200); await page.click('.rl-more button:has-text("미션")'); await W(600)
 const ready = await page.locator('.mission.ready').count()
 for (let i = 0; i < ready; i++) { await page.click('.mission.ready .btn-primary >> nth=0'); await W(400) }
 check(await page.locator('.mission.ready').count() === 0, `완료 미션 ${ready}개 수령`)
 await back()
 
 // 출석
-await page.click('.lb-mini:has-text("출석")'); await W(600)
+await page.click(LOBBY); await W(200); await page.click('.rl-more button:has-text("출석")'); await W(600)
 await page.click('.att-actions .btn-primary'); await W(500)
 check(await page.locator('.att-actions .btn-primary').isDisabled(), '출석 1일 1회')
 await back()
 
 // 콘텐츠 → 출전 준비 → 테스트 전투 → 결과
 s = await st(); const stam = s.wallet.stamina
-await page.click('.lb-ct-story'); await W(700)
+await page.click('.screen-active button[aria-label="스토리"]'); await W(700)
 await page.click('.stage-panel .btn-primary'); await W(800)
 check(await page.locator('.screen-active .prep').count() === 1, '스토리 → 출전 준비')
 await shot('prep')
@@ -156,18 +159,18 @@ const won = await page.locator('.bt-result.win').count() === 1
 check(s.content.battles.length === 1, `전투 결과 기록 (${won ? '승리' : '패배'})`)
 if (won) check(s.content.storyCleared.includes('1-1'), '스토리 1-1 클리어 기록')
 await page.click('.bt-result-actions button:has-text("로비 복귀")'); await W(900)
-check(await page.locator('.screen-active .lb').count() === 1, '결과 → 로비 복귀')
+check(await page.locator(LOBBY).count() === 1, '결과 → 로비 복귀')
 
 // 아레나·레이드·현상수배·탐색·훈련 출전 준비 진입
 for (const [ct, sel] of [['arena', '.opp .btn-primary >> nth=0'], ['raid', '.stage-panel .btn-primary'], ['training', '.stage-panel .btn-primary'], ['wanted', '.poster >> nth=0'], ['explore', '.map-pin >> nth=0']]) {
-  await page.click(`.lb-ct-${ct}`); await W(800)
+  await page.click(`.screen-active button[aria-label="${{ arena: '아레나', raid: '레이드', training: '훈련', wanted: '현상수배', explore: '도시 탐색' }[ct]}"]`); await W(800)
   await page.click(sel); await W(800)
   if (ct === 'wanted' || ct === 'explore') { await page.click('.stage-panel .btn-primary'); await W(800) }
   check(await page.locator('.screen-active .prep').count() === 1, `${ct} → 출전 준비`)
   await page.click('.back-btn'); await W(700)
   await page.click('.back-btn'); await W(700)
 }
-check(await page.locator('.screen-active .lb').count() === 1, '모든 콘텐츠에서 로비 복귀')
+check(await page.locator(LOBBY).count() === 1, '모든 콘텐츠에서 로비 복귀')
 console.log('errors:', errs.length ? errs : 'none')
 console.log('FAILS', fails)
 await browser.close()

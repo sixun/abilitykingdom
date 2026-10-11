@@ -22,8 +22,10 @@ export function statsOf(def: CharacterDefinition, owned: OwnedCharacter, items: 
   return { hp, atk, def: defn }
 }
 
+/** 표시 배율: 원본 편성 화면의 기본 팀(지안·유진·하린·도윤 Lv.40)이 24,680이 되도록 맞춘 임시 값 */
+const POWER_SCALE = 3.12456
 export function powerOf(stats: { hp: number; atk: number; def: number }) {
-  return Math.round(stats.hp * 0.1 + stats.atk * 1.6 + stats.def * 1.1)
+  return Math.round((stats.hp * 0.1 + stats.atk * 1.6 + stats.def * 1.1) * POWER_SCALE)
 }
 
 /** 다음 레벨까지 필요한 경험치(임시) */

@@ -1,0 +1,46 @@
+{
+ "jian": {
+  "scale": 0.6,
+  "x": 144,
+  "y": 24,
+  "w": 614,
+  "h": 921,
+  "feetY": 931,
+  "centerX": 464,
+  "err": 28.46,
+  "uncovered": 0.124
+ },
+ "yujin": {
+  "scale": 0.46,
+  "x": 448,
+  "y": 100,
+  "w": 471,
+  "h": 706,
+  "feetY": 798,
+  "centerX": 681,
+  "err": 22.98,
+  "uncovered": 0.122
+ },
+ "harin": {
+  "scale": 0.48,
+  "x": 740,
+  "y": 140,
+  "w": 491,
+  "h": 737,
+  "feetY": 869,
+  "centerX": 981,
+  "err": 21.61,
+  "uncovered": 0.045
+ },
+ "doyun": {
+  "scale": 0.46,
+  "x": 988,
+  "y": 128,
+  "w": 471,
+  "h": 706,
+  "feetY": 827,
+  "centerX": 1236,
+  "err": 22.87,
+  "uncovered": 0.025
+ }
+}

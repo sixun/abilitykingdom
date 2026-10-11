@@ -1,0 +1,224 @@
+{
+"canvas": {
+"width": 1456,
+"height": 819
+},
+"layers": [
+{
+"id": "back",
+"x": 13,
+"y": 35,
+"width": 73,
+"height": 55,
+"group": "",
+"file": "ref/recruitment/back.webp"
+},
+{
+"id": "brand-title",
+"x": 5,
+"y": 0,
+"width": 233,
+"height": 94,
+"group": "",
+"file": "ref/recruitment/brand-title.webp"
+},
+{
+"id": "tab-limited",
+"x": 290,
+"y": 30,
+"width": 188,
+"height": 59,
+"group": "",
+"file": "ref/recruitment/tab-limited.webp"
+},
+{
+"id": "tab-standard",
+"x": 478,
+"y": 30,
+"width": 186,
+"height": 59,
+"group": "",
+"file": "ref/recruitment/tab-standard.webp"
+},
+{
+"id": "currency-gems",
+"x": 1059,
+"y": 11,
+"width": 184,
+"height": 46,
+"group": "",
+"file": "ref/recruitment/currency-gems.webp"
+},
+{
+"id": "currency-tickets",
+"x": 1250,
+"y": 11,
+"width": 188,
+"height": 46,
+"group": "",
+"file": "ref/recruitment/currency-tickets.webp"
+},
+{
+"id": "banner-limited",
+"x": 7,
+"y": 104,
+"width": 255,
+"height": 115,
+"group": "",
+"file": "ref/recruitment/banner-limited.webp"
+},
+{
+"id": "banner-standard",
+"x": 12,
+"y": 222,
+"width": 240,
+"height": 94,
+"group": "",
+"file": "ref/recruitment/banner-standard.webp"
+},
+{
+"id": "banner-rhythm",
+"x": 12,
+"y": 324,
+"width": 240,
+"height": 95,
+"group": "",
+"file": "ref/recruitment/banner-rhythm.webp"
+},
+{
+"id": "banner-reunion",
+"x": 12,
+"y": 427,
+"width": 240,
+"height": 92,
+"group": "",
+"file": "ref/recruitment/banner-reunion.webp"
+},
+{
+"id": "info-detail",
+"x": 1079,
+"y": 653,
+"width": 176,
+"height": 56,
+"group": "",
+"file": "ref/recruitment/info-detail.webp"
+},
+{
+"id": "info-probability",
+"x": 1263,
+"y": 652,
+"width": 175,
+"height": 57,
+"group": "",
+"file": "ref/recruitment/info-probability.webp"
+},
+{
+"id": "exchange",
+"x": 21,
+"y": 733,
+"width": 187,
+"height": 67,
+"group": "",
+"file": "ref/recruitment/exchange.webp"
+},
+{
+"id": "recruit-points",
+"x": 255,
+"y": 735,
+"width": 382,
+"height": 61,
+"group": "",
+"file": "ref/recruitment/recruit-points.webp"
+},
+{
+"id": "points-gift",
+"x": 646,
+"y": 734,
+"width": 70,
+"height": 67,
+"group": "",
+"file": "ref/recruitment/points-gift.webp"
+},
+{
+"id": "pull-one",
+"x": 808,
+"y": 729,
+"width": 278,
+"height": 76,
+"group": "",
+"file": "ref/recruitment/pull-one.webp"
+},
+{
+"id": "pull-ten",
+"x": 1095,
+"y": 719,
+"width": 351,
+"height": 93,
+"group": "",
+"file": "ref/recruitment/pull-ten.webp"
+},
+{
+"id": "bottom-bar-remainder",
+"x": 0,
+"y": 716,
+"width": 1456,
+"height": 103,
+"group": "",
+"file": "ref/recruitment/bottom-bar-remainder.webp"
+},
+{
+"id": "promo-copy",
+"x": 279,
+"y": 136,
+"width": 267,
+"height": 77,
+"group": "",
+"file": "ref/recruitment/promo-copy.webp"
+},
+{
+"id": "promo-title",
+"x": 261,
+"y": 192,
+"width": 557,
+"height": 261,
+"group": "",
+"file": "ref/recruitment/promo-title.webp"
+},
+{
+"id": "character-name",
+"x": 274,
+"y": 454,
+"width": 367,
+"height": 55,
+"group": "",
+"file": "ref/recruitment/character-name.webp"
+},
+{
+"id": "character-quote",
+"x": 276,
+"y": 512,
+"width": 273,
+"height": 46,
+"group": "",
+"file": "ref/recruitment/character-quote.webp"
+},
+{
+"id": "portrait-strip",
+"x": 0,
+"y": 535,
+"width": 791,
+"height": 181,
+"group": "",
+"file": "ref/recruitment/portrait-strip.webp"
+},
+{
+"id": "scene-remainder",
+"x": 0,
+"y": 0,
+"width": 1456,
+"height": 716,
+"group": "",
+"file": "ref/recruitment/scene-remainder.webp"
+}
+]
+}

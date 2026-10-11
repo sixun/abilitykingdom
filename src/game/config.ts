@@ -18,7 +18,7 @@ export const GAME_CONFIG = {
   /** 영입 포인트 교환 기준(샘플) */
   scoutPointCap: 200,
   /** 행동력 최대치(샘플) */
-  staminaMax: 120,
+  staminaMax: 240,
 }
 
 /** 화면별 전환 시간(초기 조정값, 기획서 12항) */

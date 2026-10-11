@@ -1,0 +1,377 @@
+{
+"canvas": {
+"width": 1456,
+"height": 819
+},
+"layers": [
+{
+"id": "back",
+"x": 9,
+"y": 12,
+"width": 74,
+"height": 45,
+"group": "sidebar",
+"file": "ref/formation/back.webp"
+},
+{
+"id": "brand",
+"x": 95,
+"y": 14,
+"width": 146,
+"height": 46,
+"group": "sidebar",
+"file": "ref/formation/brand.webp"
+},
+{
+"id": "formation-title",
+"x": 13,
+"y": 74,
+"width": 170,
+"height": 81,
+"group": "sidebar",
+"file": "ref/formation/formation-title.webp"
+},
+{
+"id": "departure-lettering",
+"x": 181,
+"y": 42,
+"width": 139,
+"height": 64,
+"group": "sidebar",
+"file": "ref/formation/departure-lettering.webp"
+},
+{
+"id": "team-01",
+"x": 17,
+"y": 180,
+"width": 207,
+"height": 59,
+"group": "sidebar",
+"file": "ref/formation/team-01.webp"
+},
+{
+"id": "team-02",
+"x": 23,
+"y": 240,
+"width": 195,
+"height": 51,
+"group": "sidebar",
+"file": "ref/formation/team-02.webp"
+},
+{
+"id": "team-03",
+"x": 23,
+"y": 293,
+"width": 195,
+"height": 53,
+"group": "sidebar",
+"file": "ref/formation/team-03.webp"
+},
+{
+"id": "team-power",
+"x": 22,
+"y": 372,
+"width": 193,
+"height": 66,
+"group": "sidebar",
+"file": "ref/formation/team-power.webp"
+},
+{
+"id": "sidebar-copy",
+"x": 24,
+"y": 478,
+"width": 166,
+"height": 118,
+"group": "sidebar",
+"file": "ref/formation/sidebar-copy.webp"
+},
+{
+"id": "sidebar-signature",
+"x": 19,
+"y": 624,
+"width": 160,
+"height": 86,
+"group": "sidebar",
+"file": "ref/formation/sidebar-signature.webp"
+},
+{
+"id": "sidebar-footer",
+"x": 24,
+"y": 754,
+"width": 132,
+"height": 38,
+"group": "sidebar",
+"file": "ref/formation/sidebar-footer.webp"
+},
+{
+"id": "name-jian",
+"x": 298,
+"y": 398,
+"width": 217,
+"height": 81,
+"group": "nameplates",
+"file": "ref/formation/name-jian.webp"
+},
+{
+"id": "name-yujin",
+"x": 600,
+"y": 419,
+"width": 165,
+"height": 59,
+"group": "nameplates",
+"file": "ref/formation/name-yujin.webp"
+},
+{
+"id": "name-harin",
+"x": 878,
+"y": 423,
+"width": 167,
+"height": 57,
+"group": "nameplates",
+"file": "ref/formation/name-harin.webp"
+},
+{
+"id": "name-doyun",
+"x": 1146,
+"y": 425,
+"width": 168,
+"height": 56,
+"group": "nameplates",
+"file": "ref/formation/name-doyun.webp"
+},
+{
+"id": "roster-count",
+"x": 190,
+"y": 669,
+"width": 58,
+"height": 78,
+"group": "roster",
+"file": "ref/formation/roster-count.webp"
+},
+{
+"id": "roster-prev",
+"x": 265,
+"y": 692,
+"width": 27,
+"height": 45,
+"group": "roster",
+"file": "ref/formation/roster-prev.webp"
+},
+{
+"id": "portrait-jian",
+"x": 299,
+"y": 654,
+"width": 99,
+"height": 109,
+"group": "roster",
+"file": "ref/formation/portrait-jian.webp"
+},
+{
+"id": "portrait-yujin",
+"x": 398,
+"y": 659,
+"width": 91,
+"height": 100,
+"group": "roster",
+"file": "ref/formation/portrait-yujin.webp"
+},
+{
+"id": "portrait-harin",
+"x": 491,
+"y": 659,
+"width": 94,
+"height": 100,
+"group": "roster",
+"file": "ref/formation/portrait-harin.webp"
+},
+{
+"id": "portrait-doyun",
+"x": 587,
+"y": 659,
+"width": 93,
+"height": 100,
+"group": "roster",
+"file": "ref/formation/portrait-doyun.webp"
+},
+{
+"id": "portrait-sein",
+"x": 681,
+"y": 659,
+"width": 95,
+"height": 100,
+"group": "roster",
+"file": "ref/formation/portrait-sein.webp"
+},
+{
+"id": "portrait-narin",
+"x": 778,
+"y": 659,
+"width": 92,
+"height": 100,
+"group": "roster",
+"file": "ref/formation/portrait-narin.webp"
+},
+{
+"id": "roster-names",
+"x": 327,
+"y": 764,
+"width": 522,
+"height": 22,
+"group": "roster",
+"file": "ref/formation/roster-names.webp"
+},
+{
+"id": "roster-next",
+"x": 878,
+"y": 692,
+"width": 29,
+"height": 45,
+"group": "roster",
+"file": "ref/formation/roster-next.webp"
+},
+{
+"id": "auto-formation",
+"x": 938,
+"y": 670,
+"width": 139,
+"height": 63,
+"group": "actions",
+"file": "ref/formation/auto-formation.webp"
+},
+{
+"id": "reset",
+"x": 1079,
+"y": 670,
+"width": 137,
+"height": 63,
+"group": "actions",
+"file": "ref/formation/reset.webp"
+},
+{
+"id": "save-formation",
+"x": 1217,
+"y": 658,
+"width": 227,
+"height": 79,
+"group": "actions",
+"file": "ref/formation/save-formation.webp"
+},
+{
+"id": "bottom-signature",
+"x": 938,
+"y": 752,
+"width": 196,
+"height": 53,
+"group": "footer",
+"file": "ref/formation/bottom-signature.webp"
+},
+{
+"id": "bottom-brand",
+"x": 1244,
+"y": 765,
+"width": 202,
+"height": 38,
+"group": "footer",
+"file": "ref/formation/bottom-brand.webp"
+},
+{
+"id": "slot-01",
+"x": 240,
+"y": 554,
+"width": 337,
+"height": 86,
+"group": "floor",
+"file": "ref/formation/slot-01.webp"
+},
+{
+"id": "slot-02",
+"x": 570,
+"y": 566,
+"width": 339,
+"height": 75,
+"group": "floor",
+"file": "ref/formation/slot-02.webp"
+},
+{
+"id": "slot-03",
+"x": 798,
+"y": 570,
+"width": 377,
+"height": 72,
+"group": "floor",
+"file": "ref/formation/slot-03.webp"
+},
+{
+"id": "slot-04",
+"x": 1072,
+"y": 580,
+"width": 369,
+"height": 62,
+"group": "floor",
+"file": "ref/formation/slot-04.webp"
+},
+{
+"id": "character-jian-visible",
+"x": 241,
+"y": 28,
+"width": 368,
+"height": 585,
+"group": "characters",
+"file": "ref/formation/character-jian-visible.webp"
+},
+{
+"id": "character-yujin-visible",
+"x": 590,
+"y": 111,
+"width": 218,
+"height": 455,
+"group": "characters",
+"file": "ref/formation/character-yujin-visible.webp"
+},
+{
+"id": "character-harin-visible",
+"x": 817,
+"y": 151,
+"width": 304,
+"height": 442,
+"group": "characters",
+"file": "ref/formation/character-harin-visible.webp"
+},
+{
+"id": "character-doyun-visible",
+"x": 1109,
+"y": 137,
+"width": 230,
+"height": 462,
+"group": "characters",
+"file": "ref/formation/character-doyun-visible.webp"
+},
+{
+"id": "sidebar-remainder",
+"x": 0,
+"y": 0,
+"width": 281,
+"height": 819,
+"group": "structure",
+"file": "ref/formation/sidebar-remainder.webp"
+},
+{
+"id": "bottom-remainder",
+"x": 163,
+"y": 641,
+"width": 1293,
+"height": 178,
+"group": "structure",
+"file": "ref/formation/bottom-remainder.webp"
+},
+{
+"id": "scene-remainder",
+"x": 189,
+"y": 0,
+"width": 1267,
+"height": 641,
+"group": "scene",
+"file": "ref/formation/scene-remainder.webp"
+}
+]
+}

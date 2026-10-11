@@ -1,0 +1,106 @@
+/* 원본 재현 캔버스: 원본 px 단위. 앱 전체 rem 체계와 분리 */
+.ref-host { position: absolute; inset: 0; background: #000; overflow: hidden; }
+.ref-canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; font-size: 16px; font-family: 'Noto Sans KR', 'Noto Sans CJK KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; color: #fff; }
+.ref-layer { position: absolute; display: block; max-width: none; pointer-events: none; user-select: none; }
+.ref-bg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; max-width: none; pointer-events: none; z-index: 0; }
+
+.ref-hit { position: absolute; background: transparent; border: 0; padding: 0; margin: 0; cursor: pointer; border-radius: 4px; -webkit-tap-highlight-color: transparent; transition: background-color 90ms ease, filter 90ms ease; }
+.ref-hit:hover { background-color: rgba(255, 255, 255, 0.06); }
+.ref-hit:active:not(:disabled) { background-color: rgba(0, 0, 0, 0.18); }
+.ref-hit:focus-visible { outline: 3px solid #48e9dd; outline-offset: 2px; }
+.ref-hit:disabled { cursor: default; }
+
+.ref-patch { position: absolute; overflow: hidden; pointer-events: none; }
+.ref-skin { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; }
+.ref-txt { position: absolute; white-space: nowrap; line-height: 1; }
+.num-tab { font-variant-numeric: tabular-nums; }
+
+/* 진입 모션(UI 전용, 좌표 불변) */
+.ak-enter { animation: ak-enter 220ms cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes ak-enter { from { opacity: 0; translate: 24px 0; } to { opacity: 1; translate: 0 0; } }
+.ak-fade { animation: ak-fade 260ms ease both; }
+@keyframes ak-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ak-enter, .ak-fade { animation: none; } }
+.reduce-motion .ak-enter, .reduce-motion .ak-fade { animation: none; }
+
+/* ───────── 편성(원본 재현) ───────── */
+.rf-dyn { position: absolute; max-width: none; pointer-events: none; transform-origin: 50% 100%; }
+.rf-dyn.enter { animation: rfIn 420ms cubic-bezier(.2, .9, .1, 1) both; }
+.rf-dyn.ghost { animation: rfOut 300ms ease-in both; }
+@keyframes rfIn { 0% { opacity: 0; transform: translateX(60px) skewX(-5deg); filter: blur(6px) brightness(1.8); } 60% { opacity: 1; filter: none; } 100% { transform: none; } }
+@keyframes rfOut { to { opacity: 0; transform: translateX(-50px); filter: blur(4px); } }
+.rf-react { animation: rfReact 380ms cubic-bezier(.2, .9, .1, 1); }
+@keyframes rfReact { 35% { transform: translateY(-10px); } 100% { transform: none; } }
+.rf-slot-overlay { position: absolute; pointer-events: none; }
+.rf-slot-overlay img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; }
+.rf-slot-num { position: absolute; left: 34%; top: 50%; translate: -50% -50%; font-family: Anton, 'Black Han Sans', sans-serif; font-size: 44px; font-style: italic; color: rgba(255, 255, 255, 0.85); }
+.rf-pulse { animation: rfPulse 520ms ease-out; }
+@keyframes rfPulse { 0% { filter: brightness(1.9); } 100% { filter: none; } }
+.rf-plate { display: flex; align-items: center; gap: 10px; padding: 0 10px 0 10px; }
+.rf-role { flex: none; width: 34px; height: 34px; border: 2px solid #e8eef2; display: grid; place-items: center; color: #fff; }
+.rf-plate-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rf-plate-name b { font-size: 19px; font-weight: 900; letter-spacing: -0.02em; }
+.rf-plate-name span { font-size: 15px; font-weight: 700; color: #dfe6ea; }
+.rf-chev { margin-left: auto; width: 14px; height: 14px; border-right: 2.5px solid #fff; border-top: 2.5px solid #fff; transform: rotate(45deg); margin-right: 6px; }
+.rf-leader { position: absolute; display: flex; align-items: center; gap: 3px; padding: 0 7px; height: 20px; font-size: 12px; font-weight: 900; color: #10181c; background: #46eddf; clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%); z-index: 46; pointer-events: none; }
+.rf-empty { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 3px dashed rgba(255, 255, 255, 0.7); background: rgba(10, 16, 22, 0.35); color: #fff; font-weight: 800; font-size: 18px; pointer-events: none; }
+.rf-empty i { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, 0.18); font-style: normal; font-size: 40px; font-weight: 400; }
+.rf-tab { display: flex; align-items: center; padding: 0 16px 0 22px; }
+.rf-tab b { font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-style: italic; font-size: 26px; letter-spacing: -0.01em; }
+.rf-tab img.ic { margin-left: auto; width: 22px; height: 22px; max-width: none; }
+.rf-tab.on b { color: #0e2a2c; }
+.rf-tab.on img.ic { filter: invert(1) brightness(0.2); }
+.rf-tab input { width: 140px; height: 34px; font-size: 20px; font-weight: 800; border: 0; padding: 0 8px; pointer-events: auto; }
+.rf-power { display: flex; flex-direction: column; justify-content: center; gap: 2px; padding-left: 4px; }
+.rf-power span { font-size: 17px; font-weight: 800; color: #e7edf1; }
+.rf-power b { font-family: Anton, 'Black Han Sans', sans-serif; font-weight: 400; font-size: 40px; line-height: 1; color: #39e6d8; letter-spacing: 0.01em; }
+.rf-thumb { position: absolute; overflow: hidden; background: #2a2f37; pointer-events: none; }
+.rf-thumb img.p { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; max-width: none; }
+.rf-lv { position: absolute; right: 4px; bottom: 3px; padding: 1px 4px; font-size: 14px; font-weight: 800; background: rgba(12, 16, 20, 0.88); color: #fff; }
+.rf-check { position: absolute; right: 0; top: 0; width: 34px; height: 34px; background: #40ecde; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+.rf-check::after { content: ''; position: absolute; right: 5px; top: 5px; width: 12px; height: 7px; border-left: 3px solid #0d2224; border-bottom: 3px solid #0d2224; transform: rotate(-45deg); }
+.rf-names { display: flex; font-size: 15px; font-weight: 800; color: #1b1e22; }
+.rf-names span { text-align: center; }
+.rf-count { display: flex; flex-direction: column; gap: 4px; color: #20242a; }
+.rf-count small { font-size: 15px; font-weight: 800; line-height: 1.2; }
+.rf-count b { font-family: Anton, 'Black Han Sans', sans-serif; font-weight: 400; font-size: 26px; }
+.rf-dirty { position: absolute; z-index: 60; padding: 4px 10px; font-size: 13px; font-weight: 800; background: #14181d; color: #c8f53b; pointer-events: none; }
+.rf-pop { position: absolute; z-index: 70; display: flex; flex-direction: column; gap: 4px; padding: 6px; background: rgba(12, 16, 20, 0.95); box-shadow: 0 0 0 2px #40ecde; animation: ak-fade 160ms both; }
+.rf-pop button { height: 38px; padding: 0 16px; font-size: 16px; font-weight: 800; color: #fff; background: rgba(255, 255, 255, 0.08); border: 0; text-align: left; cursor: pointer; white-space: nowrap; }
+.rf-pop button:hover { background: rgba(64, 236, 222, 0.25); }
+.rf-pop button:disabled { opacity: 0.4; cursor: default; }
+.rf-err { position: absolute; z-index: 80; display: flex; gap: 12px; align-items: center; padding: 10px 16px; font-size: 16px; font-weight: 700; background: #3a1214; border-left: 5px solid #ff4d4f; color: #ffd9d9; }
+.rf-err button { padding: 4px 10px; background: rgba(255, 255, 255, 0.14); color: #fff; border: 0; font-weight: 800; cursor: pointer; }
+
+/* ───────── 로비(원본 재현) ───────── */
+.rl-pill { display: flex; align-items: center; justify-content: flex-end; padding: 0 30px 0 12px; font-family: Anton, 'Black Han Sans', sans-serif; font-size: 22px; letter-spacing: 0.04em; color: #f2f2f2; }
+.rl-profile { display: flex; flex-direction: column; justify-content: center; padding-left: 66px; gap: 4px; }
+.rl-profile b { font-size: 17px; font-weight: 900; }
+.rl-more { position: absolute; z-index: 60; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; width: 420px; background: rgba(10, 10, 10, 0.94); box-shadow: 0 0 0 1px #3d3d3d; animation: ak-fade 160ms both; }
+.rl-more button { position: relative; width: 96px; height: 56px; font-size: 15px; font-weight: 800; color: #fff; background: #1d1f22; border: 1px solid #3c3f44; border-radius: 6px; cursor: pointer; }
+.rl-more button:hover { background: #2a2d31; }
+.rl-more .dot { position: absolute; top: 6px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: #ff4d4f; }
+.rl-more-btn { display: grid; place-items: center; }
+.rl-more-btn img { width: 26px; height: 26px; max-width: none; }
+
+/* ───────── 영입(원본 재현) ───────── */
+.rr-pill { display: flex; align-items: center; justify-content: flex-end; padding: 0 44px 0 12px; font-size: 21px; font-weight: 700; color: #f5f5f5; }
+.rr-points { display: flex; align-items: center; gap: 14px; padding-left: 14px; color: #2a2a2e; }
+.rr-points small { font-size: 15px; font-weight: 700; }
+.rr-points b { font-size: 21px; font-weight: 800; }
+.rr-points b em { font-style: normal; font-weight: 600; color: #6a6a70; font-size: 17px; }
+.rr-points .bar { position: absolute; left: 14px; right: 18px; bottom: 9px; height: 13px; border-radius: 7px; background: #dcd5de; overflow: hidden; }
+.rr-points .bar i { display: block; height: 100%; background: #b9a6f2; }
+.rr-tab { display: grid; place-items: center; font-size: 20px; font-weight: 800; }
+.rr-alt { position: absolute; left: 260px; top: 96px; width: 1196px; height: 620px; z-index: 20; overflow: hidden; pointer-events: none; }
+.rr-alt img.bg { position: absolute; width: 1456px; height: 819px; max-width: none; }
+.rr-alt img.fig { position: absolute; right: 30px; bottom: -30px; height: 640px; max-width: none; }
+.rr-alt .copy { position: absolute; left: 30px; top: 162px; display: flex; flex-direction: column; gap: 14px; }
+.rr-alt .copy small { font-size: 14px; letter-spacing: 0.2em; font-weight: 700; color: #e9ff7a; }
+.rr-alt .copy h2 { margin: 0; font-family: 'Black Han Sans', sans-serif; font-weight: 400; font-size: 92px; line-height: 1; color: #e2ff63; -webkit-text-stroke: 3px #121418; paint-order: stroke fill; transform: rotate(-4deg); }
+.rr-alt .copy .who { display: flex; align-items: center; gap: 12px; padding: 8px 14px; background: rgba(12, 12, 16, 0.85); width: fit-content; font-size: 28px; font-weight: 900; }
+.rr-alt .copy .who em { font-style: normal; color: #ffcf33; font-size: 22px; }
+.rr-alt .copy p { margin: 0; font-size: 19px; font-weight: 700; text-shadow: 0 2px 6px #000; max-width: 420px; line-height: 1.5; }
+.rr-alt .note { position: absolute; left: 30px; bottom: 16px; padding: 4px 10px; font-size: 13px; font-weight: 700; color: #ffe03a; background: rgba(0, 0, 0, 0.6); border: 1px dashed rgba(255, 224, 58, 0.7); }
+/* 스킨 이미지(절대 위치) 위로 실제 텍스트가 올라오도록 */
+.ref-patch > *:not(.ref-skin) { position: relative; }

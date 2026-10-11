@@ -1,23 +1,58 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import '../styles/formation.css'
 import { useNav, useScreenKey } from '../app/nav'
 import { audio } from '../app/audio'
 import { game, useGame, teamPower, charPower } from '../game/store'
-import { GAME_CONFIG, ROLE_LABEL } from '../game/config'
+import { GAME_CONFIG } from '../game/config'
 import { CHARACTERS, CHAR_BY_ID } from '../game/data/characters'
 import { AUTO_FORMATION_RULE_LABEL } from '../game/rules'
 import type { TeamPreset } from '../game/types'
-import { Btn, ConfirmDialog, Dot, errorText, fmt, useAction } from '../ui/components'
-import { IconBack, IconChevron, IconChevronL, IconCrown, IconInfo, IconPencil, IconPlus, IconReset, IconSave, IconUsers, IconCheck, IconClose, RoleGlyph } from '../ui/icons'
+import { ConfirmDialog, errorText, fmt, useAction } from '../ui/components'
+import { RoleGlyph } from '../ui/icons'
+import { RefStage, RefLayers, Hit, Patch, rectOf, boxStyle, SKIN, ICON, type RefLayout, type Rect } from '../ui/ref'
+import layoutJson from '../game/data/ref-formation.json'
+import fitJson from '../game/data/ref-fit.json'
 
-/** 슬롯 기준 위치(화면 비율). 기기별 비율은 CSS 변수로 조정 */
-const SLOT_X = [0.335, 0.515, 0.69, 0.865]
-const FEET_Y = 0.79
+// 채택 시안(지하철 플랫폼 편성창)을 원본 조각 88개 중 41개로 원위치 재현한다.
+// 기본 상태(팀 01 = 지안·유진·하린·도윤, Lv.40, 리더 지안)는 원본 조각만 보인다.
+// 바뀐 부분만: 원본 인물 조각을 숨기고 복원 배경·복원 전신 캐릭터로 채우며, 이름표·수치는 글자 없는 스킨 + 실제 텍스트로 덮는다.
 
-// 저장 전 편집본은 세션 메모리에만 보관(상세 화면 다녀와도 유지, 재시작 시 저장본으로 복원)
+const L = layoutJson as RefLayout
+const FIT = fitJson as Record<string, { x: number; y: number; w: number; h: number; feetY: number; centerX: number }>
+const REF_SLOTS = ['jian', 'yujin', 'harin', 'doyun']
+const REF_LEVEL = 40
+const REF_POWER = 24680
+const REF_ROSTER = ['jian', 'yujin', 'harin', 'doyun', 'sein', 'narin']
+const CHAR_SLICE = REF_SLOTS.map((c) => `character-${c}-visible`)
+const PLATE_SLICE = REF_SLOTS.map((c) => `name-${c}`)
+const TILE = ['slot-01', 'slot-02', 'slot-03', 'slot-04']
+const SIDEBAR_BG = '#0b1319'
+const IVORY = '#f4ece3'
+/** 복원 전신이 없는 캐릭터는 기존 임시 컷아웃 사용(그림체 불일치). 가로/세로 비 */
+const CUTOUT_ASPECT: Record<string, number> = { sein: 476 / 1500, narin: 514 / 1500, rion: 643 / 1500, seoha: 574 / 1500 }
+/** 이름표의 패널 부분(원본 조각 중 배지 위쪽 제외) */
+const PLATE_RECT: Rect[] = [
+  { x: 300, y: 419, w: 213, h: 58 },
+  ...[1, 2, 3].map((i) => { const r = rectOf(L, PLATE_SLICE[i]); return { x: r.x, y: r.y, w: r.w, h: r.h } }),
+]
+const THUMB: Rect[] = REF_ROSTER.map((c) => rectOf(L, `portrait-${c}`))
+const THUMB_STD: Rect[] = THUMB.map((r, i) => (i === 0 ? { x: 304, y: 659, w: 91, h: 100 } : r))
+
 const drafts = new Map<string, TeamPreset>()
-
 type Ghost = { slot: number; charId: string; id: number }
+
+function charBox(c: string, slot: number) {
+  const ref = FIT[REF_SLOTS[slot]]
+  const anchorX = ref.centerX, feet = ref.feetY
+  const own = FIT[c]
+  if (own) {
+    const k = ref.h / own.h
+    const w = own.w * k, h = own.h * k
+    return { src: `ref/restored/formation-${c}.webp`, left: anchorX - (own.centerX - own.x) * k, top: feet - (own.feetY - own.y) * k, w, h, restored: true }
+  }
+  const H = feet - ref.y
+  const W = H * (CUTOUT_ASPECT[c] ?? 0.38)
+  return { src: CHAR_BY_ID[c].assets.stand, left: anchorX - W / 2, top: feet - H, w: W, h: H, restored: false }
+}
 
 export default function Formation({ params }: { params: Record<string, unknown> }) {
   const s = useGame()
@@ -29,308 +64,275 @@ export default function Formation({ params }: { params: Record<string, unknown> 
   const [sel, setSel] = useState<number>(() => (params.slot as number) ?? 0)
   const [ghosts, setGhosts] = useState<Ghost[]>([])
   const [renaming, setRenaming] = useState<string | null>(null)
-  const [dialog, setDialog] = useState<null | { kind: 'leave' | 'switch'; proceed: () => void }>(null)
-  const [savePulse, setSavePulse] = useState(0)
+  const [dialog, setDialog] = useState<null | { proceed: () => void }>(null)
+  const [pop, setPop] = useState<number | null>(null)
+  const [page, setPage] = useState(0)
+  const [pulse, setPulse] = useState(0)
   const [reacting, setReacting] = useState<number | null>(null)
-  const rosterRef = useRef<HTMLDivElement>(null)
+  const enterKeys = useRef<Record<number, string>>({})
   const { run, pending, failed, clearFailed } = useAction()
 
   const setDraft = (d: TeamPreset) => { drafts.set(d.id, d); setDraftState(d) }
-
-  const dirty = useMemo(() => JSON.stringify([draft.slots, draft.leaderId, draft.name]) !== JSON.stringify([saved.slots, saved.leaderId, saved.name]), [draft, saved])
-  const dirtyTeams = useMemo(() => new Set(s.teams.filter((t) => { const d = drafts.get(t.id); return d && JSON.stringify([d.slots, d.leaderId, d.name]) !== JSON.stringify([t.slots, t.leaderId, t.name]) }).map((t) => t.id)), [s.teams, draft])
+  const sig = (t: Pick<TeamPreset, 'slots' | 'leaderId' | 'name'>) => JSON.stringify([t.slots, t.leaderId, t.name])
+  const dirty = sig(draft) !== sig(saved)
+  const dirtyTeams = useMemo(() => new Set(s.teams.filter((t) => { const d = drafts.get(t.id); return d && sig(d) !== sig(t) }).map((t) => t.id)), [s.teams, draft])
 
   useEffect(() => { audio.bgm('menu') }, [])
-
-  // 저장 전 이탈 확인
   useEffect(() => {
     if (!dirty) { nav.setGuard(null, screenKey); return }
-    nav.setGuard((proceed) => { setDialog({ kind: 'leave', proceed }); return false }, screenKey)
+    nav.setGuard((proceed) => { setDialog({ proceed }); return false }, screenKey)
     return () => nav.setGuard(null, screenKey)
   }, [dirty, nav, screenKey])
 
-  const ownedList = useMemo(() => CHARACTERS.filter((c) => s.owned[c.id]), [s.owned])
+  const lv = (c: string) => s.owned[c]?.level ?? 1
   const power = teamPower(s, draft)
-  const shownPower = useCountUp(power)
+
+  // ───── 원본 유지 여부 ─────
+  const charIsOriginal = (i: number) => draft.slots[i] === REF_SLOTS[i]
+  const plateIsOriginal = (i: number) => charIsOriginal(i) && lv(REF_SLOTS[i]) === REF_LEVEL && ((draft.leaderId === REF_SLOTS[i]) === (i === 0))
+  const hide = new Set<string>()
+  REF_SLOTS.forEach((_, i) => { if (!charIsOriginal(i)) hide.add(CHAR_SLICE[i]); if (!plateIsOriginal(i)) hide.add(PLATE_SLICE[i]) })
+
+  const ownedOrdered = useMemo(() => [...REF_ROSTER.filter((c) => s.owned[c]), ...CHARACTERS.map((c) => c.id).filter((c) => s.owned[c] && !REF_ROSTER.includes(c))], [s.owned])
+  const pages = Math.max(1, Math.ceil(ownedOrdered.length / 6))
+  const pageChars = ownedOrdered.slice(page * 6, page * 6 + 6)
+  const rosterOriginal = page === 0 && REF_ROSTER.every((c, i) => pageChars[i] === c)
+  const selChar = draft.slots[sel]
+  if (rosterOriginal) {
+    if (selChar !== 'jian') hide.add('portrait-jian')
+    REF_ROSTER.forEach((c) => { if (lv(c) !== (c === 'sein' ? 37 : c === 'narin' ? 32 : REF_LEVEL)) hide.add(`portrait-${c}`) })
+  } else {
+    REF_ROSTER.forEach((c) => hide.add(`portrait-${c}`)); hide.add('roster-names')
+  }
+  const teamsDefault = teamId === 'team1' && s.teams.every((t, i) => (t.id === teamId ? draft.name : drafts.get(t.id)?.name ?? t.name) === `팀 0${i + 1}`)
+  if (!teamsDefault) ['team-01', 'team-02', 'team-03'].forEach((id) => hide.add(id))
 
   // ───── 편집 동작 ─────
   const changeSlots = (slots: (string | null)[], leaderId = draft.leaderId) => {
     const prev = draft.slots
-    const newGhosts: Ghost[] = []
-    slots.forEach((id, i) => { if (prev[i] && prev[i] !== id) newGhosts.push({ slot: i, charId: prev[i]!, id: Date.now() + i }) })
-    if (newGhosts.length) {
-      // 같은 슬롯의 이전 퇴장 연출은 정리하고 최신 것만 남긴다(연타 시 중첩 방지)
-      setGhosts((g) => [...g.filter((x) => !newGhosts.some((n) => n.slot === x.slot)), ...newGhosts])
-      const ids = newGhosts.map((n) => n.id)
-      setTimeout(() => setGhosts((g) => g.filter((x) => !ids.includes(x.id))), 360)
+    const gs: Ghost[] = []
+    slots.forEach((id, i) => { if (prev[i] && prev[i] !== id) gs.push({ slot: i, charId: prev[i]!, id: Date.now() + i }) })
+    if (gs.length) {
+      setGhosts((g) => [...g.filter((x) => !gs.some((n) => n.slot === x.slot)), ...gs]) // 연타 시 이전 퇴장 연출 정리
+      const ids = gs.map((n) => n.id)
+      setTimeout(() => setGhosts((g) => g.filter((x) => !ids.includes(x.id))), 320)
     }
+    slots.forEach((id, i) => { if (id && prev[i] !== id) enterKeys.current[i] = `${id}-${Date.now()}` })
     const members = slots.filter(Boolean) as string[]
-    const leader = leaderId && members.includes(leaderId) ? leaderId : members[0] ?? null
-    setDraft({ ...draft, slots, leaderId: leader })
-  }
-
-  const pickFromRoster = (charId: string) => {
-    const slots = [...draft.slots]
-    const cur = slots[sel]
-    if (cur === charId) { nav.toast(`${CHAR_BY_ID[charId].name}은(는) 이미 이 슬롯에 있습니다.`); return }
-    const at = slots.indexOf(charId)
-    if (at >= 0 && !GAME_CONFIG.allowDuplicateInTeam) {
-      if (GAME_CONFIG.duplicateSelectBehavior === 'swap') { slots[at] = cur; slots[sel] = charId }
-      else { slots[at] = null; slots[sel] = charId }
-    } else {
-      slots[sel] = charId
-    }
-    audio.sfx('swap')
-    changeSlots(slots)
-    react(sel)
-  }
-
-  const selectSlot = (i: number) => {
-    if (i !== sel) audio.sfx('select')
-    setSel(i)
-    react(i)
+    setDraft({ ...draft, slots, leaderId: leaderId && members.includes(leaderId) ? leaderId : members[0] ?? null })
   }
   const react = (i: number) => { setReacting(null); requestAnimationFrame(() => setReacting(i)) }
-
-  const removeFromSlot = (i: number) => {
-    const slots = [...draft.slots]; slots[i] = null
-    audio.sfx('tap')
-    changeSlots(slots)
+  const selectSlot = (i: number) => {
+    if (i === sel) { setPop(pop === i ? null : i); return }
+    audio.sfx('select'); setSel(i); setPop(null); setPulse((n) => n + 1); react(i)
   }
-  const makeLeader = (i: number) => {
-    const id = draft.slots[i]; if (!id) return
-    audio.sfx('select')
-    setDraft({ ...draft, leaderId: id })
+  const pick = (c: string) => {
+    setPop(null)
+    const slots = [...draft.slots]
+    const cur = slots[sel]
+    if (cur === c) { nav.toast(`${CHAR_BY_ID[c].name}은(는) 이미 이 슬롯에 있습니다.`); return }
+    const at = slots.indexOf(c)
+    if (at >= 0) { if (GAME_CONFIG.duplicateSelectBehavior === 'swap') { slots[at] = cur; slots[sel] = c } else { slots[at] = null; slots[sel] = c } }
+    else slots[sel] = c
+    audio.sfx('swap'); changeSlots(slots); react(sel)
   }
-
+  const remove = (i: number) => { const slots = [...draft.slots]; slots[i] = null; audio.sfx('tap'); changeSlots(slots); setPop(null) }
+  const makeLeader = (i: number) => { const id = draft.slots[i]; if (!id) return; audio.sfx('select'); setDraft({ ...draft, leaderId: id }); setPop(null) }
   const autoForm = () => {
-    const ranked = [...ownedList].sort((a, b) => charPower(s, b.id) - charPower(s, a.id)).slice(0, GAME_CONFIG.teamSize).map((c) => c.id)
-    while (ranked.length < GAME_CONFIG.teamSize) ranked.push(null as unknown as string)
-    changeSlots(ranked, ranked[0])
-    audio.sfx('swap')
-    nav.toast(AUTO_FORMATION_RULE_LABEL)
+    const ranked: (string | null)[] = ownedOrdered.slice().sort((a, b) => charPower(s, b) - charPower(s, a)).slice(0, GAME_CONFIG.teamSize)
+    while (ranked.length < GAME_CONFIG.teamSize) ranked.push(null)
+    changeSlots(ranked, ranked[0]); audio.sfx('swap'); nav.toast(AUTO_FORMATION_RULE_LABEL)
   }
   const resetDraft = () => {
-    changeSlots([...saved.slots], saved.leaderId)
-    setDraft(structuredClone(saved))
-    drafts.delete(teamId)
+    if (!dirty) { nav.toast('마지막 저장 상태와 같습니다.'); return }
+    changeSlots([...saved.slots], saved.leaderId); setDraft(structuredClone(saved)); drafts.delete(teamId)
     nav.toast('마지막으로 저장한 편성으로 되돌렸습니다.')
   }
-
   const save = async (after?: () => void) => {
+    if (!dirty) { nav.toast('저장할 변경 사항이 없습니다.'); after?.(); return }
     const res = await run('save', () => game.saveTeam(draft, saved.version))
-    if (!res) return
-    if (res.ok) {
-      drafts.delete(teamId)
-      setDraftState(structuredClone(res.value))
-      audio.sfx('save')
-      setSavePulse((n) => n + 1)
-      nav.toast(`${res.value.name} 편성을 저장했습니다.`, 'ok')
-      after?.()
-    }
+    if (res?.ok) { drafts.delete(teamId); setDraftState(structuredClone(res.value)); audio.sfx('save'); setPulse((n) => n + 1); nav.toast(`${res.value.name} 편성을 저장했습니다.`, 'ok'); after?.() }
   }
-
   const switchTeam = (id: string) => {
     if (id === teamId) return
     const go = () => {
       const t = game.getState().teams.find((x) => x.id === id)!
-      audio.sfx('swap')
-      setTeamId(id)
-      setDraftState(drafts.get(id) ?? structuredClone(t))
-      setSel(0)
-      setGhosts([])
-      game.setActiveTeam(id)
+      audio.sfx('swap'); setTeamId(id); setDraftState(drafts.get(id) ?? structuredClone(t)); setSel(0); setGhosts([]); setPop(null); game.setActiveTeam(id)
     }
-    if (dirty) setDialog({ kind: 'switch', proceed: go })
-    else go()
+    if (dirty) setDialog({ proceed: go }); else go()
   }
-
   const commitRename = (v: string) => {
-    const name = v.trim().slice(0, 12)
-    setRenaming(null)
-    if (!name || name === draft.name) return
-    setDraft({ ...draft, name })
+    const name = v.trim().slice(0, 12); setRenaming(null)
+    if (name && name !== draft.name) setDraft({ ...draft, name })
   }
+  const openDetail = (id: string) => { nav.setGuard(null, screenKey); nav.push('characterDetail', { id, from: 'formation' }) }
 
-  const openDetail = (id: string) => {
-    nav.setGuard(null, screenKey) // 편집본은 세션 메모리에 남는다
-    nav.push('characterDetail', { id, from: 'formation' })
-  }
-
-  const scrollRoster = (d: number) => rosterRef.current?.scrollBy({ left: d * rosterRef.current.clientWidth * 0.6, behavior: 'smooth' })
-
-  const leaderSlot = draft.leaderId ? draft.slots.indexOf(draft.leaderId) : -1
-
+  // ───── 렌더 ─────
+  const tabs = ['team-01', 'team-02', 'team-03'].map((id) => rectOf(L, id))
   return (
-    <div className="fm" style={{ ['--feet' as string]: FEET_Y }}>
-      {/* 배경(플랫폼) */}
-      <div className="fm-bg" aria-hidden>
-        <img src="assets/bg/platform.webp" alt="" />
-        <div className="fm-bg-grad" />
-      </div>
+    <div className="scr">
+      <RefStage canvas={L.canvas}>
+        <img className="ref-bg" src="ref/restored/formation-bg.webp" alt="" />
+        <RefLayers layout={L} ids={['scene-remainder']} z={1} />
+        {/* 인물: 원본 조각 또는 복원 전신 */}
+        {REF_SLOTS.map((_, i) => {
+          const z = 10 + (4 - i)
+          const c = draft.slots[i]
+          if (charIsOriginal(i)) return <div key={`o${i}`} className={reacting === i ? 'rf-react' : ''} style={{ position: 'absolute', inset: 0, zIndex: z, pointerEvents: 'none' }}><RefLayers layout={L} ids={[CHAR_SLICE[i]]} z={z} /></div>
+          if (!c) return null
+          const b = charBox(c, i)
+          return <img key={enterKeys.current[i] ?? `d${i}-${c}`} className={`rf-dyn enter ${reacting === i ? 'rf-react' : ''}`} src={b.src} alt="" style={{ left: b.left, top: b.top, width: b.w, height: b.h, zIndex: z }} />
+        })}
+        {ghosts.map((g) => { const b = charBox(g.charId, g.slot); return <img key={`g${g.id}`} className="rf-dyn ghost" src={b.src} alt="" style={{ left: b.left, top: b.top, width: b.w, height: b.h, zIndex: 9 }} /> })}
+        {/* 빈 슬롯 */}
+        {draft.slots.map((c, i) => c ? null : <div key={`e${i}`} className="rf-empty ak-fade" style={{ left: FIT[REF_SLOTS[i]].centerX - 80, top: 240, width: 160, height: 300, zIndex: 15 }}><i>+</i>캐릭터 추가</div>)}
 
-      {/* 바닥 슬롯 표식 */}
-      <div className="fm-floor" aria-hidden>
-        {draft.slots.map((id, i) => (
-          <div key={i} className={`fm-tile ${i === sel ? 'sel' : ''} ${id ? '' : 'empty'}`} style={{ left: `${SLOT_X[i] * 100}%`, animationDelay: `${120 + i * 70}ms` }}>
-            <div className="fm-tile-inner" key={i === sel ? `s${savePulse}` : 'n'}>
-              <span className="fm-tile-num">{String(i + 1).padStart(2, '0')}</span>
-              {i === sel && <span className="fm-tile-sub">SELECTED</span>}
-            </div>
-          </div>
-        ))}
-      </div>
+        <RefLayers layout={L} ids={TILE} z={20} />
+        {/* 바닥 슬롯 선택 표시: 01 원본은 청록, 다른 슬롯 선택 시 스킨으로 표시 */}
+        {sel !== 0 && (() => { const r = rectOf(L, TILE[0]); return (
+          <div className="rf-slot-overlay" style={boxStyle(r, { zIndex: 21 })}>
+            <div style={{ position: 'absolute', inset: 0, background: '#3b4148', clipPath: 'polygon(11.8% 3%, 81.5% 8%, 99.4% 97%, 0.6% 97%)' }} />
+            <img src={SKIN('slot-default')} alt="" />
+            <span className="rf-slot-num">01</span>
+          </div>) })()}
+        {sel !== 0 && <div key={`p${pulse}`} className="rf-slot-overlay rf-pulse" style={boxStyle(rectOf(L, TILE[sel]), { zIndex: 21 })}><img src={SKIN('slot-selected')} alt="" /></div>}
 
-      {/* 팀원 */}
-      <div className="fm-cast">
-        {ghosts.map((g) => {
-          const c = CHAR_BY_ID[g.charId]
+        <RefLayers layout={L} ids={['sidebar-remainder', 'bottom-remainder']} z={22} />
+        <RefLayers layout={L} hide={hide} ids={L.layers.filter((l) => ['sidebar', 'roster', 'actions', 'footer'].includes(l.group)).map((l) => l.id)} z={26} />
+        <RefLayers layout={L} hide={hide} ids={PLATE_SLICE} z={30} />
+
+        {/* 동적 이름표 */}
+        {REF_SLOTS.map((_, i) => {
+          const c = draft.slots[i]
+          if (!c || plateIsOriginal(i)) return null
+          const ch = CHAR_BY_ID[c]
+          const r = PLATE_RECT[i]
           return (
-            <div key={`g${g.id}`} className="fm-fig ghost" style={figStyle(g.slot, c.formation)} aria-hidden>
-              <img src={c.assets.stand} alt="" />
+            <div key={`pl${i}`}>
+              <Patch r={r} skin={SKIN('nameplate')} z={31} className="rf-plate ak-fade" style={{ boxShadow: i === sel ? 'inset 0 0 0 2px #40ecde' : undefined }}>
+                <span className="rf-role" style={i === sel ? { borderColor: '#40ecde', color: '#40ecde' } : undefined}><RoleGlyph role={ch.role} size={22} /></span>
+                <span className="rf-plate-name"><b>{ch.name}</b><span className="num-tab">Lv.{lv(c)}</span></span>
+                <span className="rf-chev" />
+              </Patch>
+              {draft.leaderId === c && <span className="rf-leader" style={{ left: r.x + 10, top: r.y - 22 }}>♛ 리더</span>}
             </div>
           )
         })}
-        {draft.slots.map((id, i) => {
-          if (!id) {
-            return (
-              <button key={`e${i}`} className={`fm-empty ${i === sel ? 'sel' : ''}`} style={{ left: `${SLOT_X[i] * 100}%` }} onClick={() => selectSlot(i)} aria-label={`${i + 1}번 슬롯 비어 있음. 선택`}>
-                <span className="fm-empty-plus"><IconPlus size="3.2rem" /></span>
-                <span className="fm-empty-label">캐릭터 추가</span>
-              </button>
-            )
-          }
-          const c = CHAR_BY_ID[id]
+
+        {/* 팀 탭(이름·선택 상태가 원본과 다를 때) */}
+        {!teamsDefault && s.teams.map((t, idx) => {
+          const on = t.id === teamId
+          const name = on ? draft.name : drafts.get(t.id)?.name ?? t.name
           return (
-            <button
-              key={`${i}-${id}`}
-              className={`fm-fig ${i === sel ? 'sel' : ''} ${reacting === i ? 'react' : ''}`}
-              style={{ ...figStyle(i, c.formation), animationDelay: `${160 + i * 90}ms`, ['--seed' as string]: c.idleSeed, ['--accent' as string]: c.accent }}
-              onClick={() => selectSlot(i)}
-              aria-label={`${i + 1}번 슬롯 ${c.name} 선택`}
-            >
-              <img src={c.assets.stand} alt="" className={`idle-${c.lobby.idle}`} draggable={false} />
-            </button>
+            <Patch key={t.id} r={tabs[idx]} bg={SIDEBAR_BG} skin={SKIN(on ? 'team-tab-selected' : 'team-tab')} z={27} className={`rf-tab ${on ? 'on' : ''}`}>
+              <b style={{ position: 'relative' }}>{name}</b>
+              {on && <img className="ic" src={ICON('edit')} alt="" style={{ position: 'relative' }} />}
+              {dirtyTeams.has(t.id) && !on && <span style={{ position: 'relative', marginLeft: 8, width: 9, height: 9, borderRadius: 5, background: '#c8f53b' }} />}
+            </Patch>
           )
         })}
-      </div>
+        {renaming && (() => { const idx = s.teams.findIndex((t) => t.id === renaming); return (
+          <div style={boxStyle(tabs[idx], { zIndex: 60, display: 'flex', alignItems: 'center', padding: '0 10px', background: '#46eddf' })}>
+            <input autoFocus defaultValue={draft.name} maxLength={12} aria-label="팀 이름" style={{ width: '100%', height: 36, fontSize: 20, fontWeight: 800, border: 0, padding: '0 8px' }}
+              onBlur={(e) => commitRename(e.currentTarget.value)} onKeyDown={(e) => { if (e.key === 'Enter') commitRename(e.currentTarget.value); if (e.key === 'Escape') setRenaming(null) }} />
+          </div>) })()}
+        {/* 팀 전투력 */}
+        {power !== REF_POWER && (
+          <Patch r={rectOf(L, 'team-power')} bg={SIDEBAR_BG} z={27} className="rf-power">
+            <span style={{ position: 'relative' }}>팀 전투력</span>
+            <b className="num-tab" style={{ position: 'relative' }}>{fmt(power)}</b>
+          </Patch>
+        )}
 
-      {/* 이름표 */}
-      <div className="fm-plates">
-        {draft.slots.map((id, i) => {
-          if (!id) return null
-          const c = CHAR_BY_ID[id]
-          const o = s.owned[id]
+        {/* 보유 캐릭터 */}
+        {(rosterOriginal ? REF_ROSTER : pageChars).map((c, i) => {
+          if (!c) return null
+          const r = THUMB_STD[i]
+          const selected = c === selChar
+          const sliceShown = rosterOriginal && !hide.has(`portrait-${c}`)
           return (
-            <div key={`p${i}-${id}`} className={`fm-plate-wrap ${i === sel ? 'sel' : ''}`} style={{ left: `${SLOT_X[i] * 100}%`, animationDelay: `${260 + i * 70}ms` }}>
-              {leaderSlot === i && <span className="fm-leader"><IconCrown size="1.5rem" />리더</span>}
-              <div className="fm-plate">
-                <button className="fm-plate-main" onClick={() => selectSlot(i)} aria-label={`${c.name} 교체할 슬롯으로 선택`}>
-                  <span className="fm-role" title={ROLE_LABEL[c.role]}><RoleGlyph role={c.role} size="2.4rem" /></span>
-                  <span className="fm-plate-text">
-                    <strong>{c.name}</strong>
-                    <span className="num">Lv.{o?.level ?? 1}</span>
-                  </span>
-                  <IconChevron size="2rem" className="fm-plate-chev" />
-                </button>
-                <button className="fm-info" onClick={() => { audio.sfx('tap'); openDetail(id) }} aria-label={`${c.name} 상세 정보`}><IconInfo size="2rem" /></button>
-              </div>
-              {i === sel && (
-                <div className="fm-slot-actions">
-                  <button onClick={() => makeLeader(i)} disabled={leaderSlot === i}><IconCrown size="1.4rem" />리더 지정</button>
-                  <button onClick={() => removeFromSlot(i)}><IconClose size="1.4rem" />빼기</button>
+            <div key={`th${page}-${c}`}>
+              {!sliceShown && (
+                <div className="rf-thumb" style={boxStyle(i === 0 ? THUMB[0] : r, { zIndex: 27, background: IVORY })}>
+                  <img className="p" src={c === 'jian' && rosterOriginal ? 'ref/formation/portrait-jian-plain.webp' : rosterOriginal ? `ref/formation/portrait-${c}.webp` : CHAR_BY_ID[c].assets.portrait} alt=""
+                    style={i === 0 ? { position: 'absolute', left: 5, top: 5, width: 91, height: 100 } : undefined} />
+                  {(!rosterOriginal || lv(c) !== (c === 'sein' ? 37 : c === 'narin' ? 32 : REF_LEVEL)) && <span className="rf-lv num-tab" style={i === 0 && rosterOriginal ? { right: 7, bottom: 7 } : undefined}>Lv.{lv(c)}</span>}
+                  {!rosterOriginal && <span style={{ position: 'absolute', left: 4, bottom: 3, width: 22, height: 22, display: 'grid', placeItems: 'center', background: 'rgba(12,16,20,.88)', color: '#fff' }}><RoleGlyph role={CHAR_BY_ID[c].role} size={14} /></span>}
+                </div>
+              )}
+              {selected && !(rosterOriginal && c === 'jian') && (
+                <div className="rf-slot-overlay" style={boxStyle(i === 0 ? THUMB[0] : r, { zIndex: 28 })}>
+                  <img src={SKIN('portrait-selected')} alt="" /><span className="rf-check" />
                 </div>
               )}
             </div>
           )
         })}
-      </div>
+        {!rosterOriginal && (
+          <Patch r={rectOf(L, 'roster-names')} bg={IVORY} z={27} className="rf-names">
+            {pageChars.map((c, i) => <span key={c} style={{ position: 'absolute', left: THUMB_STD[i].x - 327, width: THUMB_STD[i].w, top: 2 }}>{CHAR_BY_ID[c].name}</span>)}
+          </Patch>
+        )}
+        {ownedOrdered.length !== 6 && (
+          <Patch r={rectOf(L, 'roster-count')} bg={IVORY} z={27} className="rf-count">
+            <small style={{ position: 'relative', marginTop: 4 }}>보유<br />캐릭터</small>
+            <b className="num-tab" style={{ position: 'relative' }}>{ownedOrdered.length} <span style={{ fontSize: 18 }}>/ 24</span></b>
+          </Patch>
+        )}
+        {dirty && <span className="rf-dirty" style={{ left: 1300, top: 630 }}>저장하지 않은 변경</span>}
 
-      {/* 왼쪽 패널 */}
-      <aside className="fm-side">
-        <div className="fm-side-top">
-          <button className="fm-back" onClick={() => { audio.sfx('tap'); nav.back() }} aria-label="돌아가기"><IconBack size="2.6rem" /></button>
-          <div className="fm-brand"><b>ABILITY KINGDOM</b></div>
-        </div>
-        <h1 className="fm-title">편성</h1>
-        <div className="fm-title-en">TEAM FORMATION</div>
-        <div className="fm-teams" role="tablist" aria-label="팀 프리셋">
-          {s.teams.map((t, idx) => {
-            const label = (t.id === teamId ? draft.name : drafts.get(t.id)?.name ?? t.name)
-            const on = t.id === teamId
-            return (
-              <div key={t.id} className={`fm-team ${on ? 'on' : ''}`}>
-                {renaming === t.id ? (
-                  <input
-                    autoFocus defaultValue={label} maxLength={12} aria-label="팀 이름"
-                    onBlur={(e) => commitRename(e.currentTarget.value)}
-                    onKeyDown={(e) => { if (e.key === 'Enter') commitRename(e.currentTarget.value); if (e.key === 'Escape') setRenaming(null) }}
-                  />
-                ) : (
-                  <button role="tab" aria-selected={on} className="fm-team-btn" onClick={() => switchTeam(t.id)}>
-                    <span className="fm-team-idx">{String(idx + 1).padStart(2, '0')}</span>
-                    <span className="fm-team-name">{label}</span>
-                    <Dot show={dirtyTeams.has(t.id)} tone="lime" />
-                  </button>
-                )}
-                {on && renaming !== t.id && (
-                  <button className="fm-team-edit" aria-label="팀 이름 수정" onClick={() => { audio.sfx('tap'); setRenaming(t.id) }}><IconPencil size="2rem" /></button>
-                )}
-              </div>
-            )
-          })}
-        </div>
-        <div className="fm-power">
-          <span>팀 전투력</span>
-          <strong className="num">{fmt(shownPower)}</strong>
-        </div>
-        <div className="fm-members num">{draft.slots.filter(Boolean).length} / {GAME_CONFIG.teamSize}명 배치</div>
-        <div className="fm-line" aria-hidden><i /><i /><i /><i /></div>
-      </aside>
+        {/* ───── 조작 영역(투명 버튼) ───── */}
+        <Hit r={rectOf(L, 'back')} label="돌아가기" onClick={() => nav.back()} />
+        {tabs.map((r, idx) => {
+          const t = s.teams[idx]
+          const on = t.id === teamId
+          return (
+            <div key={t.id}>
+              <Hit r={on ? { ...r, w: r.w - 46 } : r} label={`${(t.id === teamId ? draft.name : drafts.get(t.id)?.name ?? t.name)} 선택${on ? '됨' : ''}`} onClick={() => switchTeam(t.id)} sfx="none" className="fm-team-btn" />
+              {on && <Hit r={{ x: r.x + r.w - 46, y: r.y, w: 46, h: r.h }} label="팀 이름 수정" onClick={() => setRenaming(t.id)} className="fm-team-edit" />}
+            </div>
+          )
+        })}
+        {REF_SLOTS.map((_, i) => {
+          const c = draft.slots[i]
+          const f = FIT[REF_SLOTS[i]]
+          const plate = PLATE_RECT[i]
+          const tile = rectOf(L, TILE[i])
+          const name = c ? CHAR_BY_ID[c].name : '빈 슬롯'
+          return (
+            <div key={`h${i}`}>
+              <Hit r={{ x: f.centerX - 85, y: Math.max(30, f.y + 10), w: 170, h: plate.y - Math.max(30, f.y + 10) }} label={`${i + 1}번 슬롯 ${name} 선택`} onClick={() => selectSlot(i)} sfx="none" z={45} className="fm-fig" />
+              <Hit r={{ ...plate, w: plate.w - 36 }} label={`${name} 이름표, ${i + 1}번 슬롯 선택`} onClick={() => selectSlot(i)} sfx="none" z={46} className="fm-plate-main" />
+              {c && <Hit r={{ x: plate.x + plate.w - 36, y: plate.y, w: 36, h: plate.h }} label={`${name} 상세 정보`} onClick={() => openDetail(c)} z={46} className="fm-info" />}
+              <Hit r={{ x: tile.x + 30, y: tile.y, w: tile.w - 60, h: tile.h }} label={`${i + 1}번 바닥 슬롯 선택`} onClick={() => selectSlot(i)} sfx="none" z={45} />
+            </div>
+          )
+        })}
+        {(rosterOriginal ? REF_ROSTER : pageChars).map((c, i) => c && (
+          <Hit key={`rh${c}`} r={i === 0 ? THUMB[0] : THUMB_STD[i]} label={`${CHAR_BY_ID[c].name} 레벨 ${lv(c)}${draft.slots.includes(c) ? `, ${draft.slots.indexOf(c) + 1}번 슬롯 배치됨` : ''}`} onClick={() => pick(c)} sfx="none" className="fm-thumb" />
+        ))}
+        <Hit r={rectOf(L, 'roster-prev')} label="이전 목록" disabled={page === 0} onClick={() => setPage((p) => Math.max(0, p - 1))} />
+        <Hit r={rectOf(L, 'roster-next')} label="다음 목록" disabled={page >= pages - 1} onClick={() => setPage((p) => Math.min(pages - 1, p + 1))} />
+        <Hit r={rectOf(L, 'auto-formation')} label="자동 편성" onClick={autoForm} className="fm-auto" />
+        <Hit r={rectOf(L, 'reset')} label="초기화 (마지막 저장 상태로 되돌리기)" onClick={resetDraft} className="fm-reset" />
+        <Hit r={rectOf(L, 'save-formation')} label={pending === 'save' ? '저장 중' : '편성 저장'} disabled={pending === 'save'} onClick={() => save()} className="fm-save" sfx="none" />
 
-      {/* 하단 보유 캐릭터 바 */}
-      <footer className="fm-bottom">
-        <div className="fm-owned">
-          <span>보유<br />캐릭터</span>
-          <strong className="num">{ownedList.length}<small> / {CHARACTERS.length}</small></strong>
-        </div>
-        <button className="fm-arrow" onClick={() => scrollRoster(-1)} aria-label="왼쪽으로"><IconChevronL size="2.4rem" /></button>
-        <div className="fm-roster scroll-x" ref={rosterRef}>
-          {ownedList.map((c) => {
-            const at = draft.slots.indexOf(c.id)
-            const isSelSlot = at === sel
-            return (
-              <button key={c.id} className={`fm-thumb ${at >= 0 ? 'in' : ''} ${isSelSlot ? 'cur' : ''}`} onClick={() => pickFromRoster(c.id)} aria-label={`${c.name} 레벨 ${s.owned[c.id].level}${at >= 0 ? `, ${at + 1}번 슬롯 배치됨` : ''}`}>
-                <div className="fm-thumb-img" style={{ ['--accent' as string]: c.accent }}>
-                  <img src={c.assets.portrait} alt="" loading="lazy" />
-                  <span className="fm-thumb-role"><RoleGlyph role={c.role} size="1.5rem" /></span>
-                  <span className="fm-thumb-lv num">Lv.{s.owned[c.id].level}</span>
-                  {at >= 0 && <span className="fm-thumb-check" aria-hidden>{isSelSlot ? <IconCheck size="1.6rem" /> : String(at + 1).padStart(2, '0')}</span>}
-                </div>
-                <span className="fm-thumb-name">{c.name}</span>
-              </button>
-            )
-          })}
-        </div>
-        <button className="fm-arrow" onClick={() => scrollRoster(1)} aria-label="오른쪽으로"><IconChevron size="2.4rem" /></button>
-
-        <div className="fm-actions">
-          {dirty && <span className="fm-dirty">저장하지 않은 변경</span>}
-          <Btn variant="dark" onClick={autoForm} title={AUTO_FORMATION_RULE_LABEL}><IconUsers size="2.2rem" />자동 편성</Btn>
-          <Btn variant="dark" onClick={resetDraft} disabled={!dirty} title="마지막 저장 상태로 되돌리기"><IconReset size="2.2rem" />초기화</Btn>
-          <Btn variant="primary" size="lg" className="fm-save" onClick={() => save()} disabled={!dirty || pending === 'save'}>
-            <IconSave size="2.8rem" />{pending === 'save' ? '저장 중…' : '편성 저장'}
-          </Btn>
-        </div>
-      </footer>
-
-      {failed && (
-        <div className="fm-error" role="alert">
-          {errorText(failed.error)}
-          {failed.error.code === 'NETWORK' && <button onClick={() => save()}>재시도</button>}
-          <button onClick={clearFailed}>닫기</button>
-        </div>
-      )}
+        {/* 선택 슬롯 메뉴 */}
+        {pop !== null && draft.slots[pop] && (
+          <div className="rf-pop" style={{ left: PLATE_RECT[pop].x, top: PLATE_RECT[pop].y - 140 }}>
+            <button onClick={() => openDetail(draft.slots[pop]!)}>상세 정보</button>
+            <button disabled={draft.leaderId === draft.slots[pop]} onClick={() => makeLeader(pop)}>리더 지정</button>
+            <button onClick={() => remove(pop)}>슬롯에서 빼기</button>
+          </div>
+        )}
+        {failed && (
+          <div className="rf-err" style={{ right: 20, top: 600 }}>
+            {errorText(failed.error)}
+            {failed.error.code === 'NETWORK' && <button onClick={() => save()}>재시도</button>}
+            <button onClick={clearFailed}>닫기</button>
+          </div>
+        )}
+      </RefStage>
 
       {dialog && (
         <ConfirmDialog
@@ -345,31 +347,4 @@ export default function Formation({ params }: { params: Record<string, unknown> 
       )}
     </div>
   )
-}
-
-function figStyle(slot: number, f: { scale: number; offsetX: number; offsetY: number }) {
-  return {
-    left: `calc(${SLOT_X[slot] * 100}% + ${f.offsetX}rem)`,
-    ['--scale' as string]: f.scale,
-    ['--oy' as string]: `${f.offsetY}rem`,
-  }
-}
-
-function useCountUp(target: number) {
-  const [v, setV] = useState(target)
-  const from = useRef(target)
-  useEffect(() => {
-    const start = performance.now(), a = from.current, d = 380
-    let raf = 0
-    const tick = (t: number) => {
-      const k = Math.min(1, (t - start) / d)
-      const val = Math.round(a + (target - a) * (1 - Math.pow(1 - k, 3)))
-      setV(val)
-      if (k < 1) raf = requestAnimationFrame(tick)
-      else from.current = target
-    }
-    raf = requestAnimationFrame(tick)
-    return () => { cancelAnimationFrame(raf); from.current = target }
-  }, [target])
-  return v
 }

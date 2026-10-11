@@ -6,97 +6,120 @@ import { game, useGame } from '../game/store'
 import { BANNERS, BANNER_BY_ID } from '../game/data/catalog'
 import { CHAR_BY_ID } from '../game/data/characters'
 import { GAME_CONFIG, ROLE_LABEL, ATTRIBUTE_LABEL } from '../game/config'
-import { TopBar, Btn, Modal, Stars, useAction, ErrorBanner, fmt, ProvisionalTag } from '../ui/components'
-import { CurrencyGlyph, IconInfo, IconDoc, IconCart, IconHistory, RoleGlyph } from '../ui/icons'
+import { Btn, Modal, fmt, useAction, ErrorBanner, ProvisionalTag } from '../ui/components'
+import { RefStage, RefLayers, Hit, Patch, rectOf, boxStyle, SKIN, type RefLayout } from '../ui/ref'
+import layoutJson from '../game/data/ref-recruitment.json'
 
-// 영입 공통 구조 + 스킨 교체. 최종 영입 디자인(4개 후보)은 미정이므로 'broadcast'/'platform' 스킨만 구현.
+// 방송 콘셉트 영입 원본(1456×819)을 원본 조각 24개로 재현.
+// 원본 키비주얼은 '주파수 너머(리온)'만 있다. 다른 배너를 고르면 복원 배경 + 임시 캐릭터 + 실제 텍스트로 대체 표시한다(원본 아님).
+const L = layoutJson as RefLayout
+const REF = { diamond: 12800, ticket: 24, points: 120 }
+const BANNER_SLICES = ['banner-limited', 'banner-standard', 'banner-rhythm', 'banner-reunion']
+const BANNER_IDS = ['b_rion', 'b_daily', 'b_rhythm', 'b_reunion']
+const PILL = '#323840'
+const IVORY = '#f5ede4'
+
 export default function Recruit({ params }: { params: Record<string, unknown> }) {
   const s = useGame()
   const nav = useNav()
-  const [kind, setKind] = useState<'limited' | 'standard'>(BANNER_BY_ID[(params.bannerId as string) ?? 'b_rion']?.kind ?? 'limited')
   const [bannerId, setBannerId] = useState<string>((params.bannerId as string) ?? 'b_rion')
+  const [kind, setKind] = useState<'limited' | 'standard'>(BANNER_BY_ID[bannerId]?.kind ?? 'limited')
   const [modal, setModal] = useState<null | 'detail' | 'rates'>(null)
   const { run, pending, failed, clearFailed } = useAction()
   const b = BANNER_BY_ID[bannerId]
   const f = CHAR_BY_ID[b.featuredId]
-  const tickets = s.wallet.ticket
-  const points = s.wallet.scoutPoint
+  const isRefBanner = bannerId === 'b_rion'
 
   const pull = async (count: number) => {
     const res = await run(`pull${count}`, (rid) => game.recruit(bannerId, count, rid))
     if (res?.ok) { audio.sfx('open'); nav.push('recruitResult', { txId: res.value.requestId }) }
   }
+  const pickKind = (k: 'limited' | 'standard') => {
+    if (k === kind) return
+    audio.sfx('select'); setKind(k)
+    if (BANNER_BY_ID[bannerId].kind !== k) setBannerId(BANNERS.find((x) => x.kind === k)!.id)
+  }
 
-  const listed = BANNERS.filter((x) => x.kind === kind)
-  const selectKind = (k: 'limited' | 'standard') => { setKind(k); const first = BANNERS.find((x) => x.kind === k); if (first) setBannerId(first.id) }
+  const W = s.wallet
+  const pts = W.scoutPoint
+  const tabL = rectOf(L, 'tab-limited'), tabS = rectOf(L, 'tab-standard')
+  const selIdx = BANNER_IDS.indexOf(bannerId)
 
   return (
-    <div className={`scr rc skin-${b.skin}`} style={{ ['--a' as string]: f.accent }}>
-      <div className="rc-bg" key={bannerId}>
-        <img src={b.skin === 'broadcast' ? 'assets/bg/recruit.webp' : 'assets/bg/platform.webp'} alt="" />
-        <div className="rc-bg-shade" />
-      </div>
-      <div className="rc-visual" key={`v${bannerId}`}>
-        <img className="rc-fig" src={f.assets.action} alt="" />
-      </div>
+    <div className="scr">
+      <RefStage canvas={L.canvas}>
+        <img className="ref-bg" src="ref/restored/recruitment-bg.webp" alt="" />
+        <RefLayers layout={L} z={1} />
 
-      <TopBar title="영입" sub="SCOUTING" currencies={['ticket', 'diamond']} />
+        {/* 다른 배너의 키비주얼(원본 없음 → 대체 표시) */}
+        {!isRefBanner && (
+          <div className="rr-alt ak-fade" key={bannerId} style={{ left: 262, top: 0, width: 1194, height: 716, clipPath: 'polygon(0 92px, 406px 92px, 406px 0, 793px 0, 793px 62px, 1194px 62px, 1194px 645px, 808px 645px, 808px 716px, 0 716px)' }}>
+            <img className="bg" src="ref/restored/recruitment-bg.webp" alt="" style={{ left: -262, top: 0 }} />
+            <img className="fig" src={f.assets.action} alt="" />
+            <div className="copy">
+              <small>{b.subtitle}</small>
+              <h2>{b.title}</h2>
+              <div className="who">{f.name} <em>{'★'.repeat(f.rarity)}</em><span style={{ fontSize: 15, fontWeight: 600, opacity: .8 }}>{ROLE_LABEL[f.role]} · {ATTRIBUTE_LABEL[f.attribute]}</span></div>
+              <p>“{b.quote}”</p>
+            </div>
+            <span className="note">원본 키비주얼 없음 · 임시 표시</span>
+          </div>
+        )}
 
-      <div className="rc-kinds" role="tablist">
-        <button role="tab" aria-selected={kind === 'limited'} className={kind === 'limited' ? 'on' : ''} onClick={() => { audio.sfx('select'); selectKind('limited') }}>한정 영입</button>
-        <button role="tab" aria-selected={kind === 'standard'} className={kind === 'standard' ? 'on' : ''} onClick={() => { audio.sfx('select'); selectKind('standard') }}>상시 영입</button>
-      </div>
+        {/* 탭 상태(상시 선택 시) */}
+        {kind === 'standard' && (
+          <>
+            <Patch r={tabL} skin={SKIN('button-dark')} bg="#1b1b20" z={30} className="rr-tab"><span>한정 영입</span></Patch>
+            <Patch r={tabS} skin={SKIN('button-lime')} bg="#1b1b20" z={30} className="rr-tab"><span style={{ color: '#15181b' }}>상시 영입</span></Patch>
+          </>
+        )}
+        {/* 배너 선택 표시 */}
+        {selIdx !== 0 && BANNER_SLICES.map((id, i) => (
+          <div key={id} className="rf-slot-overlay" style={boxStyle(rectOf(L, id), { zIndex: 30 })}>
+            {i === selIdx ? <img src={SKIN('banner-frame-selected')} alt="" /> : <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,6,14,.45)' }} />}
+          </div>
+        ))}
+        {/* 재화·포인트(원본 값과 다를 때만 숫자 영역을 덮음) */}
+        {W.diamond !== REF.diamond && <Patch r={{ x: 1122, y: 20, w: 76, h: 27 }} bg={PILL} z={30} className="rr-pill" style={{ padding: 0 }}><span className="num-tab" style={{ marginLeft: 'auto', marginRight: 4 }}>{fmt(W.diamond)}</span></Patch>}
+        {W.ticket !== REF.ticket && <Patch r={{ x: 1296, y: 20, w: 76, h: 27 }} bg={PILL} z={30} className="rr-pill" style={{ padding: 0 }}><span className="num-tab" style={{ marginLeft: 'auto', marginRight: 4 }}>{fmt(W.ticket)}</span></Patch>}
+        {pts !== REF.points && (
+          <>
+            <Patch r={{ x: 354, y: 741, w: 100, h: 27 }} bg={IVORY} z={30} style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: '#202024' }}>
+              <b className="num-tab" style={{ fontSize: 22, fontWeight: 800, marginLeft: 6 }}>{pts}</b><span style={{ fontSize: 17, color: '#55555c' }}>/ {GAME_CONFIG.scoutPointCap}</span>
+            </Patch>
+            <Patch r={{ x: 262, y: 770, w: 366, h: 19 }} bg={IVORY} z={30}>
+              <div style={{ position: 'absolute', left: 1, top: 1, right: 1, bottom: 1, borderRadius: 9, background: '#e5ddd4', boxShadow: 'inset 0 0 0 1px #b9b1a8', overflow: 'hidden' }}>
+                <i style={{ display: 'block', height: '100%', width: `${Math.min(100, (pts / GAME_CONFIG.scoutPointCap) * 100)}%`, background: '#c6aefa' }} />
+              </div>
+            </Patch>
+          </>
+        )}
 
-      <aside className="rc-list">
-        {listed.map((x) => {
-          const fc = CHAR_BY_ID[x.featuredId]
-          return (
-            <button key={x.id} className={`rc-banner ${x.id === bannerId ? 'on' : ''}`} onClick={() => { audio.sfx('select'); setBannerId(x.id) }} style={{ ['--a' as string]: fc.accent }}>
-              <img src={fc.assets.portrait} alt="" />
-              <span className="rc-banner-tag">{x.kind === 'limited' ? '한정' : '상시'}</span>
-              <span className="rc-banner-text"><strong>{x.title}</strong><small>{fc.name}</small></span>
-            </button>
-          )
+        {/* 조작 영역 */}
+        <Hit r={rectOf(L, 'back')} label="돌아가기" onClick={() => nav.back()} />
+        <Hit r={tabL} label={`한정 영입${kind === 'limited' ? ' (선택됨)' : ''}`} onClick={() => pickKind('limited')} sfx="none" />
+        <Hit r={tabS} label={`상시 영입${kind === 'standard' ? ' (선택됨)' : ''}`} onClick={() => pickKind('standard')} sfx="none" />
+        <Hit r={rectOf(L, 'currency-gems')} label={`다이아 ${W.diamond}, 충전`} onClick={() => nav.push('shop', { tab: 'currency' })} />
+        <Hit r={rectOf(L, 'currency-tickets')} label={`영입 티켓 ${W.ticket}, 구매`} onClick={() => nav.push('shop', { tab: 'recommend' })} />
+        {BANNER_SLICES.map((id, i) => {
+          const bb = BANNER_BY_ID[BANNER_IDS[i]]
+          return <Hit key={id} r={rectOf(L, id)} label={`${bb.kind === 'limited' ? '한정' : '상시'} 배너 ${bb.title}${i === selIdx ? ' (선택됨)' : ''}`} onClick={() => { setBannerId(bb.id); setKind(bb.kind) }} sfx="select" className="hit-banner" />
         })}
-      </aside>
-
-      <section className="rc-copy" key={`c${bannerId}`}>
-        <div className="rc-sub">{b.subtitle}</div>
-        <h2 className="rc-title">{b.title}</h2>
-        <div className="rc-pick">
-          <span className="rc-role"><RoleGlyph role={f.role} size="2.4rem" /></span>
-          <strong>{f.name}</strong>
-          <Stars n={f.rarity} />
-          <span className="rc-attr">{ROLE_LABEL[f.role]} · {ATTRIBUTE_LABEL[f.attribute]}</span>
-        </div>
-        <p className="rc-quote">“{b.quote}”</p>
-        <p className="rc-period num">{b.end ? `${b.start.replace(/-/g, '.')} – ${b.end.replace(/-/g, '.')}` : '상시 진행'}</p>
-        <div className="rc-meta-btns">
-          <Btn size="sm" variant="dark" onClick={() => setModal('detail')}><IconInfo size="1.8rem" />상세 정보</Btn>
-          <Btn size="sm" variant="dark" onClick={() => setModal('rates')}><IconDoc size="1.8rem" />확률 정보</Btn>
-          <Btn size="sm" variant="dark" onClick={() => nav.push('recruitHistory')}><IconHistory size="1.8rem" />기록</Btn>
-        </div>
-      </section>
-
-      <footer className="rc-bottom">
-        <Btn variant="light" className="rc-exchange" onClick={() => nav.push('shop', { tab: 'exchange' })}><IconCart size="2.4rem" />교환소</Btn>
-        <div className="rc-points">
-          <span>영입 포인트 <ProvisionalTag>샘플</ProvisionalTag></span>
-          <div className="rc-points-bar"><i style={{ width: `${Math.min(100, (points / GAME_CONFIG.scoutPointCap) * 100)}%` }} /></div>
-          <b className="num">{fmt(points)} / {GAME_CONFIG.scoutPointCap}</b>
-        </div>
-        <div className="rc-pulls">
-          <Btn variant="light" className="rc-pull1" disabled={!!pending} onClick={() => pull(1)}>
-            <span>1회 영입</span><span className="rc-cost"><CurrencyGlyph id="ticket" size="2.4rem" />×{b.costPerPull.amount}</span>
-          </Btn>
-          <Btn variant="accent" className="rc-pull10" disabled={!!pending} onClick={() => pull(GAME_CONFIG.multiPullCount)}>
-            <span>{GAME_CONFIG.multiPullCount}회 영입</span><span className="rc-cost"><CurrencyGlyph id="ticket" size="2.6rem" />×{b.costPerPull.amount * GAME_CONFIG.multiPullCount}</span>
-          </Btn>
-        </div>
-      </footer>
-      {pending && <div className="rc-pending">영입 처리 중…</div>}
-      {failed && <div className="rc-error"><ErrorBanner error={failed.error} onRetry={() => pull(failed.key === 'pull1' ? 1 : GAME_CONFIG.multiPullCount)} onClose={clearFailed} /></div>}
-      {failed?.error.code === 'INSUFFICIENT' && <div className="rc-error2"><Btn size="sm" variant="primary" onClick={() => nav.push('shop', { tab: 'recommend' })}>티켓 구매하러 가기</Btn></div>}
+        <Hit r={rectOf(L, 'info-detail')} label="상세 정보" onClick={() => setModal('detail')} />
+        <Hit r={rectOf(L, 'info-probability')} label="확률 정보" onClick={() => setModal('rates')} />
+        <Hit r={rectOf(L, 'exchange')} label="교환소" onClick={() => nav.push('shop', { tab: 'exchange' })} />
+        <Hit r={rectOf(L, 'recruit-points')} label={`영입 포인트 ${pts} / ${GAME_CONFIG.scoutPointCap}`} onClick={() => nav.push('shop', { tab: 'exchange' })} />
+        <Hit r={rectOf(L, 'points-gift')} label="영입 포인트 보상(교환소)" onClick={() => nav.push('shop', { tab: 'exchange' })} />
+        <Hit r={rectOf(L, 'pull-one')} label={`1회 영입, 영입 티켓 ${b.costPerPull.amount}장`} disabled={!!pending} onClick={() => pull(1)} sfx="none" className="hit-pull1" />
+        <Hit r={rectOf(L, 'pull-ten')} label={`${GAME_CONFIG.multiPullCount}회 영입, 영입 티켓 ${b.costPerPull.amount * GAME_CONFIG.multiPullCount}장`} disabled={!!pending} onClick={() => pull(GAME_CONFIG.multiPullCount)} sfx="none" className="hit-pull10" />
+        {pending && <div style={{ position: 'absolute', inset: 0, zIndex: 90, display: 'grid', placeItems: 'center', background: 'rgba(0,0,0,.35)', fontSize: 28, fontWeight: 900 }}>영입 처리 중…</div>}
+        {failed && (
+          <div style={{ position: 'absolute', right: 20, bottom: 112, zIndex: 91, width: 640 }} onClick={(e) => e.stopPropagation()}>
+            <ErrorBanner error={failed.error} onRetry={() => pull(failed.key === 'pull1' ? 1 : GAME_CONFIG.multiPullCount)} onClose={clearFailed} />
+            {failed.error.code === 'INSUFFICIENT' && <div style={{ marginTop: 6, textAlign: 'right' }}><Btn size="sm" variant="primary" onClick={() => nav.push('shop', { tab: 'recommend' })}>티켓 구매하러 가기</Btn></div>}
+          </div>
+        )}
+      </RefStage>
 
       {modal === 'detail' && (
         <Modal onClose={() => setModal(null)} labelledBy="rd-title">
@@ -110,7 +133,10 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
             <h3>영입 대상</h3>
             <div className="rd-pool">{b.pool.map((id) => <span key={id}><img src={CHAR_BY_ID[id].assets.portrait} alt="" />{CHAR_BY_ID[id].name} {CHAR_BY_ID[id].rarity}★</span>)}</div>
           </div>
-          <div className="confirm-actions"><Btn variant="dark" onClick={() => setModal(null)}>닫기</Btn></div>
+          <div className="confirm-actions">
+            <Btn variant="dark" onClick={() => { setModal(null); nav.push('recruitHistory') }}>영입 기록</Btn>
+            <Btn variant="dark" onClick={() => setModal(null)}>닫기</Btn>
+          </div>
         </Modal>
       )}
       {modal === 'rates' && (
@@ -121,9 +147,7 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
             <tbody>
               {b.rates.map((r) => {
                 const ids = b.pool.filter((id) => CHAR_BY_ID[id].rarity === r.rarity)
-                return (
-                  <tr key={r.rarity}><td>{r.rarity}★</td><td className="num">{(r.rate * 100).toFixed(1)}%</td><td>{ids.map((id) => CHAR_BY_ID[id].name + (id === b.featuredId && b.pickupShare ? `(픽업 ${b.pickupShare * 100}%)` : '')).join(', ')}</td></tr>
-                )
+                return <tr key={r.rarity}><td>{r.rarity}★</td><td className="num">{(r.rate * 100).toFixed(1)}%</td><td>{ids.map((id) => CHAR_BY_ID[id].name + (id === b.featuredId && b.pickupShare ? `(픽업 ${b.pickupShare * 100}%)` : '')).join(', ')}</td></tr>
               })}
             </tbody>
           </table>

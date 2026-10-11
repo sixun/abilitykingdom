@@ -31,11 +31,24 @@ export const BANNERS: RecruitmentBanner[] = [
     start: '2026-10-08', end: '2026-10-29', costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0.5,
     skin: 'broadcast', quote: '자, 어디까지 들리니? 지금, 더 멀리 가보자.',
   },
+  // 아래 3개는 원본 영입 화면의 배너 목록과 같은 순서. 원본 키비주얼은 '주파수 너머'만 있음
   {
-    id: 'b_daily', kind: 'standard', title: '일상의 영웅들', subtitle: 'STANDARD SCOUTING', featuredId: 'seoha',
+    id: 'b_daily', kind: 'standard', title: '일상의 영웅들', subtitle: 'STANDARD SCOUTING', featuredId: 'yujin',
     pool: ['jian', 'yujin', 'harin', 'doyun', 'sein', 'narin', 'seoha'],
     start: '2026-09-01', end: null, costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0,
-    skin: 'platform', quote: '물러서지 않아. 그게 내 일이야.',
+    skin: 'platform', quote: '내 뒤라면 괜찮아.',
+  },
+  {
+    id: 'b_rhythm', kind: 'limited', title: '불협의 리듬', subtitle: 'LIMITED SCOUTING', featuredId: 'sein',
+    pool: ['sein', 'jian', 'yujin', 'harin', 'doyun', 'narin', 'seoha'],
+    start: '2026-10-01', end: '2026-10-22', costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0.5,
+    skin: 'platform', quote: '귀찮게 하지 마. 무거워질 테니까.',
+  },
+  {
+    id: 'b_reunion', kind: 'standard', title: '다시, 또 만나는', subtitle: 'STANDARD SCOUTING', featuredId: 'narin',
+    pool: ['jian', 'yujin', 'harin', 'doyun', 'sein', 'narin', 'seoha'],
+    start: '2026-09-01', end: null, costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0,
+    skin: 'platform', quote: '다친 사람, 손!',
   },
 ]
 export const BANNER_BY_ID: Record<string, RecruitmentBanner> = Object.fromEntries(BANNERS.map((b) => [b.id, b]))

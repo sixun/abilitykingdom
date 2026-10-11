@@ -1,0 +1,215 @@
+{
+"canvas": {
+"width": 1456,
+"height": 818
+},
+"layers": [
+{
+"id": "back",
+"x": 43,
+"y": 12,
+"width": 83,
+"height": 56,
+"group": "",
+"file": "ref/lobby/back.webp"
+},
+{
+"id": "profile",
+"x": 132,
+"y": 13,
+"width": 246,
+"height": 55,
+"group": "",
+"file": "ref/lobby/profile.webp"
+},
+{
+"id": "stamina",
+"x": 892,
+"y": 13,
+"width": 176,
+"height": 55,
+"group": "",
+"file": "ref/lobby/stamina.webp"
+},
+{
+"id": "currency-coins",
+"x": 1068,
+"y": 13,
+"width": 169,
+"height": 55,
+"group": "",
+"file": "ref/lobby/currency-coins.webp"
+},
+{
+"id": "currency-gems",
+"x": 1237,
+"y": 13,
+"width": 171,
+"height": 55,
+"group": "",
+"file": "ref/lobby/currency-gems.webp"
+},
+{
+"id": "event-story",
+"x": 1174,
+"y": 190,
+"width": 171,
+"height": 126,
+"group": "",
+"file": "ref/lobby/event-story.webp"
+},
+{
+"id": "event-explore",
+"x": 1174,
+"y": 319,
+"width": 171,
+"height": 131,
+"group": "",
+"file": "ref/lobby/event-explore.webp"
+},
+{
+"id": "event-wanted",
+"x": 1174,
+"y": 456,
+"width": 171,
+"height": 131,
+"group": "",
+"file": "ref/lobby/event-wanted.webp"
+},
+{
+"id": "event-terminal",
+"x": 1129,
+"y": 128,
+"width": 273,
+"height": 512,
+"group": "",
+"file": "ref/lobby/event-terminal.webp"
+},
+{
+"id": "character-switch",
+"x": 57,
+"y": 585,
+"width": 84,
+"height": 53,
+"group": "",
+"file": "ref/lobby/character-switch.webp"
+},
+{
+"id": "nav-story",
+"x": 254,
+"y": 687,
+"width": 93,
+"height": 118,
+"group": "",
+"file": "ref/lobby/nav-story.webp"
+},
+{
+"id": "nav-explore",
+"x": 351,
+"y": 701,
+"width": 94,
+"height": 101,
+"group": "",
+"file": "ref/lobby/nav-explore.webp"
+},
+{
+"id": "nav-wanted",
+"x": 447,
+"y": 687,
+"width": 93,
+"height": 115,
+"group": "",
+"file": "ref/lobby/nav-wanted.webp"
+},
+{
+"id": "nav-training",
+"x": 548,
+"y": 687,
+"width": 92,
+"height": 115,
+"group": "",
+"file": "ref/lobby/nav-training.webp"
+},
+{
+"id": "nav-arena",
+"x": 646,
+"y": 687,
+"width": 96,
+"height": 115,
+"group": "",
+"file": "ref/lobby/nav-arena.webp"
+},
+{
+"id": "nav-raid",
+"x": 748,
+"y": 701,
+"width": 87,
+"height": 101,
+"group": "",
+"file": "ref/lobby/nav-raid.webp"
+},
+{
+"id": "nav-characters",
+"x": 842,
+"y": 701,
+"width": 89,
+"height": 101,
+"group": "",
+"file": "ref/lobby/nav-characters.webp"
+},
+{
+"id": "nav-formation",
+"x": 939,
+"y": 701,
+"width": 99,
+"height": 101,
+"group": "",
+"file": "ref/lobby/nav-formation.webp"
+},
+{
+"id": "nav-shop",
+"x": 1045,
+"y": 700,
+"width": 91,
+"height": 102,
+"group": "",
+"file": "ref/lobby/nav-shop.webp"
+},
+{
+"id": "nav-recruit",
+"x": 1138,
+"y": 701,
+"width": 90,
+"height": 101,
+"group": "",
+"file": "ref/lobby/nav-recruit.webp"
+},
+{
+"id": "topbar-remainder",
+"x": 0,
+"y": 0,
+"width": 1456,
+"height": 78,
+"group": "",
+"file": "ref/lobby/topbar-remainder.webp"
+},
+{
+"id": "navbar-remainder",
+"x": 0,
+"y": 698,
+"width": 1456,
+"height": 120,
+"group": "",
+"file": "ref/lobby/navbar-remainder.webp"
+},
+{
+"id": "scene-remainder",
+"x": 0,
+"y": 78,
+"width": 1456,
+"height": 620,
+"group": "",
+"file": "ref/lobby/scene-remainder.webp"
+}
+]
+}
