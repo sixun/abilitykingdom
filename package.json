@@ -9,15 +9,22 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "fonts": "python3 tools/subset_font.py",
-    "test:e2e": "mkdir -p test-results && node tests/formation-flow.mjs && node tests/menus-and-transactions.mjs && node tests/station-and-detail.mjs"
+    "test:e2e": "mkdir -p test-results && node tests/formation-flow.mjs && node tests/menus-and-transactions.mjs && node tests/station-and-detail.mjs",
+    "icons": "python3 tools/make_app_icons.py app-icons/rion-source.png app-icons && python3 tools/apply_native_assets.py app-icons",
+    "cap:sync": "npm run build && npx cap sync",
+    "android:apk": "npm run cap:sync && cd android && ./gradlew assembleDebug"
   },
   "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/ios": "8.5.3",
     "@fontsource/anton": "^5.1.0",
     "@fontsource/black-han-sans": "^5.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.5.3",
     "@eslint/js": "^9.13.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

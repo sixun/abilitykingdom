@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">어빌리티킹덤</string>
+    <string name="title_activity_main">어빌리티킹덤</string>
+    <string name="package_name">com.wakamonlabs.abilitykingdom</string>
+    <string name="custom_url_scheme">com.wakamonlabs.abilitykingdom</string>
+</resources>

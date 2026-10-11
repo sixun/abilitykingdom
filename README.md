@@ -166,6 +166,28 @@ npm run test:e2e     # dev 서버 실행 중에 브라우저 자동 검증 (Play
 
   지금 캐릭터 "움직임"은 교체 시 정지 그림이 들어오고 나가는 CSS 연출뿐입니다.
 
+## 앱 빌드 (아이폰·안드로이드)
+
+웹 빌드를 [Capacitor](https://capacitorjs.com) 8로 감싼 앱입니다. 게임 파일이 앱 안에 들어 있어 오프라인에서도 실행됩니다(본문 글꼴 Noto Sans KR만 인터넷에서 받음).
+
+| 항목 | 값 |
+| - | - |
+| 앱 이름 / ID | 어빌리티킹덤 / `com.wakamonlabs.abilitykingdom` (임시) |
+| 버전 | 0.3.2 (빌드 4) |
+| 아이콘 | 리온 전신 이미지에서 얼굴 쪽을 잘라 만든 임시 아이콘(`app-icons/`, `npm run icons`로 재생성). 안드로이드는 적응형 아이콘 |
+| 화면 | 가로 고정, 상태바·내비게이션 바 숨김, 검정 시작 화면 + 아이콘 |
+
+**안드로이드**
+- `npm run android:apk` → `android/app/build/outputs/apk/debug/app-debug.apk` (Android SDK·JDK 21 필요)
+- 저장소의 공용 디버그 키(`android/app/debug-shared.keystore`)로 서명합니다. 어디서 빌드해도 같은 키라 새 버전을 덮어 설치할 수 있습니다. **Play 스토어 출시에는 별도 비공개 릴리스 키가 필요합니다.**
+- 설치: APK를 휴대폰에서 열고 "출처를 알 수 없는 앱 설치"를 허용합니다.
+
+**아이폰**
+- 아이폰 앱은 Mac의 Xcode로만 빌드할 수 있어 GitHub Actions(macOS)에서 빌드합니다: Actions → "Native builds" 실행, 또는 `v*` 태그 푸시 시 릴리스에 첨부.
+  - `AbilityKingdom-ios-simulator.zip`: Mac 시뮬레이터용
+  - `AbilityKingdom-ios-unsigned.ipa`: **서명 없는 파일이라 그대로는 아이폰에 설치되지 않습니다.** Apple 계정으로 Sideloadly·AltStore 등에서 서명해 설치하거나(무료 계정은 7일마다 재서명), 유료 Apple Developer 계정으로 TestFlight 배포가 필요합니다.
+- 바로 써 보는 방법: 아이폰 사파리에서 공개 링크를 열고 공유 → **홈 화면에 추가**. 리온 아이콘으로 전체 화면 실행됩니다(웹 앱, PWA).
+
 ## 확정 원본이 없는 화면
 
 캐릭터 목록, 상점, 가방, 여섯 콘텐츠(스토리·도시 탐색·현상수배·훈련·아레나·레이드), 출전 준비, 테스트 전투, 영입 결과·기록, 우편·미션·공지·출석·설정은 **v0.1에서 임의로 만든 흐름 검증용 화면**이며 확정 디자인이 아닙니다. 원본 시안이 나오면 같은 방식으로 다시 만들어야 합니다.
