@@ -3,10 +3,14 @@ import '../styles/opening.css'
 import { useNav } from '../app/nav'
 import { audio } from '../app/audio'
 import { game, useGame } from '../game/store'
-import { OPENING, getOpeningVideo, releaseOpeningVideo } from '../app/openingVideo'
+import {
+  OPENING, SONG, getOpeningVideo, releaseOpeningVideo, getOpeningSong, startOpeningSong, openingSongPlaying,
+  msUntilVideo, syncSongTo, pauseOpeningSong, resumeOpeningSong, stopOpeningSong,
+} from '../app/openingVideo'
 import { CrownMark } from './Boot'
 
-// 오프닝: 사용자가 선택한 15초 영상. 영상 속 타이틀(13초~)부터 입력을 받는다.
+// 오프닝: 사용자가 선택한 15초 영상 + 오프닝 노래. 노래가 먼저 시작되고 0.6초 뒤 영상이 시작된다(영상 원래 소리는 끔).
+// 영상 속 타이틀(13초~)부터 입력을 받는다.
 // 영상이 끝나도 자동으로 로비에 들어가지 않고 마지막 장면(정지 타이틀)을 유지한다.
 // 영상 재생 실패 시 정적 타이틀로 대체한다.
 export default function Opening({ params }: { params: Record<string, unknown> }) {
@@ -23,12 +27,16 @@ export default function Opening({ params }: { params: Record<string, unknown> })
 
   useEffect(() => {
     audio.bgm('none')
+    // 부트 화면을 거치지 않았거나 노래가 막혔으면 여기서 시작(막히면 SOUND ON 버튼)
+    const startAt = s.settings.reduceMotion ? OPENING.titleAt : 0
+    if (!openingSongPlaying()) startOpeningSong(s.settings.bgm, startAt).then((ok) => { if (!ok) setNeedTap(true) })
+    host.current?.appendChild(getOpeningSong())
     if (mode !== 'video') return
     const v = getOpeningVideo(s.settings.quality === 'low')
     host.current?.appendChild(v)
-    v.muted = false
-    v.volume = Math.max(0, Math.min(1, s.settings.bgm))
-    if (s.settings.reduceMotion) v.currentTime = OPENING.titleAt // 연출 감소: 타이틀부터
+    v.muted = true // 영상 소리 대신 오프닝 노래
+    v.pause()
+    if (startAt) v.currentTime = startAt // 연출 감소: 타이틀부터
     let started = false
     const onTime = () => { if (v.currentTime >= OPENING.titleAt) setPress(true) }
     const onPlaying = () => { started = true }
@@ -38,16 +46,19 @@ export default function Opening({ params }: { params: Record<string, unknown> })
     v.addEventListener('playing', onPlaying)
     v.addEventListener('ended', onEnded)
     v.addEventListener('error', onError)
-    v.play().catch(() => {
-      // 소리 있는 자동 재생이 막히면 음소거로 재생하고 소리 켜기 버튼을 보여준다
-      v.muted = true
-      v.play().then(() => setNeedTap(true)).catch(() => setMode('static'))
-    })
+    // 노래 시작 0.6초 뒤 영상 시작
+    const go = window.setTimeout(() => {
+      v.play().then(() => syncSongTo(v.currentTime)).catch(() => setMode('static'))
+    }, msUntilVideo())
     // 일정 시간 안에 재생이 시작되지 않으면 정적 타이틀로 대체
-    const stall = window.setTimeout(() => { if (!started && v.currentTime === 0) setMode('static') }, 6000)
-    const vis = () => { if (document.hidden) v.pause(); else if (!v.ended) v.play().catch(() => {}) }
+    const stall = window.setTimeout(() => { if (!started && v.currentTime <= startAt) setMode('static') }, 6000 + SONG.videoDelay * 1000)
+    const vis = () => {
+      if (document.hidden) { v.pause(); pauseOpeningSong() }
+      else { if (!v.ended) { v.play().catch(() => {}); syncSongTo(v.currentTime) } resumeOpeningSong() }
+    }
     document.addEventListener('visibilitychange', vis)
     return () => {
+      clearTimeout(go)
       clearTimeout(stall)
       document.removeEventListener('visibilitychange', vis)
       v.removeEventListener('timeupdate', onTime)
@@ -59,7 +70,7 @@ export default function Opening({ params }: { params: Record<string, unknown> })
   }, [mode])
 
   useEffect(() => {
-    if (mode === 'static') { setPress(true); audio.sfx('title') }
+    if (mode === 'static') setPress(true)
   }, [mode])
 
   useEffect(() => { if (press) game.updateSettings({ openingSeen: true }) }, [press])
@@ -68,6 +79,7 @@ export default function Opening({ params }: { params: Record<string, unknown> })
     if (!press || leaving.current) return
     leaving.current = true
     audio.sfx('save')
+    stopOpeningSong()
     audio.bgm('lobby')
     nav.reset('lobby', { first: true })
   }, [press, nav])
@@ -81,12 +93,13 @@ export default function Opening({ params }: { params: Record<string, unknown> })
   const skip = () => {
     audio.sfx('tap')
     getOpeningVideo().currentTime = OPENING.titleAt
+    syncSongTo(OPENING.titleAt)
     setPress(true)
   }
 
   return (
     <div className={`op ${ended ? 'ended' : ''}`} onPointerUp={enter}>
-      {mode === 'video' && <div className="op-video-host" ref={host} />}
+      <div className="op-video-host" ref={host} />
       {mode === 'static' && (
         <div className="op-title static">
           {!posterFailed && <img className="op-title-bg" src={OPENING.poster} alt="" onError={() => setPosterFailed(true)} />}
@@ -106,7 +119,11 @@ export default function Opening({ params }: { params: Record<string, unknown> })
         <button className="op-skip" onPointerUp={(e) => { e.stopPropagation(); skip() }} aria-label="SKIP">SKIP ▸▸</button>
       )}
       {needTap && (
-        <button className="op-sound" onPointerUp={(e) => { e.stopPropagation(); getOpeningVideo().muted = false; setNeedTap(false) }}>SOUND ON</button>
+        <button className="op-sound" onPointerUp={(e) => {
+          e.stopPropagation()
+          const v = mode === 'video' ? getOpeningVideo() : null
+          startOpeningSong(s.settings.bgm, v ? v.currentTime + SONG.videoDelay : 0).then((ok) => setNeedTap(!ok))
+        }}>SOUND ON</button>
       )}
     </div>
   )

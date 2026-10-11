@@ -4,7 +4,7 @@ import { useNav } from '../app/nav'
 import { audio } from '../app/audio'
 import { CHARACTERS } from '../game/data/characters'
 import { useGame } from '../game/store'
-import { getOpeningVideo, waitForVideo, OPENING } from '../app/openingVideo'
+import { getOpeningVideo, waitForVideo, getOpeningSong, startOpeningSong, OPENING } from '../app/openingVideo'
 
 // 초기 로딩: 핵심 에셋을 미리 받는다. 이 화면부터 오프닝까지는 한글을 쓰지 않는다.
 export const OPENING_ASSETS = [
@@ -35,6 +35,7 @@ export default function Boot(_: { params: Record<string, unknown> }) {
     const upd = () => alive && setP(pi * 0.3 + pv * 0.7)
     // 오프닝 영상을 미리 버퍼링(오프닝 화면이 같은 요소를 이어받음)
     const v = getOpeningVideo(s.settings.quality === 'low')
+    getOpeningSong() // 오프닝 노래도 미리 받아 둔다
     Promise.all([
       preload(OPENING_ASSETS, (k) => { pi = k; upd() }),
       waitForVideo(v, (k) => { pv = k; upd() }),
@@ -45,7 +46,8 @@ export default function Boot(_: { params: Record<string, unknown> }) {
   const start = () => {
     if (!ready) return
     audio.unlock()
-    audio.sfx('open')
+    // 탭한 순간 오프닝 노래 시작(0.6초 뒤 오프닝 화면이 영상을 시작한다)
+    startOpeningSong(s.settings.bgm, s.settings.reduceMotion ? OPENING.titleAt : 0)
     nav.replace('opening', { fallback: failed > 0 })
   }
 

@@ -20,9 +20,13 @@ const slotNames = () => page.$$eval('.screen-active button.fm-fig', (e) => e.map
 await page.goto(BASE)
 await page.waitForSelector('.boot-cta.on', { timeout: 20000 })
 await page.mouse.click(700, 400)
-await W(400)
+await W(250)
 check(await page.locator('.op').count() === 1, '오프닝 시작')
-check(await page.evaluate(() => { const v = document.querySelector('.op video'); return !!v && !v.paused }), '오프닝 영상 재생 중')
+check(await page.evaluate(() => { const a = document.querySelector('.op .op-song'); const v = document.querySelector('.op video'); return !!a && !a.paused && !!v && v.paused }), '노래가 먼저 시작, 영상은 아직 대기')
+await W(900)
+const sync = await page.evaluate(() => { const a = document.querySelector('.op .op-song'); const v = document.querySelector('.op video'); return { playing: !v.paused, muted: v.muted, gap: a.currentTime - v.currentTime } })
+check(sync.playing && sync.muted, '0.6초 뒤 영상 시작(영상 소리는 끄고 노래 사용)')
+check(Math.abs(sync.gap - 0.6) < 0.2, `노래와 영상 간격 0.6초 유지 (${sync.gap.toFixed(2)}초)`)
 const t0 = Date.now()
 await page.waitForFunction(() => document.querySelector('.op .sr-only')?.textContent === 'PRESS ANY BUTTON', null, { timeout: 20000 })
 const tPress = (Date.now() - t0) / 1000
@@ -33,6 +37,7 @@ check(!(await isLobby()), '입력 없이 로비로 자동 진입하지 않음')
 await page.keyboard.press('Enter')
 await W(1500)
 check(await isLobby(), '입력 후 로비 진입')
+check(!(await page.evaluate(() => window.__AK_SONG__())), '로비 진입 시 오프닝 노래 정지')
 
 // 2) 로비 → 편성 → 교체 → 저장 → 로비 → 편성 재진입
 await page.click('.screen-active button[aria-label="편성"]'); await W(900)
