@@ -168,6 +168,8 @@ npm run test:e2e     # dev 서버 실행 중에 브라우저 자동 검증 (Play
 
 ## 앱 빌드 (아이폰·안드로이드)
 
+내려받기: https://github.com/sixun/abilitykingdom/releases/latest (안드로이드 APK, 아이폰 서명 없는 IPA·시뮬레이터용)
+
 웹 빌드를 [Capacitor](https://capacitorjs.com) 8로 감싼 앱입니다. 게임 파일이 앱 안에 들어 있어 오프라인에서도 실행됩니다(본문 글꼴 Noto Sans KR만 인터넷에서 받음).
 
 | 항목 | 값 |
@@ -183,7 +185,7 @@ npm run test:e2e     # dev 서버 실행 중에 브라우저 자동 검증 (Play
 - 설치: APK를 휴대폰에서 열고 "출처를 알 수 없는 앱 설치"를 허용합니다.
 
 **아이폰**
-- 아이폰 앱은 Mac의 Xcode로만 빌드할 수 있어 GitHub Actions(macOS)에서 빌드합니다: Actions → "Native builds" 실행, 또는 `v*` 태그 푸시 시 릴리스에 첨부.
+- 아이폰 앱은 Mac의 Xcode로만 빌드할 수 있어 GitHub Actions(macOS)에서 빌드합니다: Actions → "Native builds" → Run workflow(릴리스 태그 입력 시 릴리스에 첨부), 또는 `v*` 태그 푸시.
   - `AbilityKingdom-ios-simulator.zip`: Mac 시뮬레이터용
   - `AbilityKingdom-ios-unsigned.ipa`: **서명 없는 파일이라 그대로는 아이폰에 설치되지 않습니다.** Apple 계정으로 Sideloadly·AltStore 등에서 서명해 설치하거나(무료 계정은 7일마다 재서명), 유료 Apple Developer 계정으로 TestFlight 배포가 필요합니다.
 - 바로 써 보는 방법: 아이폰 사파리에서 공개 링크를 열고 공유 → **홈 화면에 추가**. 리온 아이콘으로 전체 화면 실행됩니다(웹 앱, PWA).
