@@ -1,8 +1,10 @@
 /* UI choreography lives in canvas pixels. Video assets are independent of these effects. */
-.ui-motion { --ui-accent: #cbf564; --ui-ease: cubic-bezier(.16, 1, .3, 1); }
-.ui-detail { --ui-accent: #4877ff; }
+.ui-motion { --ui-accent: #cbf564; --ui-ease: cubic-bezier(.16, 1, .3, 1); --ui-pop: cubic-bezier(.3, 1.5, .5, 1); --ui-accent-soft: #cbf5648c; }
+.ui-detail { --ui-accent: #4877ff; --ui-accent-soft: #4877ff8c; }
+.ui-sofa { --ui-accent-soft: #ffcf7a8c; }
+.ui-station { --ui-accent-soft: #9fd2ff8c; }
 .ui-item, .ui-item-body { position: absolute; inset: 0; pointer-events: none; }
-.ui-item { animation: uiItemIn 480ms var(--ui-ease) var(--ui-delay) both; }
+.ui-item { animation: uiItemIn 820ms var(--ui-pop) var(--ui-delay) both; }
 .ui-item-body { transition: transform 220ms var(--ui-ease); }
 .ui-item .ref-hit { pointer-events: auto; }
 .ui-item .ref-layer { transition: filter 180ms ease; }
@@ -14,7 +16,7 @@
 .ui-motion .ref-hit:not(:disabled)::after { content: ''; position: absolute; bottom: 3px; left: 12%; right: 12%; height: 3px; background: var(--ui-accent); transform: scaleX(0); transform-origin: left; transition: transform 180ms var(--ui-ease); pointer-events: none; }
 .ui-motion .ref-hit:not(:disabled):is(:hover, :focus-visible)::after { transform: scaleX(1); }
 .ui-motion .rs-char::after { display: none; }
-@keyframes uiItemIn { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+@keyframes uiItemIn { from { opacity: 0; transform: translateY(54px) scale(.86); } to { opacity: 1; transform: none; } }
 
 /* Mask each letter separately: text is live, not a video or a transformed screen grab. */
 .ui-title { display: inline-flex; white-space: nowrap; }
@@ -28,10 +30,11 @@
 @keyframes uiTicker { to { transform: translateX(-50%); } }
 
 /* A brief location signature, then a quiet animated rule under it. */
-.ui-scene-cue { position: absolute; left: 58px; top: 110px; z-index: 4; color: #f5f0e6; pointer-events: none; text-shadow: 0 2px 14px #000b; animation: uiCue 2600ms var(--ui-ease) both; }
+.ui-scene-cue { position: absolute; left: 58px; top: 110px; z-index: 4; color: #f5f0e6; pointer-events: none; text-shadow: 0 2px 14px #000b; animation: uiCue 4800ms var(--ui-ease) 300ms both; }
 .ui-scene-cue small { display: block; font-size: 12px; font-weight: 800; letter-spacing: .22em; margin-bottom: 5px; }
 .ui-scene-cue > .ui-title { font: italic 62px/1 Anton, sans-serif; letter-spacing: -.025em; }
-.ui-scene-cue > i { display: block; height: 4px; margin-top: 10px; background: var(--ui-accent); transform-origin: left; animation: uiRule 900ms var(--ui-ease) both; }
+.ui-scene-cue > i { display: block; height: 4px; margin-top: 10px; background: var(--ui-accent); transform-origin: left; animation: uiRule 1300ms var(--ui-ease) 900ms both; }
+.ui-scene-cue .ui-letter-mask > i { animation-duration: 900ms; animation-delay: calc(450ms + var(--letter-i) * 75ms); }
 .ui-station .ui-scene-cue { left: 970px; top: 110px; }
 .ui-station .ui-scene-cue > .ui-title { font-size: 48px; }
 .ui-station .ui-scene-cue small { font-size: 9px; }
@@ -40,35 +43,36 @@
 .ui-sofa .mg-right::after { content: ''; position: absolute; left: 1157px; top: 176px; width: 2px; height: 415px; background: linear-gradient(transparent 0 35%, var(--ui-accent) 48%, transparent 60%); background-size: 100% 220%; animation: uiTerminalScan 4s ease-in-out infinite; opacity: .65; }
 @keyframes uiTerminalScan { from { background-position: 0 100%; } to { background-position: 0 -120%; } }
 .ui-station .ui-nav-item .ref-hit::after { background: #f7f3e8; }
-.ui-sofa .mg, .ui-station .mg { animation-duration: 430ms; }
+.ui-sofa .mg, .ui-station .mg { animation-duration: 1000ms; }
 
 /* Detail: the same blue/ivory diagonal vocabulary, now separate vector/text planes. */
 .ui-detail-backdrop { position: absolute; left: 0; top: 0; width: 990px; height: 941px; z-index: 1; overflow: hidden; pointer-events: none; background: #15191f; clip-path: polygon(0 0, 914px 0, 914px 640px, 990px 640px, 990px 941px, 0 941px); }
 .ui-detail-plane { position: absolute; top: -240px; height: 1480px; width: 370px; background: #164af0; transform: rotate(-27deg); }
-.ui-detail-plane.plane-one { left: 220px; animation: uiPlaneOne 10s ease-in-out infinite alternate; }
-.ui-detail-plane.plane-two { left: 720px; width: 220px; background: #ebe6dc; animation: uiPlaneTwo 12s ease-in-out infinite alternate; }
-@keyframes uiPlaneOne { from { transform: translateX(-16px) rotate(-27deg); } to { transform: translateX(18px) rotate(-27deg); } }
-@keyframes uiPlaneTwo { from { transform: translateX(15px) rotate(-27deg); } to { transform: translateX(-20px) rotate(-27deg); } }
+.ui-detail-plane.plane-one { left: 220px; animation: uiPlaneOne 7s ease-in-out infinite alternate, uiPlaneIn 1100ms var(--ui-ease) both; }
+.ui-detail-plane.plane-two { left: 720px; width: 220px; background: #ebe6dc; animation: uiPlaneTwo 8.5s ease-in-out infinite alternate, uiPlaneIn 1100ms var(--ui-ease) 160ms both; }
+@keyframes uiPlaneOne { from { transform: translateX(-42px) rotate(-27deg); } to { transform: translateX(46px) rotate(-27deg); } }
+@keyframes uiPlaneTwo { from { transform: translateX(40px) rotate(-27deg); } to { transform: translateX(-48px) rotate(-27deg); } }
 .ui-detail-dots { position: absolute; inset: 0; background: radial-gradient(#070e20aa 1.5px, transparent 2px) 0 0 / 9px 9px; mask-image: linear-gradient(120deg, #000, transparent 45%, #000); opacity: .5; }
 .ui-detail-word { position: absolute; left: -24px; top: 330px; transform: rotate(-12deg); font: 250px/.96 Anton, sans-serif; letter-spacing: -.03em; color: #eee9df; }
-.ui-detail-word .ui-title { animation: uiWordDrift 13s ease-in-out infinite alternate; }
-@keyframes uiWordDrift { from { transform: translateX(-10px); } to { transform: translateX(25px); } }
+.ui-detail-word .ui-title { animation: uiWordDrift 9s ease-in-out infinite alternate; }
+@keyframes uiWordDrift { from { transform: translateX(-30px); } to { transform: translateX(55px); } }
+.ui-detail-word .ui-letter-mask > i { animation-duration: 1000ms; animation-delay: calc(320ms + var(--letter-i) * 85ms); }
 .ui-detail-brand { position: absolute; top: 205px; left: 26px; font: 900 22px/.95 'Noto Sans KR', sans-serif; letter-spacing: -.035em; color: #d0d2e5; }
 .ui-detail-brand small { display: block; font: 800 10px/1.35 sans-serif; letter-spacing: .1em; margin-top: 15px; }
 .ui-detail-ticker { position: absolute; left: -70px; top: 720px; width: 1120px; background: #eae5dc; color: #1249e6; padding: 10px 0; font: 23px/1 Anton, sans-serif; letter-spacing: .12em; transform: rotate(-12deg); border-block: 2px solid #101723; }
 .ui-detail-line { position: absolute; left: -70px; top: 697px; width: 1120px; height: 4px; background: #3067ff; transform: rotate(-12deg); }
 .ui-detail .cd2-hero { background: none; }
-.ui-detail .cdx-hero { animation: uiDetailHero 640ms var(--ui-ease) 80ms both; }
-@keyframes uiDetailHero { from { opacity: 0; transform: translateX(-65px) scale(1.025); } to { opacity: 1; transform: none; } }
+.ui-detail .cdx-hero { animation: uiDetailHero 1350ms var(--ui-ease) 150ms both; }
+@keyframes uiDetailHero { from { opacity: 0; transform: translateX(-170px) scale(1.08); filter: brightness(2.1) saturate(.3); } 40% { opacity: 1; } to { opacity: 1; transform: none; filter: none; } }
 .ui-detail .cdx-name { animation: none; }
 .ui-detail .cd2-stripes { transform-origin: left; animation: uiRule 650ms var(--ui-ease) 260ms both; }
-.ui-detail .cdx-stat { animation: uiStatReveal 380ms var(--ui-ease) both; }
+.ui-detail .cdx-stat { animation: uiStatIn 760ms var(--ui-pop) both; }
 @keyframes uiStatReveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
 .ui-detail .cd2-alt { animation: uiPanelIn 300ms var(--ui-ease) both; }
 @keyframes uiPanelIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .ui-detail .cd2-tabs .hl { transition: left 320ms var(--ui-ease), width 320ms var(--ui-ease); }
 .ui-detail .cd2-face { transition: filter 160ms, transform 220ms var(--ui-ease); }
-.ui-detail .cd2-face.on { transform: translateY(-4px); filter: brightness(1.15); }
+.ui-detail .cd2-face.on { transform: translateY(-4px) skewX(-11.5deg); filter: brightness(1.15); animation: uiFacePulse 1.6s ease-in-out infinite alternate; }
 .ui-detail .cd2-up { overflow: hidden; }
 .ui-detail .cd2-up::before { content: ''; position: absolute; inset: 15px 30px; background: linear-gradient(110deg, transparent 38%, #ffffff35 49%, transparent 61%); background-size: 300% 100%; animation: uiActionSheen 5s ease-in-out infinite; pointer-events: none; }
 @keyframes uiActionSheen { 0%, 50% { background-position: 150% 0; } 85%, 100% { background-position: -60% 0; } }
@@ -88,11 +92,11 @@
 .ui-recruit-transition { position: absolute; left: 262px; top: 94px; width: 1194px; height: 622px; z-index: 39; pointer-events: none; overflow: hidden; }
 .ui-recruit-transition::before { content: ''; position: absolute; inset: 0; background: #c8f53b; clip-path: polygon(0 0, 22% 0, 0 100%, -22% 100%); animation: uiBannerCut 480ms cubic-bezier(.7, 0, .2, 1) both; }
 @keyframes uiBannerCut { 0% { transform: translateX(-30%); opacity: 1; } 75% { opacity: 1; } 100% { transform: translateX(130%); opacity: 0; } }
-.ui-recruit .rcx-rion { animation-duration: 520ms; animation-delay: 120ms; }
+.ui-recruit-transition::before { animation-duration: 850ms; }
+.ui-recruit .rcx-rion { animation: uiRionIn 1300ms var(--ui-ease) 220ms both; }
 .ui-alt-banner .fig { animation: uiDetailHero 550ms var(--ui-ease) both; }
 .ui-alt-banner .copy > :not(h2) { animation: uiPanelIn 450ms var(--ui-ease) 140ms both; }
 .ui-recruit .hit-pull10 { overflow: hidden; }
-.ui-recruit .hit-pull10::before { content: ''; position: absolute; inset: 6px 15px; pointer-events: none; background: linear-gradient(110deg, transparent 38%, #ffffff40 49%, transparent 61%); background-size: 300% 100%; animation: uiActionSheen 5s ease-in-out 1s infinite; }
 
 /* Freeze all screen-local loops when covered or backgrounded; reduced motion is static. */
 .ui-paused *, .ui-paused *::before, .ui-paused *::after { animation-play-state: paused !important; }
@@ -114,3 +118,188 @@
 .ui-chrome-top { animation-name: uiChromeTop; }
 @keyframes uiChromeTop { from { opacity: 0; transform: translateY(-22px); } to { opacity: 1; transform: none; } }
 .ui-detail .cd2-name { max-width: 440px; }
+
+/* ═════════ v0.4.3 · 길게 들어오고, 가만히 있어도 움직이는 화면 ═════════
+   - 진입: 어두운 막 → 사선 빛 → 장면 줌아웃(2초) → UI 그룹(1초) → 카드·메뉴가 차례로 튀어 오름(약 2.4초)
+   - 대기: 카메라 숨쉬기, 입자·빛, 카드·메뉴 둥실(그림만, 버튼 위치는 고정), 순서대로 지나가는 반짝임, 알림 맥동
+   - 마우스: 장면 층만 반대 방향으로 몇 px 이동(시차). UI·버튼은 움직이지 않는다 */
+
+/* 진입 막과 사선 빛 */
+.ui-intro { position: absolute; inset: 0; z-index: 95; pointer-events: none; overflow: hidden; }
+.ui-intro::before { content: ''; position: absolute; inset: 0; background: #04050a; animation: uiVeil 1000ms cubic-bezier(.5, 0, .3, 1) both; }
+.ui-intro > i { position: absolute; top: -20%; left: -700px; width: 520px; height: 140%; transform: skewX(-22deg); background: linear-gradient(90deg, transparent, var(--ui-accent-soft) 38%, #fffbe9cc 50%, var(--ui-accent-soft) 62%, transparent); mix-blend-mode: screen; animation: uiIntroSweep 1250ms cubic-bezier(.65, 0, .25, 1) 180ms both; }
+@keyframes uiVeil { from { opacity: 1; } to { opacity: 0; visibility: hidden; } }
+@keyframes uiIntroSweep { from { translate: 0 0; } to { translate: 2900px 0; visibility: hidden; } }
+.enter-back .ui-intro::before { animation-duration: 420ms; }
+.enter-back .ui-intro > i { display: none; }
+
+/* 장면 영상: 줌아웃 진입 → 느린 카메라 숨쉬기 + 마우스 시차 */
+.ui-sofa .mv, .ui-station .mv { transform-origin: 50% 42%; animation: uiCamIn 2100ms cubic-bezier(.2, .75, .2, 1) both, uiCamBreath 15s ease-in-out 2100ms infinite alternate; translate: calc(var(--mx, 0) * -14px) calc(var(--my, 0) * -8px); transition: translate 1100ms cubic-bezier(.2, .8, .2, 1); }
+@keyframes uiCamIn { from { transform: scale(1.17); filter: brightness(.3) saturate(.5); } 55% { filter: none; } to { transform: scale(1.035); filter: none; } }
+@keyframes uiCamBreath { from { transform: scale(1.035); } to { transform: scale(1.085) translateY(-6px); } }
+.ui-detail .cdx-hero, .ui-recruit .rcx-rion { translate: calc(var(--mx, 0) * 12px) calc(var(--my, 0) * 7px); transition: translate 1100ms cubic-bezier(.2, .8, .2, 1); }
+.ui-detail .cd2-hero img { transform-origin: 50% 20%; animation: uiBreathe 5.5s ease-in-out infinite alternate; }
+@keyframes uiBreathe { from { transform: none; } to { transform: translateY(-8px) scale(1.012); } }
+
+/* UI 그룹: 멀리서 들어온다 */
+.ui-sofa .mg-top, .ui-station .mg-top { animation-name: uiGroupTop; }
+.ui-sofa .mg-left, .ui-station .mg-left { animation-name: uiGroupLeft; }
+.ui-sofa .mg-right, .ui-station .mg-right { animation-name: uiGroupRight; }
+.ui-sofa .mg-bottom, .ui-station .mg-bottom { animation-name: uiGroupBottom; }
+@keyframes uiGroupTop { from { opacity: 0; transform: translateY(-90px); } to { opacity: 1; transform: none; } }
+@keyframes uiGroupLeft { from { opacity: 0; transform: translateX(-200px); } to { opacity: 1; transform: none; } }
+@keyframes uiGroupRight { from { opacity: 0; transform: translateX(200px); } to { opacity: 1; transform: none; } }
+@keyframes uiGroupBottom { from { opacity: 0; transform: translateY(130px); } to { opacity: 1; transform: none; } }
+.ui-side-card { animation-name: uiCardIn; }
+.mg-left .ui-side-card, .ui-banner-item { animation-name: uiCardInL; }
+@keyframes uiCardIn { from { opacity: 0; transform: translateX(110px) scale(.86) rotate(3deg); } to { opacity: 1; transform: none; } }
+@keyframes uiCardInL { from { opacity: 0; transform: translateX(-110px) scale(.86) rotate(-3deg); } to { opacity: 1; transform: none; } }
+
+/* 대기: 카드·메뉴 그림만 둥실(버튼은 제자리라 클릭 위치가 변하지 않는다) */
+.ui-idle .ui-item-body > :not(.ref-hit) { animation: uiFloat var(--ui-float-d, 3.6s) ease-in-out calc(var(--ui-order) * -0.55s) infinite alternate; }
+@keyframes uiFloat { from { translate: 0 0; } to { translate: var(--ui-float-x, 0) var(--ui-float-y, -6px); } }
+.ui-side-card { --ui-float-d: 3.4s; --ui-float-y: -7px; }
+.ui-nav-item { --ui-float-d: 1.9s; --ui-float-y: -5px; }
+.ui-nav-item .ui-item-body > :not(.ref-hit) { animation-delay: calc(var(--ui-order) * -0.24s); }
+.ui-banner-item { --ui-float-d: 2.8s; --ui-float-x: 4px; --ui-float-y: 0px; }
+
+/* 반짝임: 조각 모양 그대로, 순서대로 파도처럼 지나간다(첫 회는 진입 직후) */
+.ui-glint { position: absolute; z-index: 3; pointer-events: none; overflow: hidden; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+.ui-glint::before { content: ''; position: absolute; top: -20%; bottom: -20%; left: 0; width: 46%; background: linear-gradient(100deg, transparent 0 28%, #ffffffb8 50%, transparent 72%); transform: translateX(-130%) skewX(-18deg); animation: uiGlint 6.5s cubic-bezier(.45, 0, .25, 1) calc(2.1s + var(--ui-order) * .16s) infinite; }
+@keyframes uiGlint { 0% { transform: translateX(-130%) skewX(-18deg); } 16%, 100% { transform: translateX(270%) skewX(-18deg); } }
+.ui-glint-row::before { animation-duration: 5s; animation-delay: calc(2.4s + var(--ui-order) * .12s); }
+.ui-glint-emblem::before { animation-duration: 4.2s; animation-delay: 1.6s; width: 70%; }
+.ui-glint-cta::before { animation-duration: 3.2s; animation-delay: 1.9s; }
+.ui-banner-item .ui-glint::before { animation-duration: 7s; }
+
+/* 알림 점 맥동, 버튼 고리 */
+.ui-fx { position: absolute; pointer-events: none; }
+.ui-ping { border-radius: 50%; }
+.ui-ping::before, .ui-ping::after { content: ''; position: absolute; inset: -1px; border-radius: 50%; border: 2px solid #ff5d5d; animation: uiPing 1.8s cubic-bezier(.2, .7, .3, 1) infinite; }
+.ui-ping::after { animation-delay: .9s; }
+@keyframes uiPing { from { transform: scale(1); opacity: .95; } to { transform: scale(2.8); opacity: 0; } }
+.ui-ring { border-radius: 30px; }
+.ui-ring::before { content: ''; position: absolute; inset: 2px; border-radius: inherit; border: 2px solid #f4e7c8; animation: uiRing 2.6s ease-out 2s infinite; opacity: 0; }
+@keyframes uiRing { 0% { transform: scale(.92); opacity: .9; } 70%, 100% { transform: scale(1.35, 1.6); opacity: 0; } }
+.ui-bar-shine { border-radius: 5px; overflow: hidden; }
+.ui-bar-shine::before { content: ''; position: absolute; top: 0; bottom: 0; width: 60px; left: -60px; background: linear-gradient(90deg, transparent, #e9f6ff 50%, transparent); animation: uiBarShine 2.8s ease-in-out 1.8s infinite; }
+@keyframes uiBarShine { from { translate: 0 0; } 60%, 100% { translate: 300px 0; } }
+
+/* 장면 공기: 입자 + 빛. 마우스 시차는 영상보다 크게(앞에 있는 느낌) */
+.ui-amb { position: absolute; pointer-events: none; overflow: hidden; animation: uiAmbIn 1800ms ease 500ms both; }
+.ui-amb > div { position: absolute; inset: 0; }
+.ui-amb-parts { translate: calc(var(--mx, 0) * 24px) calc(var(--my, 0) * 14px); transition: translate 1300ms cubic-bezier(.2, .8, .2, 1); }
+.ui-amb-parts i { position: absolute; border-radius: 50%; opacity: 0; background: #fff; animation: uiMote var(--d) linear var(--dl) infinite; }
+@keyframes uiAmbIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes uiMote {
+  0% { opacity: 0; transform: translate(0, 0) scale(.5); }
+  12% { opacity: var(--o); }
+  50% { transform: translate(calc(var(--dx) * .55), calc(var(--rise) * .5)) scale(1); }
+  82% { opacity: calc(var(--o) * .8); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--rise)) scale(.6); }
+}
+/* 소파: 따뜻한 먼지 + 창가 햇살 줄기 */
+.ui-amb-dust .ui-amb-parts i { background: #ffe4b0; box-shadow: 0 0 8px 2px #ffc76a80; }
+.ui-amb-dust .ui-amb-light { background: linear-gradient(118deg, transparent 34%, #ffd99a30 41%, transparent 47%, #ffd99a26 55%, transparent 60%, #ffe0a81c 66%, transparent 72%); mix-blend-mode: screen; animation: uiShaft 6.5s ease-in-out infinite alternate; }
+@keyframes uiShaft { from { opacity: .35; transform: translateX(-40px); } to { opacity: 1; transform: translateX(40px); } }
+/* 역: 하얀 빛 입자 + 위쪽 햇빛 번짐 + 가끔 지나가는 열차 불빛 */
+.ui-amb-city .ui-amb-parts i { background: #f7fbff; box-shadow: 0 0 7px 1px #cfe8ff99; }
+.ui-amb-city .ui-amb-light { background: radial-gradient(ellipse 55% 38% at 63% 0%, #fff5d84a, transparent 70%); mix-blend-mode: screen; animation: uiFlare 5s ease-in-out infinite alternate; }
+@keyframes uiFlare { from { opacity: .45; } to { opacity: 1; } }
+.ui-amb-city .ui-amb-sweep { left: -45%; right: auto; width: 42%; top: 32%; bottom: auto; height: 32%; background: linear-gradient(90deg, transparent, #fffdf2a0 45%, #dff1ff70 60%, transparent); filter: blur(22px); mix-blend-mode: screen; opacity: 0; animation: uiTrain 10s cubic-bezier(.5, 0, .5, 1) 3.2s infinite; }
+@keyframes uiTrain { 0% { opacity: 0; transform: translateX(0); } 4% { opacity: .38; } 26% { opacity: .38; transform: translateX(360%); } 30%, 100% { opacity: 0; transform: translateX(360%); } }
+/* 상세: 파란·아이보리 불티 + 아래로 훑는 스캔선 */
+.ui-amb-blue .ui-amb-parts i { border-radius: 1px; background: #7fa4ff; box-shadow: 0 0 8px 1px #3f6dff; }
+.ui-amb-blue .ui-amb-parts i:nth-child(3n) { background: #f1ece2; box-shadow: 0 0 6px #fff8; }
+.ui-amb-blue .ui-amb-light { background: linear-gradient(-27deg, transparent 46%, #ffffff16 50%, transparent 54%); background-size: 100% 300%; animation: uiStreak 7s linear infinite; }
+@keyframes uiStreak { from { background-position: 0 100%; } to { background-position: 0 -100%; } }
+.ui-amb-blue .ui-amb-sweep, .ui-amb-lime .ui-amb-sweep { inset: auto 0 auto 0; top: 0; height: 3px; background: linear-gradient(90deg, transparent, #8fb0ff 30%, #ffffff 50%, #8fb0ff 70%, transparent); box-shadow: 0 0 22px 4px #3f6dff88; opacity: .55; animation: uiScan 6s linear 1.4s infinite; }
+@keyframes uiScan { from { transform: translateY(-30px); } to { transform: translateY(980px); } }
+/* 영입: 라임 불티 + 방송 주사선 */
+.ui-amb-lime .ui-amb-parts i { background: #d6ff5c; box-shadow: 0 0 8px 1px #b7f03a; }
+.ui-amb-lime .ui-amb-parts i:nth-child(4n) { background: #cdb6f5; box-shadow: 0 0 8px #a98be8; }
+.ui-amb-lime .ui-amb-light { background: repeating-linear-gradient(0deg, transparent 0 3px, #ffffff0c 3px 4px); animation: uiFlicker 3.4s steps(1) infinite; }
+@keyframes uiFlicker { 0%, 100% { opacity: .7; } 31% { opacity: .35; } 33% { opacity: .9; } 70% { opacity: .5; } }
+.ui-amb-lime .ui-amb-sweep { background: linear-gradient(90deg, transparent, #c8f53b 30%, #f6ffd8 50%, #c8f53b 70%, transparent); box-shadow: 0 0 20px 3px #c8f53b77; opacity: .4; animation-duration: 5s; }
+
+/* 캐릭터 상세: 오른쪽 패널이 들어온 뒤 안의 요소가 차례로 */
+.ui-detail [data-layer="info-panel-remainder"], .ui-detail .cd2-fill { animation: uiPanelSlide 1000ms var(--ui-ease) 120ms both; }
+@keyframes uiPanelSlide { from { opacity: 0; translate: 300px 0; } to { opacity: 1; translate: 0 0; } }
+.ui-detail :is([data-layer^="portrait-"], [data-layer^="roster-"], .cd2-face, .cd2-slot0-cover) { animation: uiFromTop 850ms var(--ui-ease) 320ms both; }
+.ui-detail .cd2-face.on { animation: uiFromTop 850ms var(--ui-ease) 320ms both, uiFacePulse 1.6s ease-in-out 1.2s infinite alternate; }
+.ui-detail .cdx-name { animation: uiFromRight 900ms var(--ui-ease) 420ms both; }
+.ui-detail .cd2-name .ui-letter-mask > i { animation-duration: 820ms; animation-delay: calc(560ms + var(--letter-i) * 65ms); }
+.ui-detail .cd2-stripes { animation-delay: 1000ms; animation-duration: 900ms; }
+.ui-detail :is([data-layer="faction-emblem"], .cd2-x) { animation: uiEmblemIn 1000ms var(--ui-pop) 600ms both; }
+.ui-detail :is([data-layer="level"], .cdx-lv) { animation: uiFromRight 850ms var(--ui-ease) 680ms both; }
+.ui-detail [data-layer="level-up-arrow"] { animation: uiFromRight 850ms var(--ui-ease) 730ms both, uiNudge 1.4s ease-in-out 2s infinite; }
+.ui-detail :is([data-layer="role"], .cdx-role) { animation: uiFromRight 850ms var(--ui-ease) 780ms both; }
+.ui-detail :is([data-layer^="tab-"], .cd2-tabs) { animation: uiFromBottom 850ms var(--ui-ease) 1100ms both; }
+.ui-detail [data-layer="upgrade"] { animation: uiPopIn 950ms var(--ui-pop) 1250ms both, uiCtaGlow 2.2s ease-in-out 2.3s infinite alternate; }
+.ui-detail .cd2-pill { animation: uiFromLeft 850ms var(--ui-ease) 380ms both; }
+.ui-detail .cd2-lobby { animation-delay: 1150ms; }
+.ui-detail .cd2-lobby.on .star { display: inline-block; animation: uiStarSpin 3.2s ease-in-out 2.4s infinite; }
+.ui-detail .ui-bar-shine { animation: uiFade 600ms ease 1300ms both; }
+.ui-detail .ui-glint-emblem { animation: uiFade 400ms ease 1500ms both; }
+.ui-detail .cd2-tabs .hl { box-shadow: 0 0 0 0 #2f6bff00; animation: uiTabGlow 2s ease-in-out 2s infinite alternate; }
+.ui-detail-ticker, .ui-detail-line { animation: uiBandIn 1150ms var(--ui-ease) 450ms both; }
+.ui-detail-line { animation-delay: 560ms; }
+.ui-detail-brand { animation: uiFromLeft 900ms var(--ui-ease) 700ms both; }
+@keyframes uiPlaneIn { from { translate: -760px 0; } to { translate: 0 0; } }
+@keyframes uiBandIn { from { translate: -1300px 0; } to { translate: 0 0; } }
+@keyframes uiFromTop { from { opacity: 0; translate: 0 -70px; } to { opacity: 1; translate: 0 0; } }
+@keyframes uiFromRight { from { opacity: 0; translate: 90px 0; } to { opacity: 1; translate: 0 0; } }
+@keyframes uiFromLeft { from { opacity: 0; translate: -90px 0; } to { opacity: 1; translate: 0 0; } }
+@keyframes uiFromBottom { from { opacity: 0; translate: 0 70px; } to { opacity: 1; translate: 0 0; } }
+@keyframes uiPopIn { from { opacity: 0; translate: 140px 0; scale: .88; } to { opacity: 1; translate: 0 0; scale: 1; } }
+@keyframes uiEmblemIn { from { opacity: 0; scale: .45; rotate: -24deg; } to { opacity: 1; scale: 1; rotate: 0deg; } }
+@keyframes uiStatIn { from { opacity: 0; translate: 70px 0; filter: brightness(2.6); } 60% { filter: brightness(1.25); } to { opacity: 1; translate: 0 0; filter: none; } }
+@keyframes uiNudge { 0%, 55%, 100% { transform: none; } 70% { transform: translateX(6px); } 85% { transform: translateX(1px); } }
+@keyframes uiCtaGlow { from { filter: drop-shadow(0 0 0 #2f6bff00); } to { filter: drop-shadow(0 0 16px #3d78ffd0) brightness(1.08); } }
+@keyframes uiFacePulse { from { box-shadow: 0 0 0 4px #1f6dff, 0 0 10px 2px #1f6dff99; } to { box-shadow: 0 0 0 4px #5b93ff, 0 0 26px 8px #1f6dffdd; } }
+@keyframes uiTabGlow { from { box-shadow: 0 0 0 0 #2f6bff00; } to { box-shadow: 0 0 22px 2px #2f6bffaa; } }
+@keyframes uiStarSpin { 0%, 70%, 100% { transform: none; } 85% { transform: rotate(144deg) scale(1.25); } }
+@keyframes uiFade { from { opacity: 0; } to { opacity: 1; } }
+
+/* 영입: 장면 줌아웃 → 리온 → 문구 → 버튼, 대기 중 제목 글리치·버튼 빛 */
+.ui-recruit :is(.ref-bg, [data-layer="scene-remainder"]) { transform-origin: 72% 40%; animation: uiSceneIn 1900ms cubic-bezier(.2, .75, .2, 1) both; }
+@keyframes uiSceneIn { from { transform: scale(1.12); filter: brightness(.35) saturate(.6); } to { transform: none; filter: none; } }
+@keyframes uiRionIn { from { opacity: 0; transform: translateX(170px) scale(1.06); filter: brightness(2.2) saturate(.4); } 45% { opacity: 1; } to { opacity: 1; transform: none; filter: none; } }
+.ui-recruit [data-layer="portrait-strip"] { animation: uiFromBottom 950ms var(--ui-ease) 550ms both; }
+.ui-recruit [data-layer="promo-copy"] { animation: uiFromLeft 850ms var(--ui-ease) 750ms both; }
+.ui-recruit [data-layer="character-name"] { animation: uiFromLeft 850ms var(--ui-ease) 1000ms both; }
+.ui-recruit [data-layer="character-quote"] { animation: uiFromLeft 850ms var(--ui-ease) 1150ms both; }
+.ui-recruit :is([data-layer="info-detail"], [data-layer="info-probability"]) { animation: uiFromRight 850ms var(--ui-ease) 1250ms both; }
+.ui-recruit [data-layer="pull-ten"] { animation: uiCtaLime 2s ease-in-out 2.2s infinite alternate; }
+.ui-recruit .ui-chrome-actions { animation-duration: 950ms; }
+.ui-recruit-title { animation: uiTitleFloat 4.2s ease-in-out 2.6s infinite alternate; }
+.ui-recruit-title h2 { animation: uiGlitch 5.5s steps(1) 3.4s infinite; }
+.ui-recruit-title h2 .ui-letter-mask > i { animation-duration: 950ms; animation-delay: calc(480ms + var(--letter-i) * 95ms); }
+.ui-recruit-title h2::before { animation-duration: 1100ms; animation-delay: 380ms; }
+.ui-broadcast-mark { animation-duration: 800ms; animation-delay: 900ms; }
+.ui-broadcast-caption { animation-duration: 800ms; animation-delay: 1150ms; }
+.ui-broadcast-tape { animation: uiFromRight 900ms var(--ui-ease) 1300ms both; }
+.ui-banner-cursor { animation: uiCursorGlow 1.4s ease-in-out infinite alternate; }
+@keyframes uiTitleFloat { from { translate: 0 0; } to { translate: 0 -8px; } }
+@keyframes uiGlitch {
+  0%, 100% { translate: 0 0; filter: drop-shadow(4px 5px 0 #b49add); }
+  93% { translate: 5px -2px; filter: drop-shadow(-5px 0 0 #ff3d8a) drop-shadow(5px 0 0 #3df2ff); }
+  94% { translate: -4px 2px; filter: drop-shadow(5px 0 0 #ff3d8a) drop-shadow(-4px 0 0 #c8f53b); }
+  95% { translate: 2px 0; filter: drop-shadow(4px 5px 0 #b49add) drop-shadow(-3px 0 0 #3df2ff); }
+  96% { translate: 0 0; filter: drop-shadow(4px 5px 0 #b49add); }
+}
+@keyframes uiCtaLime { from { filter: drop-shadow(0 0 0 #c8f53b00); } to { filter: drop-shadow(0 0 18px #c8f53bcc) brightness(1.06); } }
+@keyframes uiCursorGlow { from { box-shadow: 0 0 6px #c8f53b55; opacity: .75; } to { box-shadow: 0 0 20px 3px #c8f53bcc; opacity: 1; } }
+
+/* 동작 줄이기: 새 장식도 전부 끈다 */
+.ui-reduced :is(.ui-intro, .ui-amb, .ui-glint, .ui-fx) { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .ui-motion :is(.ui-intro, .ui-amb, .ui-glint, .ui-fx) { display: none; }
+  .ui-motion .mv, .ui-motion .cdx-hero, .ui-motion .rcx-rion { translate: none; }
+}
+
+/* 다른 화면에서 돌아올 때는 짧게(0.5초): 긴 진입은 처음 들어올 때만 */
+.enter-back .ui-motion .mg { animation-duration: 480ms !important; animation-delay: 0ms !important; }
+.enter-back .ui-motion .ui-item { animation-duration: 460ms; animation-delay: calc(var(--ui-order) * 25ms); }
+.enter-back .ui-motion .mv { animation-duration: 600ms, 15s; animation-delay: 0ms, 600ms; }
+.enter-back .ui-scene-cue { display: none; }

@@ -12,7 +12,7 @@ import { MotionVideo, fitBox } from '../ui/motion'
 import fitJson from '../game/data/motion-fit.json'
 import matteJson from '../game/data/ref-matte.json'
 import '../styles/motion.css'
-import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue } from '../ui/ui-motion'
+import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx, Fx, glintOf } from '../ui/ui-motion'
 import layoutJson from '../game/data/ref-lobby.json'
 import LobbyStation from './LobbyStation'
 
@@ -30,8 +30,8 @@ const GROUP = {
   right: ['event-terminal', 'event-story', 'event-explore', 'event-wanted'],
   bottom: ['navbar-remainder', ...NAV_IDS],
 }
-// 진입: 장면 0ms → 상단 80 → 좌 130 → 우 170 → 하단 220ms (각 240ms, 0.46초 안에 정착)
-const DELAY = { top: 80, left: 130, right: 170, bottom: 220 }
+// 진입: 장면(줌아웃 2초) → 상단 380 → 좌 520 → 우 600 → 하단 700ms (그룹 1초, 안의 카드·메뉴는 차례로 튀어 오름, 약 2.4초)
+const DELAY = { top: 380, left: 520, right: 600, bottom: 700 }
 const REF = { stamina: 187, staminaMax: 240, credit: 388434, medal: 1443, level: 15, name: '마유' }
 const PILL_BG = '#070707'
 
@@ -88,6 +88,8 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
       <RefStage canvas={L.canvas} className="ui-sofa">
         {/* 장면: UI 없는 지안 소파 영상(배경+인물 한 장면). 감상 모드에서도 같은 영상을 그대로 쓴다 */}
         <MotionVideo src="motion/sofa.mp4" poster="motion/sofa-poster.webp" style={fitBox(FIT.sofa, L.canvas)} />
+        {/* 창가 햇살 + 떠다니는 먼지(장면 위, UI 아래) */}
+        <AmbientFx kind="dust" box={{ x: 0, y: 0, w: 1456, h: 818 }} count={30} />
 
         <div className={`mg-wrap ${viewing ? 'hide' : ''}`} aria-hidden={viewing}>
           <MotionTicker text="ABILITY KINGDOM / CITY RESPONSE UNIT" className="ui-lobby-ticker" />
@@ -125,13 +127,14 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
           {/* 왼쪽: 로비 캐릭터 변경 */}
           <div className="mg mg-left" style={g('left')}>
             <RefLayers layout={L} ids={GROUP.left} z={1} files={MATTE} />
+            <Fx r={{ x: 57, y: 585, w: 84, h: 53 }} className="ui-ring" z={2} />
             <Hit r={rectOf(L, 'character-switch')} label="로비 캐릭터 변경" onClick={() => setPicker(true)} />
           </div>
           {/* 오른쪽: 이벤트 패널 */}
           <div className="mg mg-right" style={g('right')}>
             <RefLayers layout={L} ids={['event-terminal']} z={1} files={MATTE} />
             {([{ id: 'event-story', screen: 'story', label: '스토리' }, { id: 'event-explore', screen: 'explore', label: '도시 탐색' }, { id: 'event-wanted', screen: 'wanted', label: '현상수배' }] as const).map((n, i) => (
-              <MotionItem key={n.id} order={i} className="ui-side-card">
+              <MotionItem key={n.id} order={i} className="ui-side-card" glint={glintOf(L, n.id, MATTE)}>
                 <RefLayers layout={L} ids={[n.id]} z={1} files={MATTE} />
                 <Hit r={rectOf(L, n.id)} label={`이벤트: ${n.label}`} onClick={() => go(n.screen)} />
               </MotionItem>
@@ -140,7 +143,7 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
           {/* 하단 메뉴 띠 */}
           <div className="mg mg-bottom" style={g('bottom')}>
             <RefLayers layout={L} ids={['navbar-remainder']} z={1} files={MATTE} />
-            {NAV.map((n, i) => <MotionItem key={n.id} order={i} className="ui-nav-item">
+            {NAV.map((n, i) => <MotionItem key={n.id} order={i} className="ui-nav-item" glint={glintOf(L, n.id, MATTE)}>
               <RefLayers layout={L} ids={[n.id]} z={1} files={MATTE} />
               <Hit r={rectOf(L, n.id)} label={n.label} onClick={() => go(n.screen)} className={`lb-nav-${n.screen}`} />
             </MotionItem>)}

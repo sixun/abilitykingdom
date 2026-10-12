@@ -11,7 +11,7 @@ import fitJson from '../game/data/motion-fit.json'
 import matteJson from '../game/data/ref-matte.json'
 import { MotionVideo, fitBox } from '../ui/motion'
 import '../styles/motion.css'
-import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue } from '../ui/ui-motion'
+import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx, Fx, glintOf } from '../ui/ui-motion'
 import textless from '../game/data/ref-textless.json'
 
 // 역 승강장 로비 원본(1672×941)을 원본 조각 26개로 재현.
@@ -29,7 +29,7 @@ const GROUPS: Record<string, string[]> = {
   bottom: ['characters', 'formation', 'home', 'bag', 'recruitment'],
 }
 // 진입: 장면 0ms → 상단 80 → 좌 130 → 우 170 → 하단 220ms(각 240ms 이동+페이드, 0.46초 안에 정착)
-const DELAY = { top: 80, left: 130, right: 170, bottom: 220 }
+const DELAY = { top: 380, left: 520, right: 600, bottom: 700 }
 const FIT = fitJson as unknown as Record<string, { s: number; x: number; y: number }>
 const MATTE = (matteJson as Record<string, Record<string, string>>).station
 const TM = (matteJson as Record<string, Record<string, string>>)['station-textless']
@@ -89,6 +89,8 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
       <RefStage canvas={L.canvas} className="ui-station">
         {/* 장면: UI 없는 지안 역 로비 영상. 감상 모드에서도 같은 영상을 그대로 쓴다 */}
         <MotionVideo src="motion/station.mp4" poster="motion/station-poster.webp" style={fitBox(FIT.station, L.canvas)} />
+        {/* 승강장 빛 입자 + 가끔 지나가는 열차 불빛(장면 위, UI 아래) */}
+        <AmbientFx kind="city" box={{ x: 0, y: 0, w: 1672, h: 941 }} count={28} />
         {line && !viewing && <div className="rs-line" role="status"><b>{lobbyChar.name}</b>{line}</div>}
         {!viewing && <Hit r={{ x: 470, y: 110, w: 520, h: 680 }} z={5} sfx="none" label={`${lobbyChar.name}에게 말 걸기`} onClick={talk} className="rs-char" />}
 
@@ -112,6 +114,9 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
             )}
             {/* 우편은 원본에 표시가 없어, 공지의 원본 점 그림을 같은 크기로 재사용 */}
             {b.mail && <img className="ref-layer" src={T['badge-notice'].sprite} alt="" style={{ left: 1532, top: 19, width: T['badge-notice'].w, height: T['badge-notice'].h, zIndex: 21 }} />}
+            {b.notice && <Fx r={{ x: 1451, y: 27, w: 13, h: 13 }} className="ui-ping" z={22} />}
+            {b.mission && <Fx r={{ x: 1624, y: 27, w: 13, h: 13 }} className="ui-ping" z={22} />}
+            {b.mail && <Fx r={{ x: 1540, y: 27, w: 13, h: 13 }} className="ui-ping" z={22} />}
             {/* 로비 테마 전환(원본에 없는 추가 버튼, 얼굴·카드와 겹치지 않는 상단 빈 영역) */}
             <div className="rs-theme" style={{ left: 1268, top: 22, width: 126, height: 50 }} aria-hidden>
               <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 11a8 8 0 0 1 16 0v5H4z" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M2 16h20M7 16v3M17 16v3" stroke="currentColor" strokeWidth="2" /></svg>
@@ -128,42 +133,43 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
 
           {/* 왼쪽: 픽업·아이콘·카드. 겹친 카드는 실제 앞뒤 순서대로 클릭(현상수배 > 훈련 > 상점) */}
           <div className="mg mg-left" style={g('left')}>
-            <MotionItem order={0} z={50} className="ui-side-card">
+            <MotionItem order={0} z={50} className="ui-side-card" glint={glintOf(L, 'pickup', files)}>
               <RefLayers layout={L} ids={['pickup']} z={2} files={files} />
 
               <Hit r={rectOf(L, 'pickup')} label={`픽업 영입${pickup ? `: ${pickup.title}` : ''}`} onClick={() => go('recruit', { bannerId: pickup?.id })} className="st-card" />
             </MotionItem>
-            <MotionItem order={1} z={50} className="ui-side-card">
+            <MotionItem order={1} z={50} className="ui-side-card" glint={glintOf(L, 'messages', files)}>
               <RefLayers layout={L} ids={['messages']} z={2} files={files} />
 
               <Hit r={rectOf(L, 'messages')} label="메시지" onClick={() => setPop('messages')} />
             </MotionItem>
-            <MotionItem order={2} z={50} className="ui-side-card">
+            <MotionItem order={2} z={50} className="ui-side-card" glint={glintOf(L, 'events', files)}>
               <RefLayers layout={L} ids={['events']} z={2} files={files} />
+              {b.event && <Fx r={{ x: 106, y: 364, w: 13, h: 12 }} className="ui-ping" z={22} />}
 
               <Hit r={rectOf(L, 'events')} label={`이벤트${b.event ? ', 새 이벤트 있음' : ''}`} onClick={() => go('events')} />
             </MotionItem>
-            <MotionItem order={3} z={50} className="ui-side-card">
+            <MotionItem order={3} z={50} className="ui-side-card" glint={glintOf(L, 'coupon', files)}>
               <RefLayers layout={L} ids={['coupon']} z={2} files={files} />
 
               <Hit r={rectOf(L, 'coupon')} label="쿠폰 이벤트" onClick={() => { setCoupon(''); setCouponMsg(''); setPop('coupon') }} />
             </MotionItem>
-            <MotionItem order={4} z={50} className="ui-side-card">
+            <MotionItem order={4} z={50} className="ui-side-card" glint={glintOf(L, 'costume', files)}>
               <RefLayers layout={L} ids={['costume']} z={2} files={files} />
 
               <Hit r={rectOf(L, 'costume')} label="코스튬" onClick={() => setPop('costume')} />
             </MotionItem>
-            <MotionItem order={5} z={53} className="ui-side-card">
+            <MotionItem order={5} z={53} className="ui-side-card" glint={glintOf(L, 'wanted', files)}>
               <RefLayers layout={L} ids={['wanted']} z={2} files={files} />
 
               <Hit r={rectOf(L, 'wanted')} z={53} label="현상수배" onClick={() => go('wanted')} className="st-card" />
             </MotionItem>
-            <MotionItem order={6} z={51} className="ui-side-card">
+            <MotionItem order={6} z={51} className="ui-side-card" glint={glintOf(L, 'shop', files)}>
               <RefLayers layout={L} ids={['shop']} z={2} files={files} />
 
               <Hit r={{ x: 125, y: 638, w: 284, h: 62 }} z={51} label="상점" onClick={() => go('shop')} className="st-card" />
             </MotionItem>
-            <MotionItem order={7} z={52} className="ui-side-card">
+            <MotionItem order={7} z={52} className="ui-side-card" glint={glintOf(L, 'training', files)}>
               <RefLayers layout={L} ids={['training']} z={2} files={files} />
 
               <Hit r={{ x: 47, y: 705, w: 391, h: 207 }} z={52} label="훈련" onClick={() => go('training')} className="st-card" />
@@ -173,36 +179,36 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
           {/* 오른쪽: 메인 목표·출석·아레나·레이드·도시 탐색·스토리 */}
           <div className="mg mg-right" style={g('right')}>
 
-            <MotionItem order={0} z={50} className="ui-side-card">
+            <MotionItem order={0} z={50} className="ui-side-card" glint={glintOf(L, 'quest', files)}>
               <RefLayers layout={L} ids={['quest']} z={2} files={files} />
               <TextlessPatch m={tl('quest-text')}>
               <span className="abs rs-quest" style={{ left: 8, top: 5 }}>{goal ? <><b>{goal.id}</b> 클리어하기</> : '모든 스토리 클리어'}</span>
             </TextlessPatch>
               <Hit r={rectOf(L, 'quest')} label={goal ? `메인 목표: ${goal.id} 클리어하기` : '메인 목표 없음'} onClick={() => go('story', { stageId: goal?.id })} className="st-card" />
             </MotionItem>
-            <MotionItem order={1} z={50} className="ui-side-card">
+            <MotionItem order={1} z={50} className="ui-side-card" glint={glintOf(L, 'attendance', files)}>
               <RefLayers layout={L} ids={['attendance']} z={2} files={files} />
               <TextlessPatch m={tl('attendance-timer')}>
               <span className="abs rs-timer num-tab" style={{ left: 6, top: 3 }}>{untilMidnight(now)}</span>
             </TextlessPatch>
               <Hit r={rectOf(L, 'attendance')} label={`출석 이벤트${b.attendance ? ', 오늘 보상 받기 가능' : ''}`} onClick={() => go('attendance')} className="st-card" />
             </MotionItem>
-            <MotionItem order={2} z={50} className="ui-side-card">
+            <MotionItem order={2} z={50} className="ui-side-card" glint={glintOf(L, 'arena', files)}>
               <RefLayers layout={L} ids={['arena']} z={2} files={files} />
 
               <Hit r={rectOf(L, 'arena')} label="아레나" onClick={() => go('arena')} />
             </MotionItem>
-            <MotionItem order={3} z={50} className="ui-side-card">
+            <MotionItem order={3} z={50} className="ui-side-card" glint={glintOf(L, 'raid', files)}>
               <RefLayers layout={L} ids={['raid']} z={2} files={files} />
 
               <Hit r={rectOf(L, 'raid')} label="레이드" onClick={() => go('raid')} />
             </MotionItem>
-            <MotionItem order={4} z={50} className="ui-side-card">
+            <MotionItem order={4} z={50} className="ui-side-card" glint={glintOf(L, 'exploration', files)}>
               <RefLayers layout={L} ids={['exploration']} z={2} files={files} />
 
               <Hit r={{ x: 1238, y: 502, w: 396, h: 163 }} label="도시 탐색" onClick={() => go('explore')} className="st-card" />
             </MotionItem>
-            <MotionItem order={5} z={51} className="ui-side-card">
+            <MotionItem order={5} z={51} className="ui-side-card" glint={glintOf(L, 'story', files)}>
               <RefLayers layout={L} ids={['story']} z={2} files={files} />
 
               <Hit r={{ x: 1195, y: 665, w: 440, h: 233 }} z={51} label="스토리" onClick={() => go('story')} className="st-card" />
@@ -211,27 +217,27 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
 
           {/* 하단 메뉴(인물 위에 그려진 흰 아이콘·글자만 남긴 매트) */}
           <div className="mg mg-bottom" style={g('bottom')}>
-            <MotionItem order={6} z={50} className="ui-nav-item">
+            <MotionItem order={0} z={50} className="ui-nav-item" glint={glintOf(L, 'characters', files)}>
               <RefLayers layout={L} ids={['characters']} z={2} files={files} />
 
               <Hit r={rectOf(L, 'characters')} label="캐릭터" onClick={() => go('characters')} />
             </MotionItem>
-            <MotionItem order={7} z={50} className="ui-nav-item">
+            <MotionItem order={1} z={50} className="ui-nav-item" glint={glintOf(L, 'formation', files)}>
               <RefLayers layout={L} ids={['formation']} z={2} files={files} />
 
               <Hit r={rectOf(L, 'formation')} label="편성" onClick={() => go('formation')} />
             </MotionItem>
-            <MotionItem order={0} z={50} className="ui-nav-item">
+            <MotionItem order={2} z={50} className="ui-nav-item" glint={glintOf(L, 'home', files)}>
               <RefLayers layout={L} ids={['home']} z={2} files={files} />
 
               <Hit r={rectOf(L, 'home')} label="홈 (현재 로비)" onClick={() => setPop(null)} />
             </MotionItem>
-            <MotionItem order={1} z={50} className="ui-nav-item">
+            <MotionItem order={3} z={50} className="ui-nav-item" glint={glintOf(L, 'bag', files)}>
               <RefLayers layout={L} ids={['bag']} z={2} files={files} />
 
               <Hit r={rectOf(L, 'bag')} label="가방" onClick={() => go('bag')} />
             </MotionItem>
-            <MotionItem order={2} z={50} className="ui-nav-item">
+            <MotionItem order={4} z={50} className="ui-nav-item" glint={glintOf(L, 'recruitment', files)}>
               <RefLayers layout={L} ids={['recruitment']} z={2} files={files} />
 
               <Hit r={rectOf(L, 'recruitment')} label="영입" onClick={() => go('recruit')} />

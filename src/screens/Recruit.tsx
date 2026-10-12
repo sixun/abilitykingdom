@@ -15,7 +15,7 @@ import textlessJson from '../game/data/ref-textless.json'
 import cutJson from '../game/data/recruit-cut.json'
 import { MotionVideo } from '../ui/motion'
 import '../styles/motion.css'
-import { MotionStage as RefStage, MotionItem, MotionTitle, MotionTicker } from '../ui/ui-motion'
+import { MotionStage as RefStage, MotionItem, MotionTitle, MotionTicker, AmbientFx, Glint, glintOf } from '../ui/ui-motion'
 
 // 방송 콘셉트 영입 원본(1456×819)을 원본 조각 24개로 재현.
 // 원본 키비주얼은 '주파수 너머(리온)'만 있다. 다른 배너를 고르면 복원 배경 + 임시 캐릭터 + 실제 텍스트로 대체 표시한다(원본 아님).
@@ -72,6 +72,8 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
             <div className="cdx rcx-rion" key={`rion-${enterKey}`}>
               <MotionVideo src="motion/recruit.webm" poster="motion/recruit-poster.webp" alpha className="char" style={{ left: FIT.recruit.x, top: FIT.recruit.y, width: 1080 * FIT.recruit.s, height: 1080 * FIT.recruit.s, clipPath: `inset(0 0 ${1080 * FIT.recruit.s - (716 - FIT.recruit.y)}px 0)` }} />
             </div>
+            {/* 리온 주변 라임 불티 + 방송 스캔선 */}
+            <AmbientFx kind="lime" box={{ x: 262, y: 0, w: 1194, h: 716 }} count={24} z={1} clip="polygon(0 92px, 406px 92px, 406px 0, 793px 0, 793px 62px, 1194px 62px, 1194px 645px, 808px 645px, 808px 716px, 0 716px)" />
             <RefLayers layout={L} hide={new Set(['scene-remainder', 'promo-title', ...BANNER_SLICES, ...TOP_SLICES, ...ACTION_SLICES])} z={1} files={MATTE_R} />
             {/* 라이브 타이포: 글자 마스크 + 방송 띠, 인물과 독립된 타임라인 */}
             <div className="ui-recruit-title" key={`title-${enterKey}`} aria-label={b.title}>
@@ -104,9 +106,10 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
             <span className="note">원본 키비주얼 없음 · 임시 표시</span>
           </div>
         )}
+        {!isRefBanner && <AmbientFx kind="lime" box={{ x: 262, y: 0, w: 1194, h: 716 }} count={20} z={2} clip="polygon(0 92px, 406px 92px, 406px 0, 793px 0, 793px 62px, 1194px 62px, 1194px 645px, 808px 645px, 808px 716px, 0 716px)" />}
 
         <div className="ui-recruit-transition" key={`transition-${bannerId}`} aria-hidden />
-        <MotionItem order={0} z={32} className="ui-chrome ui-chrome-top">
+        <MotionItem order={0} z={32} className="ui-chrome ui-chrome-top" idle={false}>
           <RefLayers layout={L} ids={TOP_SLICES} z={1} files={isRefBanner ? MATTE_R : undefined} />
           <div className="ui-recruit-tabline" aria-hidden style={{ left: kind === 'limited' ? 302 : 490 }} />
           {/* 탭 상태(상시 선택 시) */}
@@ -125,8 +128,9 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
           <Hit r={rectOf(L, 'currency-gems')} label={`다이아 ${W.diamond}, 충전`} onClick={() => nav.push('shop', { tab: 'currency' })} />
           <Hit r={rectOf(L, 'currency-tickets')} label={`영입 티켓 ${W.ticket}, 구매`} onClick={() => nav.push('shop', { tab: 'recommend' })} />
         </MotionItem>
-        <MotionItem order={6} z={32} className="ui-chrome ui-chrome-actions" key={`actions-${bannerId}`}>
+        <MotionItem order={6} z={32} className="ui-chrome ui-chrome-actions" key={`actions-${bannerId}`} idle={false}>
           <RefLayers layout={L} ids={ACTION_SLICES} z={1} files={isRefBanner ? MATTE_R : undefined} />
+          <Glint g={glintOf(L, 'pull-ten', isRefBanner ? MATTE_R : undefined)!} className="ui-glint-cta" />
           {pts !== REF.points && (
             <>
               <Patch r={{ x: 354, y: 741, w: 100, h: 27 }} bg={IVORY} z={30} style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: '#202024' }}>
@@ -152,7 +156,7 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
         {/* 배너 선택 */}
         {BANNER_SLICES.map((id, i) => {
           const bb = BANNER_BY_ID[BANNER_IDS[i]]
-          return <MotionItem key={id} order={i} z={40} className={`ui-banner-item ${i === selIdx ? 'is-selected' : ''}`}>
+          return <MotionItem key={id} order={i} z={40} className={`ui-banner-item ${i === selIdx ? 'is-selected' : ''}`} glint={glintOf(L, id)}>
             <RefLayers layout={L} ids={[id]} z={1} />
             {selIdx !== 0 && <div className="rf-slot-overlay" style={boxStyle(rectOf(L, id), { zIndex: 30 })}>
               {i === selIdx ? <img src={SKIN('banner-frame-selected')} alt="" /> : <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,6,14,.45)' }} />}
