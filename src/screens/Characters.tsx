@@ -20,10 +20,12 @@ export default function Characters(_: { params: Record<string, unknown> }) {
   const [sort, setSort] = useState<Sort>('level')
 
   const list = useMemo(() => {
-    let l = CHARACTERS.filter((c) => (role === 'all' || c.role === role) && (!ownedOnly || s.owned[c.id]))
+    // 설정 미확정 캐릭터는 역할이 없으므로 '전체'에서만 보인다
+    let l = CHARACTERS.filter((c) => (role === 'all' || (!c.pending && c.role === role)) && (!ownedOnly || s.owned[c.id]))
     l = [...l].sort((a, b) => {
       const oa = s.owned[a.id], ob = s.owned[b.id]
       if (!!oa !== !!ob) return oa ? -1 : 1
+      if (!!a.pending !== !!b.pending) return a.pending ? 1 : -1
       if (sort === 'level') return (ob?.level ?? 0) - (oa?.level ?? 0) || b.rarity - a.rarity
       if (sort === 'rarity') return b.rarity - a.rarity || (ob?.level ?? 0) - (oa?.level ?? 0)
       if (sort === 'power') return charPower(s, b.id) - charPower(s, a.id)
@@ -57,9 +59,9 @@ export default function Characters(_: { params: Record<string, unknown> }) {
               <div className="ccard-art"><img src={c.assets.stand} alt="" loading="lazy" /></div>
               <div className="ccard-tab">{c.nameEn}</div>
               <div className="ccard-info">
-                <div className="ccard-row"><span className="ccard-role"><RoleGlyph role={c.role} size="1.6rem" /></span><strong>{c.name}</strong></div>
-                <div className="ccard-row small"><Stars n={c.rarity} /><span>{ATTRIBUTE_LABEL[c.attribute]} · {ROLE_LABEL[c.role]}</span></div>
-                <div className="ccard-row small num">{o ? <>Lv.{o.level} · 전투력 {fmt(charPower(s, c.id))}</> : <span className="ccard-unowned">미보유</span>}</div>
+                <div className="ccard-row">{!c.pending && <span className="ccard-role"><RoleGlyph role={c.role} size="1.6rem" /></span>}<strong>{c.name}</strong></div>
+                <div className="ccard-row small">{c.pending ? <span>설정 미정 · 역할·희귀도 미정</span> : <><Stars n={c.rarity} /><span>{ATTRIBUTE_LABEL[c.attribute]} · {ROLE_LABEL[c.role]}</span></>}</div>
+                <div className="ccard-row small num">{o ? <>Lv.{o.level} · 전투력 {fmt(charPower(s, c.id))}</> : <span className="ccard-unowned">{c.pending ? '신규 · 획득 불가' : '미보유'}</span>}</div>
               </div>
             </button>
           )

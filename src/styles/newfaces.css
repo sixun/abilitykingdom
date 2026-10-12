@@ -1,0 +1,63 @@
+/* 신규 대원 미리보기(영입 화면 위, 원본 캔버스 1456×819 좌표) */
+.nf { position: absolute; inset: 0; z-index: 85; background: #0b0a10f2; color: #f6f3ea; overflow: hidden; animation: nfIn 420ms cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes nfIn { from { clip-path: polygon(0 0, 0 0, -12% 100%, -12% 100%); } to { clip-path: polygon(0 0, 112% 0, 100% 100%, -12% 100%); } }
+.nf-stripes { position: absolute; inset: -40% -10%; background: repeating-linear-gradient(-62deg, transparent 0 46px, #c8f53b0d 46px 50px); animation: nfStripes 14s linear infinite; pointer-events: none; }
+@keyframes nfStripes { to { transform: translateX(96px); } }
+.nf-head { position: absolute; left: 40px; top: 22px; }
+.nf-head small { display: block; font: 800 11px/1.2 sans-serif; letter-spacing: .2em; color: #c8f53b; }
+.nf-head h2 { margin: 2px 0 6px; font: italic 64px/1 Anton, sans-serif; letter-spacing: -.01em; }
+.nf-chip { display: inline-block; padding: 4px 10px; border: 2px solid #f6f3ea55; border-radius: 4px; font: 800 13px/1.3 'Noto Sans KR', sans-serif; color: #f6f3ea; background: #00000066; }
+.nf-chip.warn { border-color: #c8f53b; color: #c8f53b; }
+.nf-close { position: absolute; right: 36px; top: 26px; width: 64px; height: 64px; border-radius: 50%; border: 2px solid #f6f3ea88; background: #15141b; color: #fff; font: 400 40px/1 sans-serif; cursor: pointer; transition: transform 140ms, background-color 140ms; }
+.nf-close:hover, .nf-close:focus-visible { background: #c8f53b; color: #111; transform: rotate(90deg); }
+
+.nf-list { position: absolute; left: 40px; top: 150px; width: 312px; display: grid; gap: 14px; }
+.nf-card { position: relative; display: flex; align-items: center; gap: 14px; height: 124px; padding: 10px 14px 10px 12px; border: 0; border-radius: 6px; background: #1a1922; color: inherit; text-align: left; cursor: pointer; clip-path: polygon(0 0, 100% 0, 94% 100%, 0 100%); animation: nfCard 520ms cubic-bezier(.3, 1.5, .5, 1) both; transition: background-color 160ms, transform 160ms; }
+@keyframes nfCard { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: none; } }
+.nf-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: #c8f53b; transform: scaleY(0); transition: transform 180ms cubic-bezier(.16, 1, .3, 1); }
+.nf-card:hover, .nf-card:focus-visible { background: #24232e; transform: translateX(6px); }
+.nf-card:active { transform: translateX(3px) scale(.98); }
+.nf-card.on { background: #2b2a36; }
+.nf-card.on::before { transform: none; }
+.nf-card .pt { flex: none; width: 100px; height: 100px; border-radius: 6px; overflow: hidden; background: #0e0e14; box-shadow: 0 0 0 2px #ffffff22; }
+.nf-card.on .pt { box-shadow: 0 0 0 3px #c8f53b; }
+.nf-card .pt img { width: 100%; height: 100%; object-fit: cover; }
+.nf-card .tx { display: grid; gap: 3px; min-width: 0; }
+.nf-card b { font: 900 21px/1.15 'Noto Sans KR', sans-serif; letter-spacing: -.02em; }
+.nf-card em { font: italic 18px/1 Anton, sans-serif; letter-spacing: .02em; color: #c8f53b; }
+.nf-card i { font: 700 12px/1.2 'Noto Sans KR', sans-serif; font-style: normal; color: #f6f3ea99; }
+
+.nf-stage { position: absolute; left: 380px; top: 128px; width: 1036px; height: 583px; overflow: hidden; border-radius: 4px; background: #000; box-shadow: 0 0 0 2px #f6f3ea33, 0 18px 40px #0009; }
+.nf-scene { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: nfScene 900ms cubic-bezier(.16, 1, .3, 1) both, nfBreath 14s ease-in-out 900ms infinite alternate; }
+@keyframes nfScene { from { transform: scale(1.12); filter: brightness(.4); } to { transform: scale(1.02); filter: none; } }
+@keyframes nfBreath { from { transform: scale(1.02); } to { transform: scale(1.06); } }
+.nf-fig { position: absolute; left: 50%; bottom: 0; height: 100%; translate: -50% 0; }
+.nf-wipe { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.nf-wipe::before { content: ''; position: absolute; top: -10%; bottom: -10%; left: -40%; width: 38%; transform: skewX(-20deg); background: linear-gradient(90deg, transparent, #c8f53b 40%, #15121d 60%, transparent); animation: nfWipe 460ms cubic-bezier(.7, 0, .2, 1) both; }
+@keyframes nfWipe { from { translate: 0 0; } to { translate: 1600px 0; visibility: hidden; } }
+.nf-name { position: absolute; left: 34px; bottom: 26px; z-index: 4; text-shadow: 0 3px 18px #000c; }
+.nf-name .en { display: block; font: italic 92px/.95 Anton, sans-serif; letter-spacing: -.02em; }
+.nf-name .en .ui-letter-mask > i { animation-duration: 520ms; animation-delay: calc(160ms + var(--letter-i) * 45ms); }
+.nf-name .rule { display: block; height: 5px; width: 220px; margin: 6px 0 8px; background: #c8f53b; transform-origin: left; animation: nfRule 600ms cubic-bezier(.16, 1, .3, 1) 380ms both; box-shadow: 0 0 14px #c8f53b99; }
+@keyframes nfRule { 0% { transform: scaleX(0); opacity: 1; } 60% { transform: scaleX(1.25); opacity: 1; } 100% { transform: scaleX(1); opacity: 1; } }
+.nf-name .ko { display: block; font: 900 30px/1.1 'Noto Sans KR', sans-serif; letter-spacing: -.02em; animation: nfUp 420ms cubic-bezier(.16, 1, .3, 1) 420ms both; }
+.nf-name .chips { display: flex; gap: 8px; margin-top: 10px; animation: nfUp 420ms cubic-bezier(.16, 1, .3, 1) 520ms both; }
+@keyframes nfUp { from { opacity: 0; translate: 0 14px; } to { opacity: 1; translate: 0 0; } }
+
+.nf-foot { position: absolute; left: 380px; right: 40px; top: 730px; display: flex; align-items: center; gap: 22px; }
+.nf-btn { flex: none; height: 56px; padding: 0 34px; border: 0; border-radius: 30px; background: #c8f53b; color: #121316; font: 900 21px/1 'Noto Sans KR', sans-serif; cursor: pointer; transition: transform 120ms, filter 120ms; }
+.nf-btn:hover, .nf-btn:focus-visible { filter: brightness(1.08); transform: translateY(-2px); }
+.nf-btn:active { transform: translateY(1px) scale(.98); }
+.nf-foot p { margin: 0; font: 600 13px/1.4 'Noto Sans KR', sans-serif; color: #f6f3ea99; }
+
+/* 영입 상단의 진입 버튼 */
+.rr-newfaces { position: absolute; z-index: 33; display: flex; white-space: nowrap; align-items: center; gap: 10px; padding: 0 16px 0 12px; border-radius: 26px; border: 2px solid #c8f53b; background: #15141bdd; color: #f6f3ea; pointer-events: none; animation: nfPulse 2.2s ease-in-out 2s infinite alternate; }
+.rr-newfaces b { font: italic 22px/1 Anton, sans-serif; letter-spacing: .02em; color: #c8f53b; }
+.rr-newfaces span { font: 800 14px/1 'Noto Sans KR', sans-serif; }
+.rr-newfaces .faces { display: flex; }
+.rr-newfaces .faces img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; margin-left: -8px; box-shadow: 0 0 0 2px #15141b; background: #222; }
+.rr-newfaces .faces img:first-child { margin-left: 0; }
+@keyframes nfPulse { from { box-shadow: 0 0 0 0 #c8f53b00; } to { box-shadow: 0 0 18px 2px #c8f53b88; } }
+
+.ui-reduced .nf, .ui-reduced .nf *, .ui-reduced .rr-newfaces { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .nf, .nf *, .rr-newfaces { animation: none !important; } }

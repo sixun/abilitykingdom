@@ -303,3 +303,9 @@
 .enter-back .ui-motion .ui-item { animation-duration: 460ms; animation-delay: calc(var(--ui-order) * 25ms); }
 .enter-back .ui-motion .mv { animation-duration: 600ms, 15s; animation-delay: 0ms, 600ms; }
 .enter-back .ui-scene-cue { display: none; }
+
+/* 신규 캐릭터 로비 장면: 푸른 도깨비불 입자(키요미) */
+.ui-amb-wisp .ui-amb-parts i { background: #8fd0ff; box-shadow: 0 0 10px 3px #3c8dffb0; }
+.ui-amb-wisp .ui-amb-light { background: radial-gradient(ellipse 30% 40% at 50% 45%, #3c8dff22, transparent 70%); mix-blend-mode: screen; animation: uiFlare 3.6s ease-in-out infinite alternate; }
+/* 전용 장면 정지 그림(영상 없음): 영상과 같은 카메라 숨쉬기를 쓴다 */
+.ui-motion img.mv.scene { object-fit: cover; }

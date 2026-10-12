@@ -15,6 +15,7 @@ import '../styles/motion.css'
 import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx, Fx, glintOf } from '../ui/ui-motion'
 import layoutJson from '../game/data/ref-lobby.json'
 import LobbyStation from './LobbyStation'
+import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 
 // 소파 로비 원본(1456×818)을 원본 조각 23개로 재현.
 // 재화·레벨은 원본 값과 같으면 원본 조각 그대로, 바뀌면 숫자 영역만 덮어 실제 텍스트로 표시한다.
@@ -70,6 +71,8 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
   const [more, setMore] = useState(false)
   const [viewing, setViewing] = useState(false)
   const [toTitle, setToTitle] = useState(false)
+  // 전용 로비 장면이 있는 캐릭터면 지안 소파 영상 대신 그 장면(인물 포함 정지 그림)을 쓴다 → 두 인물이 겹치지 않는다
+  const scene = LOBBY_SCENES[s.lobby.characterId]
 
   useEffect(() => { audio.bgm('lobby') }, [])
   const go = (sc: ScreenName, p?: Record<string, unknown>) => { setMore(false); nav.push(sc, p) }
@@ -87,13 +90,15 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
     <div className="scr">
       <RefStage canvas={L.canvas} className="ui-sofa">
         {/* 장면: UI 없는 지안 소파 영상(배경+인물 한 장면). 감상 모드에서도 같은 영상을 그대로 쓴다 */}
-        <MotionVideo src="motion/sofa.mp4" poster="motion/sofa-poster.webp" style={fitBox(FIT.sofa, L.canvas)} />
-        {/* 창가 햇살 + 떠다니는 먼지(장면 위, UI 아래) */}
-        <AmbientFx kind="dust" box={{ x: 0, y: 0, w: 1456, h: 818 }} count={30} />
+        {scene
+          ? <img className="mv scene" src={scene.poster} alt="" draggable={false} style={{ left: 0, top: 0, width: 1456, height: 818 }} />
+          : <MotionVideo src="motion/sofa.mp4" poster="motion/sofa-poster.webp" style={fitBox(FIT.sofa, L.canvas)} />}
+        {/* 장면 공기(창가 햇살·먼지 / 캐릭터 장면별 입자). 장면 위, UI 아래 */}
+        <AmbientFx key={scene ? scene.poster : 'sofa'} kind={scene ? scene.amb : 'dust'} box={{ x: 0, y: 0, w: 1456, h: 818 }} count={30} />
 
         <div className={`mg-wrap ${viewing ? 'hide' : ''}`} aria-hidden={viewing}>
           <MotionTicker text="ABILITY KINGDOM / CITY RESPONSE UNIT" className="ui-lobby-ticker" />
-          <SceneCue title="LOUNGE" subtitle="ABILITY KINGDOM / LOBBY" />
+          <SceneCue title={scene ? scene.place : 'LOUNGE'} subtitle="ABILITY KINGDOM / LOBBY" />
           {/* 상단 띠 */}
           <div className="mg mg-top" style={g('top')}>
             <RefLayers layout={L} ids={GROUP.top} z={1} />
@@ -171,7 +176,7 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
           <p className="lb-picker-note">로비에 전시할 캐릭터입니다. 팀 리더와는 따로 저장됩니다. 현재 로비 장면(소파) 그림은 지안만 있습니다.</p>
           <div className="lb-picker-grid">
             {CHARACTERS.filter((x) => s.owned[x.id]).map((x) => {
-              const ready = x.id === 'jian'
+              const ready = x.id === 'jian' || !!LOBBY_SCENES[x.id]
               return (
                 <button key={x.id} className={x.id === s.lobby.characterId ? 'on' : ''} disabled={!ready} onClick={async () => { audio.sfx('select'); await game.setLobbyCharacter(x.id); setPicker(false) }}>
                   <img src={x.assets.portrait} alt="" style={ready ? undefined : { filter: 'grayscale(1) brightness(.5)' }} />

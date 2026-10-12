@@ -91,11 +91,12 @@ await page.click('.modal .btn-primary'); await W(800)
 let s = await st()
 check(s.owned.jian.level === 41 && s.wallet.credit < cr0, `CONFIRM 후 Lv.40 → ${s.owned.jian.level}`)
 check(await has('img[src*="textless/stat-hp"]') && await has('img[src*="textless/level-text"]'), '값이 바뀐 칸만 글자 없는 패치 + 실제 텍스트로 교체')
-await page.click('.screen-active button[aria-label="목록 뒤로"]'); await W(200)
-await page.click('.screen-active button[aria-label="목록 뒤로"]'); await W(200)
+// 목록 길이가 바뀌어도(신규 캐릭터 추가) 끝까지 넘긴 뒤 비활성인지 확인한다
+for (let i = 0; i < 20 && !(await page.locator('.screen-active button[aria-label="목록 뒤로"]').isDisabled()); i++) { await page.click('.screen-active button[aria-label="목록 뒤로"]'); await W(150) }
 check(await page.locator('.screen-active button[aria-label="목록 뒤로"]').isDisabled(), '목록 끝에서 뒤로 버튼 비활성(무한 순환 없음)')
 await page.click('.screen-active button[aria-label^="리온"]'); await W(500)
 check(await has('.cd2-lv:has-text("NOT OWNED")') && await page.locator('.screen-active button[aria-label^="UPGRADE"]').isDisabled(), '미보유 캐릭터: NOT OWNED, UPGRADE 비활성')
+for (let i = 0; i < 20 && (await page.locator('.screen-active button[aria-label^="하린"]').count()) === 0; i++) { await page.click('.screen-active button[aria-label="목록 앞으로"]'); await W(150) }
 await page.click('.screen-active button[aria-label^="하린"]'); await W(500)
 check(await page.locator('.screen-active button[aria-label^="로비 캐릭터로 설정"]').isDisabled(), '로비 그림 없는 캐릭터는 로비 설정 비활성')
 await page.click('.screen-active button[aria-label^="GEAR"]'); await W(400)

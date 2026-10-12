@@ -11,6 +11,7 @@ import fitJson from '../game/data/motion-fit.json'
 import matteJson from '../game/data/ref-matte.json'
 import { MotionVideo, fitBox } from '../ui/motion'
 import '../styles/motion.css'
+import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx, Fx, glintOf } from '../ui/ui-motion'
 import textless from '../game/data/ref-textless.json'
 
@@ -64,6 +65,8 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
   const go = (sc: ScreenName, p?: Record<string, unknown>) => { setPop(null); nav.push(sc, p) }
   const W = s.wallet
   const lobbyChar = CHAR_BY_ID[s.lobby.characterId] ?? CHAR_BY_ID.jian
+  // 전용 로비 장면이 있는 캐릭터면 지안 역 영상 대신 그 장면을 쓴다(인물 중복 방지)
+  const scene = LOBBY_SCENES[s.lobby.characterId]
   const pickup = BANNERS.find((x) => x.kind === 'limited')
   const allStages = STORY_CHAPTERS.flatMap((c) => c.stages)
   const goal = allStages.find((st) => !s.content.storyCleared.includes(st.id))
@@ -88,15 +91,17 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
     <div className="scr rs">
       <RefStage canvas={L.canvas} className="ui-station">
         {/* 장면: UI 없는 지안 역 로비 영상. 감상 모드에서도 같은 영상을 그대로 쓴다 */}
-        <MotionVideo src="motion/station.mp4" poster="motion/station-poster.webp" style={fitBox(FIT.station, L.canvas)} />
-        {/* 승강장 빛 입자 + 가끔 지나가는 열차 불빛(장면 위, UI 아래) */}
-        <AmbientFx kind="city" box={{ x: 0, y: 0, w: 1672, h: 941 }} count={28} />
+        {scene
+          ? <img className="mv scene" src={scene.poster} alt="" draggable={false} style={{ left: 0, top: 0, width: 1672, height: 941 }} />
+          : <MotionVideo src="motion/station.mp4" poster="motion/station-poster.webp" style={fitBox(FIT.station, L.canvas)} />}
+        {/* 승강장 빛 입자 + 가끔 지나가는 열차 불빛 / 캐릭터 장면별 입자(장면 위, UI 아래) */}
+        <AmbientFx key={scene ? scene.poster : 'station'} kind={scene ? scene.amb : 'city'} box={{ x: 0, y: 0, w: 1672, h: 941 }} count={28} />
         {line && !viewing && <div className="rs-line" role="status"><b>{lobbyChar.name}</b>{line}</div>}
         {!viewing && <Hit r={{ x: 470, y: 110, w: 520, h: 680 }} z={5} sfx="none" label={`${lobbyChar.name}에게 말 걸기`} onClick={talk} className="rs-char" />}
 
         <div className={`mg-wrap ${viewing ? 'hide' : ''}`} aria-hidden={viewing}>
           <MotionTicker text="ABILITY KINGDOM / CITY RESPONSE UNIT" className="ui-lobby-ticker" />
-          <SceneCue title="CITY LINE" subtitle="ABILITY KINGDOM / LOBBY" />
+          <SceneCue title={scene ? scene.place : 'CITY LINE'} subtitle="ABILITY KINGDOM / LOBBY" />
           {/* 상단: 프로필·재화·공지/우편/메뉴·테마 */}
           <div className="mg mg-top" style={g('top')}>
             <RefLayers layout={L} ids={GROUPS.top} z={2} files={files} />

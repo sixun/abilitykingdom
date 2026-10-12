@@ -457,4 +457,4 @@ export class LocalGameService implements GameService {
   }
 }
 
-export const ALL_CHARACTER_COUNT = CHARACTERS.length
+export const ALL_CHARACTER_COUNT = CHARACTERS.filter((c) => !c.pending).length // 설정 미확정(신규 추가) 캐릭터는 수집 수에서 제외

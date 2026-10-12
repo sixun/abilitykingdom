@@ -43,7 +43,8 @@ export default function App() {
   const [stack, setStack] = useState<Route[]>(() => {
     // 개발·검증용: ?screen=formation 처럼 특정 화면으로 바로 진입
     const q = new URLSearchParams(location.search).get('screen') as ScreenName | null
-    if (q && q in SCREENS && q !== 'boot') return q === 'lobby' ? [mkRoute('lobby')] : [mkRoute('lobby'), mkRoute(q)]
+    const id = new URLSearchParams(location.search).get('id') // 예: ?screen=characterDetail&id=kiyomi
+    if (q && q in SCREENS && q !== 'boot') return q === 'lobby' ? [mkRoute('lobby')] : [mkRoute('lobby'), mkRoute(q, id ? { id } : undefined)]
     return [mkRoute('boot')]
   })
   const [leaving, setLeaving] = useState<{ route: Route; dir: 'fwd' | 'back' } | null>(null)

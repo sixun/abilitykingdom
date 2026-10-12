@@ -16,6 +16,10 @@ import cutJson from '../game/data/recruit-cut.json'
 import { MotionVideo } from '../ui/motion'
 import '../styles/motion.css'
 import { MotionStage as RefStage, MotionItem, MotionTitle, MotionTicker, AmbientFx, Glint, glintOf } from '../ui/ui-motion'
+import NewFaces from './NewFaces'
+import { CHARACTERS } from '../game/data/characters'
+
+const NEW_FACES = CHARACTERS.filter((c) => c.pending)
 
 // 방송 콘셉트 영입 원본(1456×819)을 원본 조각 24개로 재현.
 // 원본 키비주얼은 '주파수 너머(리온)'만 있다. 다른 배너를 고르면 복원 배경 + 임시 캐릭터 + 실제 텍스트로 대체 표시한다(원본 아님).
@@ -38,6 +42,7 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
   const [bannerId, setBannerId] = useState<string>((params.bannerId as string) ?? 'b_rion')
   const [kind, setKind] = useState<'limited' | 'standard'>(BANNER_BY_ID[bannerId]?.kind ?? 'limited')
   const [modal, setModal] = useState<null | 'detail' | 'rates'>(null)
+  const [faces, setFaces] = useState(false) // 신규 대원 미리보기(소개용, 영입 풀과 무관)
   const { run, pending, failed, clearFailed } = useAction()
   const b = BANNER_BY_ID[bannerId]
   const f = CHAR_BY_ID[b.featuredId]
@@ -153,6 +158,16 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
           <Hit r={rectOf(L, 'pull-ten')} label={`${GAME_CONFIG.multiPullCount}회 영입, 영입 티켓 ${b.costPerPull.amount * GAME_CONFIG.multiPullCount}장`} disabled={!!pending} onClick={() => pull(GAME_CONFIG.multiPullCount)} sfx="none" className="hit-pull10" />
         </MotionItem>
 
+        {/* 신규 대원 미리보기 진입(원본에 없는 추가 버튼: 탭과 재화 사이 빈 상단 영역) */}
+        {NEW_FACES.length > 0 && (
+          <>
+            <div className="rr-newfaces" aria-hidden style={{ left: 682, top: 34, width: 330, height: 50 }}>
+              <span className="faces">{NEW_FACES.map((c) => <img key={c.id} src={c.assets.portrait} alt="" />)}</span>
+              <b>NEW FACES</b><span>미리보기</span>
+            </div>
+            <Hit r={{ x: 682, y: 34, w: 330, h: 50 }} z={34} label={`신규 대원 ${NEW_FACES.length}명 미리보기 (영입 대상 아님)`} onClick={() => setFaces(true)} />
+          </>
+        )}
         {/* 배너 선택 */}
         {BANNER_SLICES.map((id, i) => {
           const bb = BANNER_BY_ID[BANNER_IDS[i]]
@@ -172,6 +187,7 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
             {failed.error.code === 'INSUFFICIENT' && <div style={{ marginTop: 6, textAlign: 'right' }}><Btn size="sm" variant="primary" onClick={() => nav.push('shop', { tab: 'recommend' })}>티켓 구매하러 가기</Btn></div>}
           </div>
         )}
+        {faces && <NewFaces onClose={() => setFaces(false)} />}
       </RefStage>
 
       {modal === 'detail' && (

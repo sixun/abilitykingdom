@@ -145,6 +145,28 @@ export const CHARACTERS: CharacterDefinition[] = [
     lobby: { entrance: 'slam', idle: 'breath' },
     idleSeed: 0.9,
   },
+  // ── 신규 추가 패키지(2026-10-12, Ability-Kingdom-Character-Additions): 설정 미확정 ──
+  // 원본 참고 이미지 8장 = 4명. 그림(배경 제거본)만 확정이고 이름(뒤의 둘)·역할·희귀도·수치·스킬·획득 경로는 미정.
+  // 아래 role/attribute/rarity/수치는 형식용 자리값이며 화면에 표시하지 않는다(pending).
+  ...([
+    { id: 'baekrin', name: '백린', nameEn: 'BAEKRIN', accent: '#ff7a2e' },
+    { id: 'kiyomi', name: '키요미', nameEn: 'KIYOMI', accent: '#4aa8ff' },
+    { id: 'swordswoman', name: '이름 미정 (장검)', nameEn: 'UNNAMED A', accent: '#e0263c' },
+    { id: 'kimono', name: '이름 미정 (기모노)', nameEn: 'UNNAMED B', accent: '#e9e4da' },
+  ] as const).map((x, i): CharacterDefinition => ({
+    ...x, role: 'attack', attribute: 'blade', rarity: 0,
+    tagline: '설정 확정 전입니다.',
+    profile: { affiliation: '미정', ability: '미정', note: '이름·능력·소속은 아직 정해지지 않았습니다.' },
+    skills: [],
+    baseStats: { hp: 0, atk: 0, def: 0 },
+    subStats: { critRate: 0, critDmg: 0, speed: 0 },
+    en: { unit: 'PROFILE PENDING', motto: 'SETTINGS ARE NOT|CONFIRMED YET.' },
+    assets: a(x.id),
+    formation: { scale: 1.0, offsetX: 0, offsetY: 0, faceY: 0.07 },
+    lobby: { entrance: 'slash', idle: 'breath' },
+    idleSeed: 0.2 + i * 0.17,
+    pending: true,
+  })),
 ]
 
 export const CHAR_BY_ID: Record<string, CharacterDefinition> = Object.fromEntries(CHARACTERS.map((c) => [c.id, c]))

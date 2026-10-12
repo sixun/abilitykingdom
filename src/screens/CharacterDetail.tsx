@@ -15,6 +15,7 @@ import layoutJson from '../game/data/ref-detail.json'
 import textless from '../game/data/ref-textless.json'
 import artJson from '../game/data/ref-detail-art.json'
 import fillJson from '../game/data/detail-fill.json'
+import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 import fitJson from '../game/data/motion-fit.json'
 import { MotionVideo } from '../ui/motion'
 import '../styles/motion.css'
@@ -26,7 +27,7 @@ import { MotionStage as RefStage, MotionTitle, MotionTicker, AmbientFx, Fx, Glin
 // - 표기는 원본대로 영문. SKILLS/GEAR는 확정 시안이 없어 오른쪽 능력치 칸만 기존 기능 목록으로 바꾼다.
 const L = layoutJson as RefLayout
 const T = textless.detail as Record<string, TextlessMeta>
-const ART = artJson as Record<string, { src: string; kind: string; w: number; h: number; top: number; bodyH: number; headX: number }>
+const ART = artJson as Record<string, { src: string; kind: string; w: number; h: number; top: number; bodyH: number; headX: number; heroH?: number }>
 const REF = { id: 'jian', level: 40, hp: 18600, atk: 3240, def: 1280, critRate: 22.5, critDmg: 150, speed: 108, role: 'attack' }
 const ROLE_EN: Record<string, string> = { attack: 'ATTACK', defense: 'DEFENSE', ability: 'ABILITY', support: 'SUPPORT' }
 const ROLE_DESC: Record<string, string> = {
@@ -34,7 +35,7 @@ const ROLE_DESC: Record<string, string> = {
   ability: '범위 효과와 상태 변화로 전황을 바꾸는 역할입니다.', support: '회복과 강화로 아군을 돕는 역할입니다.',
 }
 const SLOT_LABEL: Record<keyof EquipmentSlots, string> = { weapon: 'WEAPON', gear: 'GEAR', accessory: 'ACCESSORY' }
-const LOBBY_ART = new Set(['jian']) // 로비 장면 그림이 있는 캐릭터
+const LOBBY_ART = new Set(['jian', ...Object.keys(LOBBY_SCENES)]) // 로비 장면 그림이 있는 캐릭터
 const VISIBLE = 6
 // 상단 목록 칸(원본 초상 위치). 0번은 원본에서 선택 표시가 그려진 칸
 const SLOT_CX = [949, 1073, 1197, 1321, 1445, 1569]
@@ -83,6 +84,7 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
   const c = CHAR_BY_ID[id]
   const o = s.owned[id]
   const isRef = id === REF.id
+  const pend = !!c.pending // 설정 미확정(이름·역할·수치·스킬 미정)
   const base = statsOf(c, o ?? blank(id), ITEM_BY_ID)
   const st: Record<StatKey, number> = { ...base, ...c.subStats }
   const level = o?.level ?? 1
@@ -160,7 +162,7 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
           <>
             <div className="cd2-pill" style={{ left: 44, top: 20, width: 122, height: 64 }}><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden><path d="M15 4 7 12l8 8" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /></svg></div>
             <div className={`cd2-pill cd2-lobby ${isLobby ? 'on' : ''} ${!o || !LOBBY_ART.has(id) ? 'off' : ''}`} style={{ left: 40, top: 827, width: 268, height: 64 }}>
-              <span className="star">★</span><span>{isLobby ? 'LOBBY ACTIVE' : LOBBY_ART.has(id) ? 'SET AS LOBBY' : 'NO LOBBY ART'}</span>
+              <span className="star">★</span><span>{isLobby ? 'LOBBY ACTIVE' : pend ? 'NOT OWNED' : LOBBY_ART.has(id) ? 'SET AS LOBBY' : 'NO LOBBY ART'}</span>
             </div>
           </>
         )}
@@ -183,7 +185,7 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
         </TextlessPatch>
         {!isRef && (
           <TextlessPatch m={T.emblem} className="cd2-x">
-            <span className="abs cd2-emblem"><RoleGlyph role={c.role} size={120} /></span>
+            <span className="abs cd2-emblem">{pend ? <b className="cd2-tbd">?</b> : <RoleGlyph role={c.role} size={120} />}</span>
           </TextlessPatch>
         )}
 
@@ -192,17 +194,17 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
           <TextlessPatch m={T['level-text']} key={`lv-${id}`} className="cdx-lv">
             {o
               ? <span className={`abs cd2-lv ${flash ? 'flash' : ''}`} style={{ left: 13, top: 5 }}><small>Lv.</small><b>{level}</b><em>/ {maxLv}</em></span>
-              : <span className="abs cd2-lv" style={{ left: 14, top: 14 }}><small>NOT OWNED</small></span>}
+              : <span className="abs cd2-lv" style={{ left: 14, top: 14 }}><small>{pend ? 'PENDING' : 'NOT OWNED'}</small></span>}
             <span className="abs cd2-bar" style={{ left: 12, top: 51 }}><i style={{ width: `${o ? lvPct : 0}%` }} /></span>
           </TextlessPatch>
         )}
         {/* 경험치 막대 위를 주기적으로 지나가는 빛 */}
         {o && <Fx r={{ x: 962, y: 441, w: isRef && level === REF.level ? 160 : Math.round(231 * lvPct / 100), h: 9 }} className="ui-bar-shine" />}
         {/* 역할 */}
-        {c.role !== REF.role && (
+        {(c.role !== REF.role || pend) && (
           <TextlessPatch m={T['role-content']} className="cdx-role">
-            <span className="abs cd2-role-ic"><RoleGlyph role={c.role} size={50} /></span>
-            <span className="abs cd2-role" style={{ left: 157, top: 15 }}>{ROLE_EN[c.role]}</span>
+            {!pend && <span className="abs cd2-role-ic"><RoleGlyph role={c.role} size={50} /></span>}
+            <span className="abs cd2-role" style={{ left: pend ? 40 : 157, top: 15 }}>{pend ? 'ROLE TBD' : ROLE_EN[c.role]}</span>
           </TextlessPatch>
         )}
         {/* 능력치 */}
@@ -212,7 +214,7 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
           const isPct = r.key === 'critRate' || r.key === 'critDmg'
           return (
             <TextlessPatch key={`${r.key}-${id}-${tab}`} m={T[r.patch]} className="cdx-stat" style={{ animationDelay: `${statBase + STAT_LAYERS.indexOf(r.patch) * 110}ms` }}>
-              <span className={`abs cd2-val ${isPct ? 'pct' : ''} ${flash ? 'flash' : ''}`} style={{ right: r.right, top: 12 }}>{isPct ? pct(v) : v}</span>
+              <span className={`abs cd2-val ${isPct ? 'pct' : ''} ${flash ? 'flash' : ''}`} style={{ right: r.right, top: 12 }}>{pend ? '—' : isPct ? pct(v) : v}</span>
             </TextlessPatch>
           )
         })}
@@ -220,6 +222,9 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
         {/* SKILLS / GEAR: 능력치 칸만 바꾼다(확정 시안 없음) */}
         {tab !== 'stats' && (
           <div className="cd2-alt" style={{ left: 926, top: 478, width: 690, height: 168 }} key={`${tab}-${id}`}>
+            {tab === 'skills' && pend && (
+              <div className="cd2-row cd2-row-tbd"><b className="k">TBD</b><strong>스킬 미정</strong><span>이 캐릭터의 스킬·능력은 아직 정해지지 않았습니다.</span></div>
+            )}
             {tab === 'skills' && c.skills.map((sk, i) => (
               <button key={sk.name} type="button" className="cd2-row" aria-label={`스킬 ${sk.name} 자세히`} onClick={() => { audio.sfx('tap'); setSkillPick(i) }}>
                 <b className="k">{kindEn(sk.kind)}</b><strong>{sk.name}</strong><span>{sk.desc}</span><IconChevron size={20} />
@@ -255,7 +260,7 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
         <Hit r={rectOf(L, 'faction-emblem')} label="소속 정보" onClick={() => setPop('faction')} />
         <Hit r={{ x: 925, y: 383, w: 279, h: 84 }} label={`레벨 ${level} / ${maxLv}, 성장`} disabled={!o} onClick={() => setPop('growth')} />
         <Hit r={rectOf(L, 'level-up-arrow')} label="성장 창 열기" disabled={!o} onClick={() => setPop('growth')} />
-        <Hit r={rectOf(L, 'role')} label={`역할 ${ROLE_EN[c.role]}`} onClick={() => setPop('role')} />
+        <Hit r={rectOf(L, 'role')} label={pend ? '역할 미정' : `역할 ${ROLE_EN[c.role]}`} onClick={() => setPop('role')} />
         <Hit r={rectOf(L, 'tab-stats')} label={`STATS${tab === 'stats' ? ' (선택됨)' : ''}`} onClick={() => setTab('stats')} />
         <Hit r={rectOf(L, 'tab-skills')} label={`SKILLS${tab === 'skills' ? ' (선택됨)' : ''}`} onClick={() => setTab('skills')} />
         <Hit r={rectOf(L, 'tab-gear')} label={`GEAR${tab === 'gear' ? ' (선택됨)' : ''}`} onClick={() => setTab('gear')} />
@@ -299,8 +304,8 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
       )}
       {pop === 'role' && (
         <Modal onClose={() => setPop(null)} labelledBy="role-title">
-          <h2 id="role-title">{ROLE_EN[c.role]}</h2>
-          <p className="rs-pop-note">{ROLE_DESC[c.role]} 역할별 전투 효과는 전투 규칙 확정 후 정합니다.</p>
+          <h2 id="role-title">{pend ? 'ROLE TBD' : ROLE_EN[c.role]}</h2>
+          <p className="rs-pop-note">{pend ? '이 캐릭터의 역할은 아직 정해지지 않았습니다.' : `${ROLE_DESC[c.role]} 역할별 전투 효과는 전투 규칙 확정 후 정합니다.`}</p>
           <div className="confirm-actions"><Btn variant="dark" onClick={() => setPop(null)}>닫기</Btn></div>
         </Modal>
       )}
@@ -312,7 +317,7 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
             <dt>능력</dt><dd>{c.profile.ability}</dd>
             <dt>메모</dt><dd>{c.profile.note}</dd>
           </dl>
-          <p className="rs-pop-note">“{c.tagline}” · 샘플 설정(세계관 문서와 아직 맞추지 않음)</p>
+          <p className="rs-pop-note">{pend ? '신규 추가 캐릭터 · 그림(참고 이미지 배경 제거본)만 있고 설정은 확정 전입니다. 영입·교환으로 얻을 수 없습니다.' : `“${c.tagline}” · 샘플 설정(세계관 문서와 아직 맞추지 않음)`}</p>
           <div className="confirm-actions"><Btn variant="dark" onClick={() => setPop(null)}>닫기</Btn></div>
         </Modal>
       )}
@@ -361,11 +366,11 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
 /** 지안 외 캐릭터: 원본 상세 일러스트가 없어 임시 배경 + 기존 전신 아트로 왼쪽 영역을 채운다 */
 function HeroFallback({ cid }: { cid: string }) {
   const a = ART[cid]
-  const sc = 2150 / a.bodyH
+  const sc = (a.heroH ?? 2150) / a.bodyH
   return (
     <div className="cd2-hero" style={{ left: 0, top: 0, width: 990, height: 941, clipPath: 'polygon(0 0, 914px 0, 914px 640px, 990px 640px, 990px 941px, 0 941px)' }}>
       <img src={a.src} alt="" style={{ width: a.w * sc, height: a.h * sc, left: 540 - a.headX * sc, top: 28 - a.top * sc }} />
-      <span className="tag">TEMP ART · 원본 상세 일러스트 없음</span>
+      <span className="tag">{a.kind === 'cutout' ? 'REF ART · 참고 그림 배경 제거본(상세 일러스트 없음)' : 'TEMP ART · 원본 상세 일러스트 없음'}</span>
     </div>
   )
 }

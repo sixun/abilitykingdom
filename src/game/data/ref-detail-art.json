@@ -61,5 +61,42 @@
   "top": 1,
   "bodyH": 1498,
   "headX": 265.6
+ },
+ "baekrin": {
+  "src": "ref/detail-art/baekrin.webp",
+  "kind": "cutout",
+  "w": 705,
+  "h": 1501,
+  "top": 4,
+  "bodyH": 1492,
+  "headX": 311
+ },
+ "kiyomi": {
+  "src": "ref/detail-art/kiyomi.webp",
+  "kind": "cutout",
+  "w": 938,
+  "h": 1531,
+  "top": 2,
+  "bodyH": 1524,
+  "headX": 508
+ },
+ "swordswoman": {
+  "src": "ref/detail-art/swordswoman.webp",
+  "kind": "cutout",
+  "w": 1273,
+  "h": 853,
+  "top": 0,
+  "bodyH": 852,
+  "headX": 1012,
+  "heroH": 1250
+ },
+ "kimono": {
+  "src": "ref/detail-art/kimono.webp",
+  "kind": "cutout",
+  "w": 882,
+  "h": 1509,
+  "top": 4,
+  "bodyH": 1500,
+  "headX": 401
  }
 }

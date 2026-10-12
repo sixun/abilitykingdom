@@ -81,7 +81,7 @@ export function SceneCue({ title, subtitle }: { title: string; subtitle: string 
 }
 
 /** 장면 위 공기: 떠다니는 입자 + 화면별 빛(창가 햇살, 지나가는 열차 불빛, 스캔선). 전부 CSS 반복 애니메이션 */
-export function AmbientFx({ kind, box, count = 26, z = 5, clip }: { kind: 'dust' | 'city' | 'blue' | 'lime'; box: Box; count?: number; z?: number; clip?: string }) {
+export function AmbientFx({ kind, box, count = 26, z = 5, clip }: { kind: 'dust' | 'city' | 'blue' | 'lime' | 'wisp'; box: Box; count?: number; z?: number; clip?: string }) {
   const parts = useMemo(() => {
     let seed = kind.length * 9301 + count * 49297
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647)

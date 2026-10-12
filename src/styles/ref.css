@@ -205,3 +205,6 @@
 .cd2-note { margin-top: 1rem; font-size: 1.3rem; opacity: 0.75; }
 .reduce-motion .cd2-x, .reduce-motion .cd2-hero, .reduce-motion .cd2-alt, .reduce-motion .flash, .reduce-motion .cd2-bar i { animation: none; transition: none; }
 @media (prefers-reduced-motion: reduce) { .cd2-x, .cd2-hero, .cd2-alt, .flash, .cd2-bar i { animation: none; transition: none; } }
+/* 설정 미정(신규 추가) 캐릭터 표시 */
+.cd2-tbd { font: italic 120px/1 Anton, sans-serif; color: #c7ccd4; }
+.cd2-row-tbd { cursor: default; opacity: .8; }
