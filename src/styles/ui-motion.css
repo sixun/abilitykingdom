@@ -1,0 +1,116 @@
+/* UI choreography lives in canvas pixels. Video assets are independent of these effects. */
+.ui-motion { --ui-accent: #cbf564; --ui-ease: cubic-bezier(.16, 1, .3, 1); }
+.ui-detail { --ui-accent: #4877ff; }
+.ui-item, .ui-item-body { position: absolute; inset: 0; pointer-events: none; }
+.ui-item { animation: uiItemIn 480ms var(--ui-ease) var(--ui-delay) both; }
+.ui-item-body { transition: transform 220ms var(--ui-ease); }
+.ui-item .ref-hit { pointer-events: auto; }
+.ui-item .ref-layer { transition: filter 180ms ease; }
+.ui-item-body:has(.ref-hit:enabled:is(:hover, :focus-visible)) { transform: translateY(-7px); }
+.ui-side-card .ui-item-body:has(.ref-hit:enabled:is(:hover, :focus-visible)),
+.ui-banner-item .ui-item-body:has(.ref-hit:enabled:is(:hover, :focus-visible)) { transform: translateX(7px); }
+.ui-item-body:has(.ref-hit:enabled:active) { transform: translateY(2px); }
+.ui-item-body:has(.ref-hit:enabled:is(:hover, :focus-visible)) .ref-layer { filter: brightness(1.13) drop-shadow(0 7px 5px #0006); }
+.ui-motion .ref-hit:not(:disabled)::after { content: ''; position: absolute; bottom: 3px; left: 12%; right: 12%; height: 3px; background: var(--ui-accent); transform: scaleX(0); transform-origin: left; transition: transform 180ms var(--ui-ease); pointer-events: none; }
+.ui-motion .ref-hit:not(:disabled):is(:hover, :focus-visible)::after { transform: scaleX(1); }
+.ui-motion .rs-char::after { display: none; }
+@keyframes uiItemIn { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: none; } }
+
+/* Mask each letter separately: text is live, not a video or a transformed screen grab. */
+.ui-title { display: inline-flex; white-space: nowrap; }
+.ui-letter-mask { display: inline-block; overflow: hidden; vertical-align: bottom; padding: .12em .025em .12em 0; margin: -.12em -.025em -.12em 0; }
+.ui-letter-mask > i { display: inline-block; font-style: inherit; animation: uiLetterIn 560ms var(--ui-ease) var(--letter-delay) both; }
+@keyframes uiLetterIn { from { transform: translateY(118%) skewY(12deg); } to { transform: none; } }
+.ui-ticker { overflow: hidden; pointer-events: none; }
+.ui-ticker > div { display: flex; width: max-content; animation: uiTicker 18s linear infinite; }
+.ui-ticker span { flex: none; white-space: nowrap; padding-right: 24px; }
+.ui-ticker b { padding: 0 18px; }
+@keyframes uiTicker { to { transform: translateX(-50%); } }
+
+/* A brief location signature, then a quiet animated rule under it. */
+.ui-scene-cue { position: absolute; left: 58px; top: 110px; z-index: 4; color: #f5f0e6; pointer-events: none; text-shadow: 0 2px 14px #000b; animation: uiCue 2600ms var(--ui-ease) both; }
+.ui-scene-cue small { display: block; font-size: 12px; font-weight: 800; letter-spacing: .22em; margin-bottom: 5px; }
+.ui-scene-cue > .ui-title { font: italic 62px/1 Anton, sans-serif; letter-spacing: -.025em; }
+.ui-scene-cue > i { display: block; height: 4px; margin-top: 10px; background: var(--ui-accent); transform-origin: left; animation: uiRule 900ms var(--ui-ease) both; }
+.ui-station .ui-scene-cue { left: 970px; top: 110px; }
+.ui-station .ui-scene-cue > .ui-title { font-size: 48px; }
+.ui-station .ui-scene-cue small { font-size: 9px; }
+@keyframes uiCue { 0% { opacity: 0; } 12%, 70% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-12px); visibility: hidden; } }
+@keyframes uiRule { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.ui-sofa .mg-right::after { content: ''; position: absolute; left: 1157px; top: 176px; width: 2px; height: 415px; background: linear-gradient(transparent 0 35%, var(--ui-accent) 48%, transparent 60%); background-size: 100% 220%; animation: uiTerminalScan 4s ease-in-out infinite; opacity: .65; }
+@keyframes uiTerminalScan { from { background-position: 0 100%; } to { background-position: 0 -120%; } }
+.ui-station .ui-nav-item .ref-hit::after { background: #f7f3e8; }
+.ui-sofa .mg, .ui-station .mg { animation-duration: 430ms; }
+
+/* Detail: the same blue/ivory diagonal vocabulary, now separate vector/text planes. */
+.ui-detail-backdrop { position: absolute; left: 0; top: 0; width: 990px; height: 941px; z-index: 1; overflow: hidden; pointer-events: none; background: #15191f; clip-path: polygon(0 0, 914px 0, 914px 640px, 990px 640px, 990px 941px, 0 941px); }
+.ui-detail-plane { position: absolute; top: -240px; height: 1480px; width: 370px; background: #164af0; transform: rotate(-27deg); }
+.ui-detail-plane.plane-one { left: 220px; animation: uiPlaneOne 10s ease-in-out infinite alternate; }
+.ui-detail-plane.plane-two { left: 720px; width: 220px; background: #ebe6dc; animation: uiPlaneTwo 12s ease-in-out infinite alternate; }
+@keyframes uiPlaneOne { from { transform: translateX(-16px) rotate(-27deg); } to { transform: translateX(18px) rotate(-27deg); } }
+@keyframes uiPlaneTwo { from { transform: translateX(15px) rotate(-27deg); } to { transform: translateX(-20px) rotate(-27deg); } }
+.ui-detail-dots { position: absolute; inset: 0; background: radial-gradient(#070e20aa 1.5px, transparent 2px) 0 0 / 9px 9px; mask-image: linear-gradient(120deg, #000, transparent 45%, #000); opacity: .5; }
+.ui-detail-word { position: absolute; left: -24px; top: 330px; transform: rotate(-12deg); font: 250px/.96 Anton, sans-serif; letter-spacing: -.03em; color: #eee9df; }
+.ui-detail-word .ui-title { animation: uiWordDrift 13s ease-in-out infinite alternate; }
+@keyframes uiWordDrift { from { transform: translateX(-10px); } to { transform: translateX(25px); } }
+.ui-detail-brand { position: absolute; top: 205px; left: 26px; font: 900 22px/.95 'Noto Sans KR', sans-serif; letter-spacing: -.035em; color: #d0d2e5; }
+.ui-detail-brand small { display: block; font: 800 10px/1.35 sans-serif; letter-spacing: .1em; margin-top: 15px; }
+.ui-detail-ticker { position: absolute; left: -70px; top: 720px; width: 1120px; background: #eae5dc; color: #1249e6; padding: 10px 0; font: 23px/1 Anton, sans-serif; letter-spacing: .12em; transform: rotate(-12deg); border-block: 2px solid #101723; }
+.ui-detail-line { position: absolute; left: -70px; top: 697px; width: 1120px; height: 4px; background: #3067ff; transform: rotate(-12deg); }
+.ui-detail .cd2-hero { background: none; }
+.ui-detail .cdx-hero { animation: uiDetailHero 640ms var(--ui-ease) 80ms both; }
+@keyframes uiDetailHero { from { opacity: 0; transform: translateX(-65px) scale(1.025); } to { opacity: 1; transform: none; } }
+.ui-detail .cdx-name { animation: none; }
+.ui-detail .cd2-stripes { transform-origin: left; animation: uiRule 650ms var(--ui-ease) 260ms both; }
+.ui-detail .cdx-stat { animation: uiStatReveal 380ms var(--ui-ease) both; }
+@keyframes uiStatReveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+.ui-detail .cd2-alt { animation: uiPanelIn 300ms var(--ui-ease) both; }
+@keyframes uiPanelIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.ui-detail .cd2-tabs .hl { transition: left 320ms var(--ui-ease), width 320ms var(--ui-ease); }
+.ui-detail .cd2-face { transition: filter 160ms, transform 220ms var(--ui-ease); }
+.ui-detail .cd2-face.on { transform: translateY(-4px); filter: brightness(1.15); }
+.ui-detail .cd2-up { overflow: hidden; }
+.ui-detail .cd2-up::before { content: ''; position: absolute; inset: 15px 30px; background: linear-gradient(110deg, transparent 38%, #ffffff35 49%, transparent 61%); background-size: 300% 100%; animation: uiActionSheen 5s ease-in-out infinite; pointer-events: none; }
+@keyframes uiActionSheen { 0%, 50% { background-position: 150% 0; } 85%, 100% { background-position: -60% 0; } }
+
+/* Recruitment: cut-paper title, broadcast tape and one selection rail. */
+.ui-recruit-title { position: absolute; left: 278px; top: 228px; width: 540px; z-index: 3; pointer-events: none; transform: rotate(-7deg); }
+.ui-recruit-title h2 { position: relative; margin: 0; padding: 12px 8px; font: 104px/1.13 'Black Han Sans', sans-serif; letter-spacing: -.065em; white-space: nowrap; color: #f8f5ec; background: none; filter: drop-shadow(4px 5px 0 #b49add); isolation: isolate; }
+.ui-recruit-title h2::before { content: ''; position: absolute; inset: -10px; border: 3px solid #cdf558; clip-path: polygon(0 0, 30% 0, 30% 8%, 2% 8%, 2% 92%, 75% 92%, 75% 100%, 0 100%); animation: uiRule 650ms var(--ui-ease) both; }
+.ui-recruit-title h2 .ui-letter-mask:first-child { color: #c8f53b; }
+.ui-broadcast-mark { position: absolute; left: 215px; top: -43px; width: 140px; height: 40px; color: #cdf558; animation: uiPanelIn 460ms var(--ui-ease) 150ms both; }
+.ui-broadcast-caption { display: inline-block; font: 800 11px/1.5 sans-serif; letter-spacing: .035em; padding: 3px 7px; background: #c7b1ee; color: #19151f; border: 2px solid #1d1b20; margin: 7px 0 0 4px; animation: uiPanelIn 400ms var(--ui-ease) 250ms both; }
+.ui-broadcast-tape { position: absolute; right: 0; top: 142px; width: 213px; transform: rotate(-3deg); background: #c8f53b; color: #15171a; font: 24px/1.1 Anton, 'Black Han Sans', sans-serif; padding: 7px 0; border: 2px solid #15171a; }
+.ui-broadcast-tape > div { animation-duration: 10s; }
+.ui-banner-cursor { position: absolute; left: 10px; width: 4px; z-index: 41; background: #c8f53b; pointer-events: none; box-shadow: 0 0 12px #c8f53b66; transition: top 360ms var(--ui-ease), height 360ms var(--ui-ease); }
+.ui-banner-item.is-selected .ref-layer { filter: brightness(1.08); }
+.ui-recruit-tabline { position: absolute; top: 83px; width: 162px; height: 3px; z-index: 31; pointer-events: none; background: #c8f53b; transition: left 320ms var(--ui-ease); }
+.ui-recruit-transition { position: absolute; left: 262px; top: 94px; width: 1194px; height: 622px; z-index: 39; pointer-events: none; overflow: hidden; }
+.ui-recruit-transition::before { content: ''; position: absolute; inset: 0; background: #c8f53b; clip-path: polygon(0 0, 22% 0, 0 100%, -22% 100%); animation: uiBannerCut 480ms cubic-bezier(.7, 0, .2, 1) both; }
+@keyframes uiBannerCut { 0% { transform: translateX(-30%); opacity: 1; } 75% { opacity: 1; } 100% { transform: translateX(130%); opacity: 0; } }
+.ui-recruit .rcx-rion { animation-duration: 520ms; animation-delay: 120ms; }
+.ui-alt-banner .fig { animation: uiDetailHero 550ms var(--ui-ease) both; }
+.ui-alt-banner .copy > :not(h2) { animation: uiPanelIn 450ms var(--ui-ease) 140ms both; }
+.ui-recruit .hit-pull10 { overflow: hidden; }
+.ui-recruit .hit-pull10::before { content: ''; position: absolute; inset: 6px 15px; pointer-events: none; background: linear-gradient(110deg, transparent 38%, #ffffff40 49%, transparent 61%); background-size: 300% 100%; animation: uiActionSheen 5s ease-in-out 1s infinite; }
+
+/* Freeze all screen-local loops when covered or backgrounded; reduced motion is static. */
+.ui-paused *, .ui-paused *::before, .ui-paused *::after { animation-play-state: paused !important; }
+.ui-reduced *, .ui-reduced *::before, .ui-reduced *::after { animation: none !important; transition: none !important; }
+.ui-reduced .ui-scene-cue, .ui-reduced .ui-recruit-transition { display: none; }
+.ui-reduced .ui-item-body { transform: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .ui-motion *, .ui-motion *::before, .ui-motion *::after { animation: none !important; transition: none !important; }
+  .ui-scene-cue, .ui-recruit-transition { display: none; }
+  .ui-item-body { transform: none !important; }
+}
+.ui-lobby-ticker { position: absolute; z-index: 1; left: 255px; top: 654px; width: 975px; padding: 4px 0; font: 11px/1 Anton, sans-serif; letter-spacing: .23em; color: #e8e5d5; background: #0e111bb3; border-top: 1px solid #eeeecc44; }
+.ui-lobby-ticker > div { animation-duration: 30s; }
+.ui-station .ui-lobby-ticker { left: 500px; top: 770px; width: 662px; }
+.ui-recruit-title h2::after { content: ''; position: absolute; z-index: -1; inset: -4px; background: #16171d; clip-path: polygon(0 8%, 31% 0, 32% 8%, 68% 2%, 69% 8%, 98% 0, 100% 85%, 69% 96%, 67% 90%, 32% 100%, 31% 92%, 0 100%); }
+
+.ui-chrome .ui-item-body:has(.ref-hit:enabled:is(:hover, :focus-visible, :active)) { transform: none; }
+.ui-chrome .ui-item-body:has(.ref-hit:enabled:is(:hover, :focus-visible)) .ref-layer { filter: none; }
+.ui-chrome-top { animation-name: uiChromeTop; }
+@keyframes uiChromeTop { from { opacity: 0; transform: translateY(-22px); } to { opacity: 1; transform: none; } }
+.ui-detail .cd2-name { max-width: 440px; }

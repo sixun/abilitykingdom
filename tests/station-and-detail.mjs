@@ -77,7 +77,7 @@ await page.click('.screen-active button[aria-label^="로비 테마 변경"]'); a
 await page.click('.screen-active button[aria-label^="캐릭터"]'); await W(700)
 await page.click('.ccard:has-text("지안")'); await W(800)
 check(!(await has('img[src*="textless/stat-"]')) && !(await has('img[src*="textless/level-text"]')), '지안 Lv.40: 능력치·레벨은 원본 조각 그대로')
-check(await has('.cd2-lobby-t:has-text("LOBBY ACTIVE")'), '현재 로비 캐릭터 = LOBBY ACTIVE')
+check(await has('.cd2-lobby.on:has-text("LOBBY ACTIVE")'), '현재 로비 캐릭터 = LOBBY ACTIVE')
 check(await page.locator('.screen-active button[aria-label="목록 앞으로"]').isDisabled(), '목록 처음에서 앞으로 버튼 비활성')
 const cr0 = (await st()).wallet.credit
 await page.click('.screen-active button[aria-label^="UPGRADE"]'); await W(300)

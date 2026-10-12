@@ -7,11 +7,12 @@ import { CHARACTERS } from '../game/data/characters'
 import { GAME_CONFIG } from '../game/config'
 import { Modal, Btn, ConfirmDialog } from '../ui/components'
 import { RoleGlyph, IconGrid } from '../ui/icons'
-import { RefStage, RefLayers, Hit, Patch, rectOf, type RefLayout } from '../ui/ref'
+import { RefLayers, Hit, Patch, rectOf, type RefLayout } from '../ui/ref'
 import { MotionVideo, fitBox } from '../ui/motion'
 import fitJson from '../game/data/motion-fit.json'
 import matteJson from '../game/data/ref-matte.json'
 import '../styles/motion.css'
+import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue } from '../ui/ui-motion'
 import layoutJson from '../game/data/ref-lobby.json'
 import LobbyStation from './LobbyStation'
 
@@ -84,11 +85,13 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
   const g = (k: keyof typeof DELAY) => ({ animationDelay: `${DELAY[k]}ms` })
   return (
     <div className="scr">
-      <RefStage canvas={L.canvas}>
+      <RefStage canvas={L.canvas} className="ui-sofa">
         {/* 장면: UI 없는 지안 소파 영상(배경+인물 한 장면). 감상 모드에서도 같은 영상을 그대로 쓴다 */}
         <MotionVideo src="motion/sofa.mp4" poster="motion/sofa-poster.webp" style={fitBox(FIT.sofa, L.canvas)} />
 
         <div className={`mg-wrap ${viewing ? 'hide' : ''}`} aria-hidden={viewing}>
+          <MotionTicker text="ABILITY KINGDOM / CITY RESPONSE UNIT" className="ui-lobby-ticker" />
+          <SceneCue title="LOUNGE" subtitle="ABILITY KINGDOM / LOBBY" />
           {/* 상단 띠 */}
           <div className="mg mg-top" style={g('top')}>
             <RefLayers layout={L} ids={GROUP.top} z={1} />
@@ -126,15 +129,21 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
           </div>
           {/* 오른쪽: 이벤트 패널 */}
           <div className="mg mg-right" style={g('right')}>
-            <RefLayers layout={L} ids={GROUP.right} z={1} files={MATTE} />
-            <Hit r={rectOf(L, 'event-story')} label="이벤트: 스토리" onClick={() => go('story')} />
-            <Hit r={rectOf(L, 'event-explore')} label="이벤트: 도시 탐색" onClick={() => go('explore')} />
-            <Hit r={rectOf(L, 'event-wanted')} label="이벤트: 현상수배" onClick={() => go('wanted')} />
+            <RefLayers layout={L} ids={['event-terminal']} z={1} files={MATTE} />
+            {([{ id: 'event-story', screen: 'story', label: '스토리' }, { id: 'event-explore', screen: 'explore', label: '도시 탐색' }, { id: 'event-wanted', screen: 'wanted', label: '현상수배' }] as const).map((n, i) => (
+              <MotionItem key={n.id} order={i} className="ui-side-card">
+                <RefLayers layout={L} ids={[n.id]} z={1} files={MATTE} />
+                <Hit r={rectOf(L, n.id)} label={`이벤트: ${n.label}`} onClick={() => go(n.screen)} />
+              </MotionItem>
+            ))}
           </div>
           {/* 하단 메뉴 띠 */}
           <div className="mg mg-bottom" style={g('bottom')}>
-            <RefLayers layout={L} ids={GROUP.bottom} z={1} files={MATTE} />
-            {NAV.map((n) => <Hit key={n.id} r={rectOf(L, n.id)} label={n.label} onClick={() => go(n.screen)} className={`lb-nav-${n.screen}`} />)}
+            <RefLayers layout={L} ids={['navbar-remainder']} z={1} files={MATTE} />
+            {NAV.map((n, i) => <MotionItem key={n.id} order={i} className="ui-nav-item">
+              <RefLayers layout={L} ids={[n.id]} z={1} files={MATTE} />
+              <Hit r={rectOf(L, n.id)} label={n.label} onClick={() => go(n.screen)} className={`lb-nav-${n.screen}`} />
+            </MotionItem>)}
           </div>
         </div>
 

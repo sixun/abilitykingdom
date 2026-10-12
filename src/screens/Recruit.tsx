@@ -7,7 +7,7 @@ import { BANNERS, BANNER_BY_ID } from '../game/data/catalog'
 import { CHAR_BY_ID } from '../game/data/characters'
 import { GAME_CONFIG, ROLE_LABEL, ATTRIBUTE_LABEL } from '../game/config'
 import { Btn, Modal, fmt, useAction, ErrorBanner, ProvisionalTag } from '../ui/components'
-import { RefStage, RefLayers, Hit, Patch, TextlessPatch, rectOf, boxStyle, SKIN, type RefLayout, type TextlessMeta } from '../ui/ref'
+import { RefLayers, Hit, Patch, TextlessPatch, rectOf, boxStyle, SKIN, type RefLayout, type TextlessMeta } from '../ui/ref'
 import layoutJson from '../game/data/ref-recruitment.json'
 import fitJson from '../game/data/motion-fit.json'
 import matteJson from '../game/data/ref-matte.json'
@@ -15,12 +15,15 @@ import textlessJson from '../game/data/ref-textless.json'
 import cutJson from '../game/data/recruit-cut.json'
 import { MotionVideo } from '../ui/motion'
 import '../styles/motion.css'
+import { MotionStage as RefStage, MotionItem, MotionTitle, MotionTicker } from '../ui/ui-motion'
 
 // 방송 콘셉트 영입 원본(1456×819)을 원본 조각 24개로 재현.
 // 원본 키비주얼은 '주파수 너머(리온)'만 있다. 다른 배너를 고르면 복원 배경 + 임시 캐릭터 + 실제 텍스트로 대체 표시한다(원본 아님).
 const L = layoutJson as RefLayout
 const REF = { diamond: 12800, ticket: 24, points: 120 }
 const BANNER_SLICES = ['banner-limited', 'banner-standard', 'banner-rhythm', 'banner-reunion']
+const TOP_SLICES = ['back', 'brand-title', 'tab-limited', 'tab-standard', 'currency-gems', 'currency-tickets']
+const ACTION_SLICES = ['info-detail', 'info-probability', 'exchange', 'recruit-points', 'points-gift', 'pull-one', 'pull-ten', 'bottom-bar-remainder']
 const BANNER_IDS = ['b_rion', 'b_daily', 'b_rhythm', 'b_reunion']
 const PILL = '#323840'
 const FIT = fitJson as unknown as Record<string, { s: number; x: number; y: number }>
@@ -60,7 +63,7 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
 
   return (
     <div className="scr">
-      <RefStage canvas={L.canvas}>
+      <RefStage canvas={L.canvas} className="ui-recruit">
         <img className="ref-bg" src="ref/restored/recruitment-bg.webp" alt="" />
         {isRefBanner ? (
           <>
@@ -69,31 +72,32 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
             <div className="cdx rcx-rion" key={`rion-${enterKey}`}>
               <MotionVideo src="motion/recruit.webm" poster="motion/recruit-poster.webp" alpha className="char" style={{ left: FIT.recruit.x, top: FIT.recruit.y, width: 1080 * FIT.recruit.s, height: 1080 * FIT.recruit.s, clipPath: `inset(0 0 ${1080 * FIT.recruit.s - (716 - FIT.recruit.y)}px 0)` }} />
             </div>
-            <RefLayers layout={L} hide={new Set(['scene-remainder', 'promo-title'])} z={1} files={MATTE_R} />
-            {/* 제목: 리온보다 100ms 늦게 안착(조각 크기 이상으로만 변해 원래 자리가 비지 않게 함) */}
-            <div className="cdx rcx-title" key={`title-${enterKey}`}><RefLayers layout={L} ids={['promo-title']} z={1} files={MATTE_R} /></div>
+            <RefLayers layout={L} hide={new Set(['scene-remainder', 'promo-title', ...BANNER_SLICES, ...TOP_SLICES, ...ACTION_SLICES])} z={1} files={MATTE_R} />
+            {/* 라이브 타이포: 글자 마스크 + 방송 띠, 인물과 독립된 타임라인 */}
+            <div className="ui-recruit-title" key={`title-${enterKey}`} aria-label={b.title}>
+              <svg className="ui-broadcast-mark" viewBox="0 0 140 40" aria-hidden><path d="M8 30 4 8 25 21 38 2 47 21 69 8 65 30Z" fill="currentColor" /><path d="M82 16v12m10-23v35m10-28v22m10-15v8m10-22v33m10-20v11" stroke="currentColor" strokeWidth="5" /></svg>
+              <h2><MotionTitle text={b.title} /></h2>
+              <span className="ui-broadcast-caption">PIRATE SCOUTING BROADCAST</span>
+              <MotionTicker text="ON AIR / 주파수 너머" className="ui-broadcast-tape" />
+            </div>
             {/* 파형: 0.8~1.6초 간격으로 막대 높이가 바뀌는 장식(실제 소리 분석 아님) */}
             <TextlessPatch m={TL.wave} z={2}>
               <span className="rc-wave">{[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => <i key={i} style={{ animationDuration: `${0.8 + ((i * 37) % 9) / 10}s`, animationDelay: `${-(i * 0.23)}s` }} />)}</span>
             </TextlessPatch>
-            {/* ON AIR 띠: 느린 광택 흐름(글자는 고정) */}
-            <div className="rc-onair" aria-hidden />
+
             {/* REC 점: 1.6초 느린 점멸 */}
             <div className="rc-rec" aria-hidden />
-            {/* 배너 선택 전환: 사선 wipe 160ms → 리온 → 제목(+100ms) → 하단 클로즈업(+80ms) */}
-            <div className="rcx-wipe" key={`wipe-${enterKey}`} aria-hidden />
-            <div className="rcx-strip" key={`strip-${enterKey}`} aria-hidden />
           </>
-        ) : <RefLayers layout={L} z={1} />}
+        ) : <RefLayers layout={L} hide={new Set([...BANNER_SLICES, ...TOP_SLICES, ...ACTION_SLICES])} z={1} />}
 
         {/* 다른 배너의 키비주얼(원본 없음 → 대체 표시) */}
         {!isRefBanner && (
-          <div className="rr-alt ak-fade" key={bannerId} style={{ left: 262, top: 0, width: 1194, height: 716, clipPath: 'polygon(0 92px, 406px 92px, 406px 0, 793px 0, 793px 62px, 1194px 62px, 1194px 645px, 808px 645px, 808px 716px, 0 716px)' }}>
+          <div className="rr-alt ui-alt-banner" key={bannerId} style={{ left: 262, top: 0, width: 1194, height: 716, clipPath: 'polygon(0 92px, 406px 92px, 406px 0, 793px 0, 793px 62px, 1194px 62px, 1194px 645px, 808px 645px, 808px 716px, 0 716px)' }}>
             <img className="bg" src="ref/restored/recruitment-bg.webp" alt="" style={{ left: -262, top: 0 }} />
             <img className="fig" src={f.assets.action} alt="" />
             <div className="copy">
               <small>{b.subtitle}</small>
-              <h2>{b.title}</h2>
+              <h2><MotionTitle text={b.title} /></h2>
               <div className="who">{f.name} <em>{'★'.repeat(f.rarity)}</em><span style={{ fontSize: 15, fontWeight: 600, opacity: .8 }}>{ROLE_LABEL[f.role]} · {ATTRIBUTE_LABEL[f.attribute]}</span></div>
               <p>“{b.quote}”</p>
             </div>
@@ -101,52 +105,62 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
           </div>
         )}
 
-        {/* 탭 상태(상시 선택 시) */}
-        {kind === 'standard' && (
-          <>
-            <Patch r={tabL} skin={SKIN('button-dark')} bg="#1b1b20" z={30} className="rr-tab"><span>한정 영입</span></Patch>
-            <Patch r={tabS} skin={SKIN('button-lime')} bg="#1b1b20" z={30} className="rr-tab"><span style={{ color: '#15181b' }}>상시 영입</span></Patch>
-          </>
-        )}
-        {/* 배너 선택 표시 */}
-        {selIdx !== 0 && BANNER_SLICES.map((id, i) => (
-          <div key={id} className="rf-slot-overlay" style={boxStyle(rectOf(L, id), { zIndex: 30 })}>
-            {i === selIdx ? <img src={SKIN('banner-frame-selected')} alt="" /> : <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,6,14,.45)' }} />}
-          </div>
-        ))}
-        {/* 재화·포인트(원본 값과 다를 때만 숫자 영역을 덮음) */}
-        {W.diamond !== REF.diamond && <Patch r={{ x: 1122, y: 20, w: 76, h: 27 }} bg={PILL} z={30} className="rr-pill" style={{ padding: 0 }}><span className="num-tab" style={{ marginLeft: 'auto', marginRight: 4 }}>{fmt(W.diamond)}</span></Patch>}
-        {W.ticket !== REF.ticket && <Patch r={{ x: 1296, y: 20, w: 76, h: 27 }} bg={PILL} z={30} className="rr-pill" style={{ padding: 0 }}><span className="num-tab" style={{ marginLeft: 'auto', marginRight: 4 }}>{fmt(W.ticket)}</span></Patch>}
-        {pts !== REF.points && (
-          <>
-            <Patch r={{ x: 354, y: 741, w: 100, h: 27 }} bg={IVORY} z={30} style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: '#202024' }}>
-              <b className="num-tab" style={{ fontSize: 22, fontWeight: 800, marginLeft: 6 }}>{pts}</b><span style={{ fontSize: 17, color: '#55555c' }}>/ {GAME_CONFIG.scoutPointCap}</span>
-            </Patch>
-            <Patch r={{ x: 262, y: 770, w: 366, h: 19 }} bg={IVORY} z={30}>
-              <div style={{ position: 'absolute', left: 1, top: 1, right: 1, bottom: 1, borderRadius: 9, background: '#e5ddd4', boxShadow: 'inset 0 0 0 1px #b9b1a8', overflow: 'hidden' }}>
-                <i style={{ display: 'block', height: '100%', width: `${Math.min(100, (pts / GAME_CONFIG.scoutPointCap) * 100)}%`, background: '#c6aefa' }} />
-              </div>
-            </Patch>
-          </>
-        )}
+        <div className="ui-recruit-transition" key={`transition-${bannerId}`} aria-hidden />
+        <MotionItem order={0} z={32} className="ui-chrome ui-chrome-top">
+          <RefLayers layout={L} ids={TOP_SLICES} z={1} files={isRefBanner ? MATTE_R : undefined} />
+          <div className="ui-recruit-tabline" aria-hidden style={{ left: kind === 'limited' ? 302 : 490 }} />
+          {/* 탭 상태(상시 선택 시) */}
+          {kind === 'standard' && (
+            <>
+              <Patch r={tabL} skin={SKIN('button-dark')} bg="#1b1b20" z={30} className="rr-tab"><span>한정 영입</span></Patch>
+              <Patch r={tabS} skin={SKIN('button-lime')} bg="#1b1b20" z={30} className="rr-tab"><span style={{ color: '#15181b' }}>상시 영입</span></Patch>
+            </>
+          )}
+          {/* 재화·포인트(원본 값과 다를 때만 숫자 영역을 덮음) */}
+          {W.diamond !== REF.diamond && <Patch r={{ x: 1122, y: 20, w: 76, h: 27 }} bg={PILL} z={30} className="rr-pill" style={{ padding: 0 }}><span className="num-tab" style={{ marginLeft: 'auto', marginRight: 4 }}>{fmt(W.diamond)}</span></Patch>}
+          {W.ticket !== REF.ticket && <Patch r={{ x: 1296, y: 20, w: 76, h: 27 }} bg={PILL} z={30} className="rr-pill" style={{ padding: 0 }}><span className="num-tab" style={{ marginLeft: 'auto', marginRight: 4 }}>{fmt(W.ticket)}</span></Patch>}
+          <Hit r={rectOf(L, 'back')} label="돌아가기" onClick={() => nav.back()} />
+          <Hit r={tabL} label={`한정 영입${kind === 'limited' ? ' (선택됨)' : ''}`} onClick={() => pickKind('limited')} sfx="none" />
+          <Hit r={tabS} label={`상시 영입${kind === 'standard' ? ' (선택됨)' : ''}`} onClick={() => pickKind('standard')} sfx="none" />
+          <Hit r={rectOf(L, 'currency-gems')} label={`다이아 ${W.diamond}, 충전`} onClick={() => nav.push('shop', { tab: 'currency' })} />
+          <Hit r={rectOf(L, 'currency-tickets')} label={`영입 티켓 ${W.ticket}, 구매`} onClick={() => nav.push('shop', { tab: 'recommend' })} />
+        </MotionItem>
+        <MotionItem order={6} z={32} className="ui-chrome ui-chrome-actions" key={`actions-${bannerId}`}>
+          <RefLayers layout={L} ids={ACTION_SLICES} z={1} files={isRefBanner ? MATTE_R : undefined} />
+          {pts !== REF.points && (
+            <>
+              <Patch r={{ x: 354, y: 741, w: 100, h: 27 }} bg={IVORY} z={30} style={{ display: 'flex', alignItems: 'baseline', gap: 6, color: '#202024' }}>
+                <b className="num-tab" style={{ fontSize: 22, fontWeight: 800, marginLeft: 6 }}>{pts}</b><span style={{ fontSize: 17, color: '#55555c' }}>/ {GAME_CONFIG.scoutPointCap}</span>
+              </Patch>
+              <Patch r={{ x: 262, y: 770, w: 366, h: 19 }} bg={IVORY} z={30}>
+                <div style={{ position: 'absolute', left: 1, top: 1, right: 1, bottom: 1, borderRadius: 9, background: '#e5ddd4', boxShadow: 'inset 0 0 0 1px #b9b1a8', overflow: 'hidden' }}>
+                  <i style={{ display: 'block', height: '100%', width: `${Math.min(100, (pts / GAME_CONFIG.scoutPointCap) * 100)}%`, background: '#c6aefa' }} />
+                </div>
+              </Patch>
+            </>
+          )}
 
-        {/* 조작 영역 */}
-        <Hit r={rectOf(L, 'back')} label="돌아가기" onClick={() => nav.back()} />
-        <Hit r={tabL} label={`한정 영입${kind === 'limited' ? ' (선택됨)' : ''}`} onClick={() => pickKind('limited')} sfx="none" />
-        <Hit r={tabS} label={`상시 영입${kind === 'standard' ? ' (선택됨)' : ''}`} onClick={() => pickKind('standard')} sfx="none" />
-        <Hit r={rectOf(L, 'currency-gems')} label={`다이아 ${W.diamond}, 충전`} onClick={() => nav.push('shop', { tab: 'currency' })} />
-        <Hit r={rectOf(L, 'currency-tickets')} label={`영입 티켓 ${W.ticket}, 구매`} onClick={() => nav.push('shop', { tab: 'recommend' })} />
+          <Hit r={rectOf(L, 'info-detail')} label="상세 정보" onClick={() => setModal('detail')} />
+          <Hit r={rectOf(L, 'info-probability')} label="확률 정보" onClick={() => setModal('rates')} />
+          <Hit r={rectOf(L, 'exchange')} label="교환소" onClick={() => nav.push('shop', { tab: 'exchange' })} />
+          <Hit r={rectOf(L, 'recruit-points')} label={`영입 포인트 ${pts} / ${GAME_CONFIG.scoutPointCap}`} onClick={() => nav.push('shop', { tab: 'exchange' })} />
+          <Hit r={rectOf(L, 'points-gift')} label="영입 포인트 보상(교환소)" onClick={() => nav.push('shop', { tab: 'exchange' })} />
+          <Hit r={rectOf(L, 'pull-one')} label={`1회 영입, 영입 티켓 ${b.costPerPull.amount}장`} disabled={!!pending} onClick={() => pull(1)} sfx="none" className="hit-pull1" />
+          <Hit r={rectOf(L, 'pull-ten')} label={`${GAME_CONFIG.multiPullCount}회 영입, 영입 티켓 ${b.costPerPull.amount * GAME_CONFIG.multiPullCount}장`} disabled={!!pending} onClick={() => pull(GAME_CONFIG.multiPullCount)} sfx="none" className="hit-pull10" />
+        </MotionItem>
+
+        {/* 배너 선택 */}
         {BANNER_SLICES.map((id, i) => {
           const bb = BANNER_BY_ID[BANNER_IDS[i]]
-          return <Hit key={id} r={rectOf(L, id)} label={`${bb.kind === 'limited' ? '한정' : '상시'} 배너 ${bb.title}${i === selIdx ? ' (선택됨)' : ''}`} onClick={() => { setBannerId(bb.id); setKind(bb.kind) }} sfx="select" className="hit-banner" />
+          return <MotionItem key={id} order={i} z={40} className={`ui-banner-item ${i === selIdx ? 'is-selected' : ''}`}>
+            <RefLayers layout={L} ids={[id]} z={1} />
+            {selIdx !== 0 && <div className="rf-slot-overlay" style={boxStyle(rectOf(L, id), { zIndex: 30 })}>
+              {i === selIdx ? <img src={SKIN('banner-frame-selected')} alt="" /> : <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,6,14,.45)' }} />}
+            </div>}
+            <Hit r={rectOf(L, id)} label={`${bb.kind === 'limited' ? '한정' : '상시'} 배너 ${bb.title}${i === selIdx ? ' (선택됨)' : ''}`} onClick={() => { setBannerId(bb.id); setKind(bb.kind) }} sfx="select" className="hit-banner" />
+          </MotionItem>
         })}
-        <Hit r={rectOf(L, 'info-detail')} label="상세 정보" onClick={() => setModal('detail')} />
-        <Hit r={rectOf(L, 'info-probability')} label="확률 정보" onClick={() => setModal('rates')} />
-        <Hit r={rectOf(L, 'exchange')} label="교환소" onClick={() => nav.push('shop', { tab: 'exchange' })} />
-        <Hit r={rectOf(L, 'recruit-points')} label={`영입 포인트 ${pts} / ${GAME_CONFIG.scoutPointCap}`} onClick={() => nav.push('shop', { tab: 'exchange' })} />
-        <Hit r={rectOf(L, 'points-gift')} label="영입 포인트 보상(교환소)" onClick={() => nav.push('shop', { tab: 'exchange' })} />
-        <Hit r={rectOf(L, 'pull-one')} label={`1회 영입, 영입 티켓 ${b.costPerPull.amount}장`} disabled={!!pending} onClick={() => pull(1)} sfx="none" className="hit-pull1" />
-        <Hit r={rectOf(L, 'pull-ten')} label={`${GAME_CONFIG.multiPullCount}회 영입, 영입 티켓 ${b.costPerPull.amount * GAME_CONFIG.multiPullCount}장`} disabled={!!pending} onClick={() => pull(GAME_CONFIG.multiPullCount)} sfx="none" className="hit-pull10" />
+        <div className="ui-banner-cursor" aria-hidden style={{ top: rectOf(L, BANNER_SLICES[Math.max(0, selIdx)]).y + 12, height: rectOf(L, BANNER_SLICES[Math.max(0, selIdx)]).h - 24 }} />
         {pending && <div style={{ position: 'absolute', inset: 0, zIndex: 90, display: 'grid', placeItems: 'center', background: 'rgba(0,0,0,.35)', fontSize: 28, fontWeight: 900 }}>영입 처리 중…</div>}
         {failed && (
           <div style={{ position: 'absolute', right: 20, bottom: 112, zIndex: 91, width: 640 }} onClick={(e) => e.stopPropagation()}>

@@ -12,7 +12,8 @@
     "test:e2e": "mkdir -p test-results && node tests/formation-flow.mjs && node tests/menus-and-transactions.mjs && node tests/station-and-detail.mjs",
     "icons": "python3 tools/make_app_icons.py app-icons/rion-source.png app-icons && python3 tools/apply_native_assets.py app-icons",
     "cap:sync": "npx cap sync",
-    "android:apk": "npx cap sync android && cd android && ./gradlew assembleDebug"
+    "android:apk": "npx cap sync android && cd android && ./gradlew assembleDebug",
+    "test:ui-motion": "node tests/ui-motion.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.3",

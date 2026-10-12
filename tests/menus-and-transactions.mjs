@@ -51,7 +51,7 @@ check(s.lobby.characterId === 'jian' && s.teams[0].leaderId === 'jian', '로비 
 // 캐릭터 상세(원본 재현): 탭 3개, 성장 확인 창, 장비
 await page.click('.screen-active button[aria-label="캐릭터"]'); await W(700)
 await page.click('.ccard:has-text("하린")'); await W(700)
-check((await page.locator('.cd2-name').innerText()).startsWith('HARIN'), '상세: 선택 캐릭터 이름 표시')
+check((await page.locator('.cd2-name').first().textContent()).replace(/\s/g, '').startsWith('HARIN'), '상세: 선택 캐릭터 이름 표시')
 for (const t of ['SKILLS', 'GEAR', 'STATS']) { await page.click(`.screen-active button[aria-label^="${t}"]`); await W(400); await shot('cd-' + t) }
 await page.click('.screen-active button[aria-label^="SKILLS"]'); await W(300)
 check(await page.locator('.cd2-row').count() === 3, 'SKILLS: 스킬 3개')

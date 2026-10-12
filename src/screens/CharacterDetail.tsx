@@ -10,16 +10,17 @@ import { statsOf, RULES_ARE_PROVISIONAL } from '../game/rules'
 import type { EquipmentSlots, OwnedCharacter } from '../game/types'
 import { fmt, Btn, useAction, ErrorBanner, Modal, ProvisionalTag } from '../ui/components'
 import { RoleGlyph, ItemGlyph, IconPlus, IconChevron } from '../ui/icons'
-import { RefStage, RefLayers, Hit, TextlessPatch, rectOf, type RefLayout, type TextlessMeta } from '../ui/ref'
+import { RefLayers, Hit, TextlessPatch, rectOf, type RefLayout, type TextlessMeta } from '../ui/ref'
 import layoutJson from '../game/data/ref-detail.json'
 import textless from '../game/data/ref-textless.json'
 import artJson from '../game/data/ref-detail-art.json'
 import fitJson from '../game/data/motion-fit.json'
 import { MotionVideo } from '../ui/motion'
 import '../styles/motion.css'
+import { MotionStage as RefStage, MotionTitle, MotionTicker } from '../ui/ui-motion'
 
 // 캐릭터 상세 원본(지안, 1672×941)을 원본 조각 29개로 재현.
-// - 지안 Lv.40 기본 상태는 원본 조각 그대로. 값이 달라진 칸만 글자를 지운 근사 패치 + 실제 텍스트.
+// - 능력치 조각은 유지하고, 이름·배경 타이포·탭은 실제 텍스트/그래픽으로 연출한다.
 // - 다른 캐릭터는 원본 상세 일러스트가 없어 왼쪽 인물 영역을 임시 아트로 대체한다(화면에 표시).
 // - 표기는 원본대로 영문. SKILLS/GEAR는 확정 시안이 없어 오른쪽 능력치 칸만 기존 기능 목록으로 바꾼다.
 const L = layoutJson as RefLayout
@@ -51,8 +52,8 @@ const blank = (id: string): OwnedCharacter => ({ id, level: 1, obtainedAt: 0, du
 const STAT_LAYERS = ['stat-hp', 'stat-atk', 'stat-def', 'stat-crit-dmg', 'stat-crit-rate', 'stat-speed']
 const TAB_X: Record<'stats' | 'skills' | 'gear', [number, number]> = { stats: [0, 241], skills: [241, 223], gear: [464, 229] }
 const FIT = fitJson as unknown as Record<string, { s: number; x: number; y: number }>
-// 인물을 지운 원본 배경판(tools/build_motion_plates.py)
-const PLATE: Record<string, string> = { 'hero-artwork': 'ref/detail/motion/hero-artwork-plate.webp', 'background-remainder': 'ref/detail/motion/background-remainder-plate.webp' }
+// 오른쪽 배경판은 유지. 왼쪽 타이포/사선은 DetailBackdrop에서 독립적으로 그린다.
+const PLATE: Record<string, string> = { 'background-remainder': 'ref/detail/motion/background-remainder-plate.webp' }
 // 영상 좌표 기준 잘라내기: 왼쪽 인물 영역(오른쪽 아래 머리카락 번짐 포함)만 보이게
 const HERO_CLIP = `polygon(0 0, ${914 - 13.9}px 0, ${914 - 13.9}px ${640 - 7.2}px, ${990 - 13.9}px ${640 - 7.2}px, ${990 - 13.9}px 100%, 0 100%)`
 const kindEn = (k: string) => (k === '기본' ? 'BASIC' : k === '스킬' ? 'SKILL' : k === '궁극기' ? 'ULT' : 'PASSIVE')
@@ -64,7 +65,6 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
   const [id, setId] = useState((params.id as string) ?? 'jian')
   const [offset, setOffset] = useState(() => Math.max(0, Math.min(roster.indexOf((params.id as string) ?? 'jian') - VISIBLE + 1, roster.length - VISIBLE)))
   const [tab, setTab] = useState<Tab>('stats')
-  const [tabTouched, setTabTouched] = useState(false)
   const [pop, setPop] = useState<null | 'growth' | 'role' | 'profile' | 'faction'>(null)
   const [skillPick, setSkillPick] = useState<number | null>(null)
   const [slotPick, setSlotPick] = useState<keyof EquipmentSlots | null>(null)
@@ -114,44 +114,40 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
 
   // 원본과 다른 칸만 덮는다
   const hide = new Set<string>()
-  if (!isRef) hide.add('hero-artwork').add('back').add('set-as-lobby')
+  // 왼쪽 배경이 코드 그래픽으로 바뀌어, 옛 배경이 들어 있는 뒤로·로비 버튼 조각 대신 같은 모양의 버튼을 그린다
+  hide.add('back').add('set-as-lobby')
+  if (!isRef) hide.add('hero-artwork')
   const visible = roster.slice(offset, offset + VISIBLE)
   const slot0Original = offset === 0 && visible[0] === REF.id && id === REF.id
   const lvPct = Math.round((level / maxLv) * 1000) / 10
 
   return (
     <div className="scr cd2">
-      <RefStage canvas={L.canvas}>
+      <RefStage canvas={L.canvas} className="ui-detail">
         {/* 왼쪽 인물
-            - 지안: 인물을 지운 원본 배경판 + 대기 영상(배경 제거 알파) + 원본 UI 조각
+            - 지안: 독립된 타이포 배경 + 대기 영상(배경 제거 알파) + 원본 UI 조각
             - 그 외: 원본 상세 일러스트가 없어 임시 아트(배경 그래픽 + 기존 전신)
             원본 배경 조각에 번진 지안 머리카락 영역(오른쪽 아래)까지 덮고, UI 조각은 그 위에 그린다 */}
         <RefLayers layout={L} ids={['background-remainder']} z={1} files={isRef ? PLATE : undefined} />
-        {isRef && <RefLayers layout={L} ids={['hero-artwork']} z={1} files={PLATE} />}
+        <DetailBackdrop key={`backdrop-${id}`} name={c.nameEn} />
         <div className="cdx cdx-hero" key={`hero-${id}`}>
           {isRef
             ? <MotionVideo src="motion/detail.webm" poster="motion/detail-poster.webp" alpha className="char" style={{ left: FIT.detail.x, top: FIT.detail.y, width: 1080 * FIT.detail.s, height: 1080 * FIT.detail.s, clipPath: HERO_CLIP }} />
             : <HeroFallback cid={id} />}
         </div>
-        <div className="cdx-wipe" key={`wipe-${id}`} aria-hidden />
         <RefLayers layout={L} hide={new Set([...hide, 'hero-artwork', 'background-remainder', 'identity-title', ...STAT_LAYERS])} z={1} />
         {/* 이름·능력치 순차 등장(조각을 띄우는 동안 비는 자리는 패널 색으로 채움) */}
         <div className="cd2-fill" style={{ left: 930, top: 161, width: 445, height: 202 }} />
         <div className="cd2-fill" style={{ left: 926, top: 480, width: 690, height: 164 }} />
-        <div className="cdx cdx-name" key={`name-${id}`}><RefLayers layout={L} ids={['identity-title']} z={1} /></div>
-        {STAT_LAYERS.map((sl, i) => <div key={`${sl}-${id}`} className="cdx cdx-stat" style={{ animationDelay: `${220 + i * 40}ms` }}><RefLayers layout={L} ids={[sl]} z={1} /></div>)}
-        {!isRef && (
+
+        {STAT_LAYERS.map((sl, i) => <div key={`${sl}-${id}-${tab}`} className="cdx cdx-stat" style={{ animationDelay: `${220 + i * 40}ms` }}><RefLayers layout={L} ids={[sl]} z={1} /></div>)}
+        {(
           <>
             <div className="cd2-pill" style={{ left: 44, top: 20, width: 122, height: 64 }}><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden><path d="M15 4 7 12l8 8" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /></svg></div>
             <div className={`cd2-pill cd2-lobby ${isLobby ? 'on' : ''} ${!o || !LOBBY_ART.has(id) ? 'off' : ''}`} style={{ left: 40, top: 827, width: 268, height: 64 }}>
               <span className="star">★</span><span>{isLobby ? 'LOBBY ACTIVE' : LOBBY_ART.has(id) ? 'SET AS LOBBY' : 'NO LOBBY ART'}</span>
             </div>
           </>
-        )}
-        {isRef && isLobby && (
-          <TextlessPatch m={T['lobby-text']}>
-            <span className="abs cd2-lobby-t" style={{ left: 12, top: 9 }}><span className="star">★</span>LOBBY ACTIVE</span>
-          </TextlessPatch>
         )}
 
         {/* 상단 캐릭터 목록 */}
@@ -165,13 +161,11 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
         {offset >= maxOffset && <div className="cd2-dim" style={{ left: 1627, top: 36, width: 38, height: 60, borderRadius: 30 }} />}
 
         {/* 이름·소속·소개 */}
-        {!isRef && (
-          <TextlessPatch m={T.identity} key={`id-${id}`} className="cdx-name">
-            <span className="abs cd2-name" style={{ left: 3, bottom: 85, fontSize: Math.min(124, Math.round(300 / (c.nameEn.length * 0.62))) }}>{c.nameEn}<i className="cd2-stripes" /></span>
-            <span className="abs cd2-unit" style={{ left: 6, top: 103 }}>{c.en.unit}</span>
-            <span className="abs cd2-motto" style={{ left: 7, top: 143 }}>{c.en.motto.split('|').map((l) => <span key={l}>{l}</span>)}</span>
-          </TextlessPatch>
-        )}
+        <TextlessPatch m={T.identity} key={`id-${id}`} className="cdx-name">
+          <span className="abs cd2-name" style={{ left: 3, bottom: 85, fontSize: Math.min(124, Math.round(330 / (c.nameEn.length * 0.68))) }}><MotionTitle text={c.nameEn} /><i className="cd2-stripes" /></span>
+          <span className="abs cd2-unit" style={{ left: 6, top: 103 }}>{c.en.unit}</span>
+          <span className="abs cd2-motto" style={{ left: 7, top: 143 }}>{c.en.motto.split('|').map((l) => <span key={l}>{l}</span>)}</span>
+        </TextlessPatch>
         {!isRef && (
           <TextlessPatch m={T.emblem} className="cd2-x">
             <span className="abs cd2-emblem"><RoleGlyph role={c.role} size={120} /></span>
@@ -200,7 +194,7 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
           if (isRef && v === REF[r.key] && !flash) return null
           const isPct = r.key === 'critRate' || r.key === 'critDmg'
           return (
-            <TextlessPatch key={`${r.key}-${id}`} m={T[r.patch]} className="cdx-stat" style={{ animationDelay: `${220 + STAT_LAYERS.indexOf(r.patch) * 40}ms` }}>
+            <TextlessPatch key={`${r.key}-${id}-${tab}`} m={T[r.patch]} className="cdx-stat" style={{ animationDelay: `${220 + STAT_LAYERS.indexOf(r.patch) * 40}ms` }}>
               <span className={`abs cd2-val ${isPct ? 'pct' : ''} ${flash ? 'flash' : ''}`} style={{ right: r.right, top: 12 }}>{isPct ? pct(v) : v}</span>
             </TextlessPatch>
           )
@@ -225,13 +219,11 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
             })}
           </div>
         )}
-        {/* 탭: 처음에는 원본 조각(STATS 선택). 탭을 한 번 누르면 같은 배치의 탭 막대로 바꾸고 선택 배경이 180ms 동안 이동한다 */}
-        {tabTouched && (
-          <div className="cd2-tabs" style={{ left: 926, top: 670, width: 693, height: 77 }} aria-hidden>
+        {/* 탭 선택 배경은 기존 좌표 위에서 이동한다 */}
+        <div className="cd2-tabs" style={{ left: 926, top: 670, width: 693, height: 77 }} aria-hidden>
             <i className="hl" style={{ left: TAB_X[tab][0], width: TAB_X[tab][1] }} />
             {(['stats', 'skills', 'gear'] as Tab[]).map((t) => <span key={t} className={t === tab ? 'on' : ''}>{t.toUpperCase()}</span>)}
-          </div>
-        )}
+        </div>
         {!o && <div className="cd2-dim" style={{ left: 1075, top: 788, width: 562, height: 108, borderRadius: 24 }} />}
         {toast && <div className="cd2-toast" role="status">{toast}</div>}
 
@@ -247,9 +239,9 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
         <Hit r={{ x: 925, y: 383, w: 279, h: 84 }} label={`레벨 ${level} / ${maxLv}, 성장`} disabled={!o} onClick={() => setPop('growth')} />
         <Hit r={rectOf(L, 'level-up-arrow')} label="성장 창 열기" disabled={!o} onClick={() => setPop('growth')} />
         <Hit r={rectOf(L, 'role')} label={`역할 ${ROLE_EN[c.role]}`} onClick={() => setPop('role')} />
-        <Hit r={rectOf(L, 'tab-stats')} label={`STATS${tab === 'stats' ? ' (선택됨)' : ''}`} onClick={() => { setTab('stats'); setTabTouched(true) }} />
-        <Hit r={rectOf(L, 'tab-skills')} label={`SKILLS${tab === 'skills' ? ' (선택됨)' : ''}`} onClick={() => { setTab('skills'); setTabTouched(true) }} />
-        <Hit r={rectOf(L, 'tab-gear')} label={`GEAR${tab === 'gear' ? ' (선택됨)' : ''}`} onClick={() => { setTab('gear'); setTabTouched(true) }} />
+        <Hit r={rectOf(L, 'tab-stats')} label={`STATS${tab === 'stats' ? ' (선택됨)' : ''}`} onClick={() => setTab('stats')} />
+        <Hit r={rectOf(L, 'tab-skills')} label={`SKILLS${tab === 'skills' ? ' (선택됨)' : ''}`} onClick={() => setTab('skills')} />
+        <Hit r={rectOf(L, 'tab-gear')} label={`GEAR${tab === 'gear' ? ' (선택됨)' : ''}`} onClick={() => setTab('gear')} />
         <Hit r={rectOf(L, 'upgrade')} label="UPGRADE (성장)" disabled={!o} onClick={() => setPop('growth')} className="cd2-up" />
         <Hit r={rectOf(L, 'set-as-lobby')} label={isLobby ? 'LOBBY ACTIVE (현재 로비 캐릭터)' : LOBBY_ART.has(id) ? '로비 캐릭터로 설정' : '로비 캐릭터로 설정 (로비 그림 없음)'} disabled={!o || isLobby || !LOBBY_ART.has(id)} onClick={setLobby} />
       </RefStage>
@@ -351,16 +343,24 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
 
 /** 지안 외 캐릭터: 원본 상세 일러스트가 없어 임시 배경 + 기존 전신 아트로 왼쪽 영역을 채운다 */
 function HeroFallback({ cid }: { cid: string }) {
-  const c = CHAR_BY_ID[cid]
   const a = ART[cid]
   const sc = 2150 / a.bodyH
   return (
     <div className="cd2-hero" style={{ left: 0, top: 0, width: 990, height: 941, clipPath: 'polygon(0 0, 914px 0, 914px 640px, 990px 640px, 990px 941px, 0 941px)' }}>
-      <div className="bands"><i className="band" /><i className="band b2" /></div>
-      <b className="big">{c.nameEn}</b>
-      <div className="brand"><b>ABILITY<br />KINGDOM</b><small>PEOPLE<br />CITIES<br />RESPONSES<br />TOMORROW</small></div>
       <img src={a.src} alt="" style={{ width: a.w * sc, height: a.h * sc, left: 540 - a.headX * sc, top: 28 - a.top * sc }} />
       <span className="tag">TEMP ART · 원본 상세 일러스트 없음</span>
     </div>
   )
+}
+
+/** Independent graphic planes: the lettering can move without dragging the character. */
+function DetailBackdrop({ name }: { name: string }) {
+  return <div className="ui-detail-backdrop" aria-hidden>
+    <div className="ui-detail-plane plane-one" /><div className="ui-detail-plane plane-two" />
+    <div className="ui-detail-dots" />
+    <div className="ui-detail-word"><MotionTitle text={name} /></div>
+    <div className="ui-detail-brand">ABILITY<br />KINGDOM<small>PEOPLE / CITIES<br />RESPONSES / TOMORROW</small></div>
+    <MotionTicker text={`${name} / ABILITY KINGDOM`} className="ui-detail-ticker" />
+    <div className="ui-detail-line" />
+  </div>
 }
