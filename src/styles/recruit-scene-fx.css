@@ -1,0 +1,147 @@
+/* NIGHT SHIFT · ONE MORE PLAY? 연출. 진입은 backwards 채움(끝나면 호버·기울기 등 원래 값으로), 대기 연출은 장면 층에만 */
+.ui-rscene.rs-nightshift .ui-intro, .ui-rscene.rs-omp .ui-intro { display: none; }
+
+/* ════════════ NIGHT SHIFT ════════════ */
+/* 오른쪽 무리(인물·이름표·재화·영입 버튼)는 오른쪽에서, 왼쪽 무리(목록·제목·탭·교환소·포인트)는 왼쪽에서 — 속도감 있게 꽂힘 */
+@keyframes nsInR { 0% { opacity: 0; translate: 380px 0; transform: skewX(-18deg) scaleX(1.32); filter: blur(12px); } 58% { opacity: 1; translate: -16px 0; transform: skewX(3deg) scaleX(.985); filter: blur(0); } 100% { opacity: 1; translate: 0 0; transform: none; filter: none; } }
+@keyframes nsInL { 0% { opacity: 0; translate: -380px 0; transform: skewX(18deg) scaleX(1.32); filter: blur(12px); } 58% { opacity: 1; translate: 16px 0; transform: skewX(-3deg) scaleX(.985); filter: blur(0); } 100% { opacity: 1; translate: 0 0; transform: none; filter: none; } }
+.rs-nightshift { --ns-e: cubic-bezier(.16, .9, .2, 1); }
+.rs-nightshift .rs-s.char { animation: nsInR 680ms var(--ns-e) .18s backwards, rsBreath 5.2s ease-in-out 2s infinite alternate; }
+.rs-nightshift .rs-s.tag { animation: nsInR 560ms var(--ns-e) .36s backwards; }
+.rs-nightshift .rs-s.top.gems, .rs-nightshift .rs-num { animation: nsInR 520ms var(--ns-e) .16s backwards; }
+.rs-nightshift .rs-s.top.tickets, .rs-nightshift .rs-num + .rs-num { animation: nsInR 520ms var(--ns-e) .2s backwards; }
+.rs-nightshift .rs-s.b3 { animation: nsInR 520ms var(--ns-e) .24s backwards; }
+.rs-nightshift .rs-s.b4 { animation: nsInR 520ms var(--ns-e) .28s backwards, rsTen 2.8s ease-in-out 2.2s infinite alternate; }
+.rs-nightshift .rs-s.top.back { animation: nsInL 520ms var(--ns-e) .34s backwards; }
+.rs-nightshift .rs-s.top.tabs { animation: nsInL 520ms var(--ns-e) .38s backwards; }
+.rs-nightshift .rs-s.top.faces, .rs-nightshift .rs-faces { animation: nsInL 520ms var(--ns-e) .3s backwards; }
+.rs-nightshift .rs-item { animation: nsInL 560ms var(--ns-e) calc(.3s + var(--i) * 50ms) backwards; }
+.rs-nightshift .rs-info { animation: nsInL 520ms var(--ns-e) .55s backwards; }
+.rs-nightshift .rs-bar { animation: none; }
+.rs-nightshift .rs-s.b0 { animation: nsInL 520ms var(--ns-e) .42s backwards; }
+.rs-nightshift .rs-s.b1, .rs-nightshift .rs-pts, .rs-nightshift .rs-ptbar { animation: nsInL 520ms var(--ns-e) .38s backwards; }
+.rs-nightshift .rs-s.b2 { animation: nsInL 520ms var(--ns-e) .34s backwards; }
+.rs-nightshift .rs-dev:not([data-demo]) { animation: rsDev 900ms cubic-bezier(.3, 1.5, .5, 1) .7s both; }
+
+/* 진입: 터널 고속 통과 — 어두운 막 위로 불빛 줄이 쏟아지고 터널등이 두 번 번쩍, 막이 걷히며 장면이 옆으로 미끄러져 멈춤 */
+.ns-intro { position: absolute; inset: 0; z-index: 92; pointer-events: none; overflow: hidden; }
+.ns-veil { position: absolute; inset: 0; background: radial-gradient(120% 90% at 70% 50%, #15171d, #050608); animation: nsVeil 440ms cubic-bezier(.5, 0, .2, 1) both; }
+@keyframes nsVeil { 0%, 28% { opacity: 1; } 100% { opacity: 0; } }
+.ns-flash { position: absolute; top: -10%; left: 1672px; width: 360px; height: 120%; background: radial-gradient(closest-side, #fff4dccc, #ffc77a55 45%, #ffc77a00); filter: blur(18px); animation: nsFlash 260ms cubic-bezier(.4, 0, .9, .6) both; }
+.ns-flash.a { animation-delay: 0ms; } .ns-flash.b { animation-delay: 150ms; width: 260px; }
+@keyframes nsFlash { from { translate: 0 0; } to { translate: -2100px 0; } }
+.ns-line { position: absolute; left: 1672px; border-radius: 2px; background: linear-gradient(90deg, #dbe8ff00, #eef4ff 25%, #dbe8ff 70%, #dbe8ff00); box-shadow: 0 0 6px #dbe8ff66; animation: nsLine 300ms cubic-bezier(.3, 0, .8, .6) both; }
+.ns-line.warm { background: linear-gradient(90deg, #ffcf8a00, #fff1d8 25%, #ffcf8a 70%, #ffcf8a00); box-shadow: 0 0 6px #ffb46a66; }
+@keyframes nsLine { 0% { translate: 0 0; opacity: 0; } 10% { opacity: 1; } 100% { translate: -2700px 0; opacity: 1; } }
+.rs-nightshift .rs-base { animation: nsBaseIn 900ms cubic-bezier(.16, .9, .2, 1) .05s backwards; }
+@keyframes nsBaseIn { from { translate: 220px 0; scale: 1.08; filter: blur(16px) brightness(1.5) saturate(.6); } }
+
+/* 대기(3.2초 박자): 창밖 불빛 줄이 쉼 없이 흐르고, 터널등이 지날 때마다 창 → 실내 → 인물 순으로 따뜻한 빛이 훑고 지나감.
+   가끔 승강장 불빛 줄이 지나가고, 덜컹·전력 깜빡임 */
+.rs-nightshift { --ns-beat: 3.2s; }
+.ns-window { position: absolute; left: 300px; top: 90px; width: 545px; height: 640px; overflow: hidden; mix-blend-mode: screen; -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
+.ns-streak { position: absolute; left: 100%; border-radius: 2px; background: linear-gradient(90deg, #dbe8ff00, #f4f8ff 35%, #dbe8ff 70%, #dbe8ff00); box-shadow: 0 0 8px #bcd4ff88; animation: nsStreak linear infinite; }
+.ns-streak.warm { background: linear-gradient(90deg, #ffcf8a00, #fff0d4 35%, #ffbf70 70%, #ffcf8a00); box-shadow: 0 0 8px #ffb46a88; }
+@keyframes nsStreak { from { translate: 0 0; } to { translate: -1000px 0; } }
+.ns-lamp { position: absolute; top: 20px; left: 100%; width: 260px; height: 620px; border-radius: 50%; background: radial-gradient(closest-side, #fff0d0, #ffb46a99 45%, #ffb46a00); filter: blur(8px); animation: nsLamp var(--ns-beat) cubic-bezier(.45, 0, .55, 1) 1.4s infinite; }
+.ns-lamp.b { top: 140px; height: 420px; animation-delay: 3s; opacity: .8; }
+@keyframes nsLamp { 0% { translate: 0 0; } 30%, 100% { translate: -1100px 0; } }
+.ns-platform { position: absolute; left: 100%; top: 470px; height: 30px; width: 1200px; animation: nsPlatform 9.6s linear 5s infinite; }
+.ns-platform i { position: absolute; top: 0; width: 70px; height: 16px; border-radius: 3px; background: #f6fbff; box-shadow: 0 0 16px 4px #cfe3ffaa; }
+@keyframes nsPlatform { 0% { translate: 0 0; } 9%, 100% { translate: -1900px 0; } }
+.ns-wash { position: absolute; left: 0; top: 0; width: 1672px; height: 941px; background: linear-gradient(90deg, #ffc58000 0, #ffc58000 40%, #ffd8a0 48%, #ffe7c4 50%, #ffd8a0 52%, #ffc58000 60%, #ffc58000 100%); background-size: 300% 100%; background-position: 100% 0; mix-blend-mode: soft-light; opacity: .75; animation: nsWash var(--ns-beat) cubic-bezier(.45, 0, .55, 1) 1.75s infinite; }
+@keyframes nsWash { 0% { background-position: 100% 0; } 36%, 100% { background-position: 0% 0; } }
+/* 인물 위로 지나가는 터널등 빛(인물 모양대로 잘림) — 실내 빛과 같은 박자 */
+.ns-charlight { position: absolute; pointer-events: none; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; background: linear-gradient(90deg, #ffb46a00 0, #ffb46a00 40%, #ffc98a 47%, #ffe9c8 50%, #ffc98a 53%, #ffb46a00 60%, #ffb46a00 100%); background-size: 300% 100%; background-position: 100% 0; mix-blend-mode: screen; opacity: .3; animation: nsCharLight var(--ns-beat) cubic-bezier(.45, 0, .55, 1) 1.82s infinite; }
+@keyframes nsCharLight { 0% { background-position: 100% 0; } 36%, 100% { background-position: 0% 0; } }
+.ns-dim { position: absolute; inset: 0; z-index: 4; pointer-events: none; background: #05070c; opacity: 0; animation: nsDim 11s steps(1, end) 6s infinite; }
+@keyframes nsDim { 0%, 100% { opacity: 0; } 90% { opacity: .42; } 91% { opacity: .08; } 92% { opacity: .5; } 94% { opacity: 0; } }
+.rs-nightshift .rs-scene { animation: nsRide 6.4s ease-in-out 1.8s infinite; }
+.rs-nightshift .rs-char-wrap { animation: nsRide 6.4s ease-in-out 1.86s infinite; }
+@keyframes nsRide { 0%, 100% { transform: none; } 12% { transform: translateY(1.4px); } 24% { transform: translateY(-.5px); } 36% { transform: translateY(1.2px); } 62% { transform: none; } 66% { transform: translateY(4.5px) rotate(.08deg); } 69% { transform: translateY(-2px); } 73% { transform: translateY(1px); } 78% { transform: none; } }
+/* 진입 잔상 */
+.ns-ghost { position: absolute; max-width: none; pointer-events: none; opacity: 0; mix-blend-mode: screen; filter: blur(3px) brightness(1.5) saturate(.5); animation: nsGhost 620ms cubic-bezier(.16, .9, .2, 1) backwards; }
+.ns-ghost.g1 { animation-delay: .23s; } .ns-ghost.g2 { animation-delay: .28s; } .ns-ghost.g3 { animation-delay: .33s; }
+@keyframes nsGhost { 0% { opacity: 0; translate: 380px 0; transform: skewX(-18deg) scaleX(1.3); } 20% { opacity: .55; } 100% { opacity: 0; translate: 0 0; transform: none; } }
+
+/* 제목: 글자 쾅 → 주황 틀이 그려짐 → 빛이 틀을 따라 돎 */
+.rs-s.ns-text { animation: nsSlam 660ms cubic-bezier(.2, .9, .25, 1) .36s backwards; }
+@keyframes nsSlam { 0% { opacity: 0; translate: -440px 0; transform: skewX(20deg) scaleX(1.45); filter: blur(14px); } 52% { opacity: 1; translate: 20px 0; transform: skewX(-5deg) scale(1.04); filter: none; } 74% { translate: -5px 0; transform: scale(.995); } 100% { opacity: 1; translate: 0 0; transform: none; } }
+.rs-s.ns-frame { animation: nsDraw 720ms cubic-bezier(.65, 0, .25, 1) .68s backwards, nsGlow 1.6s ease-in-out 1.8s infinite alternate; }
+@keyframes nsDraw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes nsGlow { from { filter: drop-shadow(0 0 2px #f07a2f44); } to { filter: drop-shadow(0 0 14px #f07a2fcc); } }
+.ns-trace { position: absolute; inset: 0; pointer-events: none; z-index: 1; mix-blend-mode: screen; }
+.ns-trace i { position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 50%; offset-rotate: 0deg; background: radial-gradient(closest-side, #fff, #ffd2a0 30%, #ff8a3d 55%, #ff7a2f00); box-shadow: 0 0 18px 6px #ff8a3d66; opacity: 0; animation: nsTrace 3.2s cubic-bezier(.45, .05, .55, .95) 1.8s infinite; }
+.ns-trace i.k1 { width: 18px; height: 18px; box-shadow: none; animation-delay: 1.75s; opacity: .7; }
+.ns-trace i.k2 { width: 12px; height: 12px; box-shadow: none; animation-delay: 1.7s; }
+@keyframes nsTrace { 0% { offset-distance: 0%; opacity: 0; } 5% { opacity: 1; } 82% { opacity: 1; } 88%, 100% { offset-distance: 100%; opacity: 0; } }
+
+/* ════════════ ONE MORE PLAY? ════════════ */
+/* 진입: 브라운관 켜짐 — 검은 화면 가운데 밝은 가로줄 → 위아래로 열림(살짝 넘쳤다 자리 잡음) → 주사선·색 번짐이 걷힘 */
+.omp-crt { position: absolute; inset: 0; z-index: 92; pointer-events: none; overflow: hidden; }
+.omp-crt .half { position: absolute; left: 0; right: 0; height: 50%; background: #07060a; }
+.omp-crt .half.top { top: 0; transform-origin: top; animation: ompHalfT 520ms cubic-bezier(.7, 0, .2, 1) 330ms both; }
+.omp-crt .half.bot { bottom: 0; transform-origin: bottom; animation: ompHalfB 520ms cubic-bezier(.7, 0, .2, 1) 330ms both; }
+@keyframes ompHalfT { to { transform: translateY(-101%); } }
+@keyframes ompHalfB { to { transform: translateY(101%); } }
+.omp-crt .beam { position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; background: #fff; box-shadow: 0 0 24px 8px #fff7e0, 0 0 80px 30px #ffd8a066; transform: scaleX(0); animation: ompBeam 900ms cubic-bezier(.3, 0, .2, 1) 40ms both; }
+@keyframes ompBeam { 0% { transform: scaleX(0); opacity: 1; } 34% { transform: scaleX(1); opacity: 1; } 55% { transform: scaleX(1) scaleY(2.5); opacity: 1; } 100% { transform: scaleX(1) scaleY(60); opacity: 0; } }
+.omp-crt .scan { position: absolute; inset: 0; background: repeating-linear-gradient(#0000 0 3px, #0006 3px 5px); mix-blend-mode: multiply; animation: ompScanOut 900ms ease 700ms both; }
+@keyframes ompScanOut { to { opacity: 0; } }
+.omp-crt .omp-boot { position: absolute; left: 50%; top: 50%; translate: -50% -50%; font: 22px/1 'Press Start 2P', ui-monospace, monospace; letter-spacing: .1em; color: #fff3d6; text-shadow: 2px 0 #ef5a45, -2px 0 #7fd1c4; opacity: 0; animation: ompBoot 300ms steps(1, end) 90ms both; }
+@keyframes ompBoot { 0% { opacity: 1; } 50% { opacity: 0; } 70% { opacity: 1; } 100% { opacity: 0; } }
+.rs-omp .rs-scene { animation: ompRgb 700ms steps(6, end) 420ms backwards; }
+@keyframes ompRgb { 0% { filter: saturate(1.6) contrast(1.25) brightness(1.4) hue-rotate(-12deg); } 50% { filter: saturate(1.2) brightness(1.1) hue-rotate(6deg); } 100% { filter: none; } }
+/* 인물: 모자이크 28 → 14 → 7 → 선명 */
+.omp-px { position: absolute; max-width: none; pointer-events: none; opacity: 0; image-rendering: pixelated; animation: ompShow 150ms linear both; }
+.omp-px.p0 { animation-delay: .62s; } .omp-px.p1 { animation-delay: .77s; } .omp-px.p2 { animation-delay: .92s; }
+@keyframes ompShow { 0% { opacity: 0; } 1% { opacity: 1; scale: 1.012; } 99% { opacity: 1; scale: 1; } 100% { opacity: 0; } }
+.rs-omp .rs-s.char { animation: ompCharOn 460ms ease-out 1.07s backwards, rsBreath 5.2s ease-in-out 2s infinite alternate, ompSway 6.5s ease-in-out 2.2s infinite alternate; }
+@keyframes ompCharOn { 0% { opacity: 0; } 1% { opacity: 1; filter: brightness(1.7) saturate(1.3); } 100% { opacity: 1; filter: none; } }
+@keyframes ompSway { from { rotate: -.3deg; } to { rotate: .35deg; } }
+/* 제목 글자 12개: 하나씩 튀어나오고, 대기 중엔 차례로 통통(오락기 대기 화면처럼) */
+.rs-s.omp-l { transform-origin: 50% 85%; animation: ompLetter 640ms cubic-bezier(.3, 1.75, .5, 1) calc(.75s + var(--i) * 55ms) backwards, ompWave 5.6s ease-in-out calc(2.8s + var(--i) * 80ms) infinite; }
+@keyframes ompLetter { from { opacity: 0; translate: 0 -100px; scale: .2; rotate: var(--r); } }
+@keyframes ompWave { 0%, 15%, 100% { translate: 0 0; scale: 1 1; } 4% { translate: 0 -15px; scale: .95 1.07; } 8% { translate: 0 0; scale: 1.07 .93; } 11% { scale: .98 1.02; } }
+.omp-star { position: absolute; z-index: 2; width: 21px; height: 21px; margin: -10px 0 0 -10px; pointer-events: none; background: #fff8dc; clip-path: polygon(42.8% 0, 57.1% 0, 57.1% 28.5%, 71.4% 28.5%, 71.4% 42.8%, 100% 42.8%, 100% 57.1%, 71.4% 57.1%, 71.4% 71.4%, 57.1% 71.4%, 57.1% 100%, 42.8% 100%, 42.8% 71.4%, 28.5% 71.4%, 28.5% 57.1%, 0 57.1%, 0 42.8%, 28.5% 42.8%, 28.5% 28.5%, 42.8% 28.5%); filter: drop-shadow(0 0 5px #ffd36a); opacity: 0; animation: ompStar 3.6s steps(4, end) calc(2s + var(--i) * .6s) infinite; }
+@keyframes ompStar { 0%, 100% { opacity: 0; scale: .3; } 8% { opacity: 1; scale: 1.1; } 18% { opacity: .6; scale: .7; } 26% { opacity: 0; scale: .3; } }
+.rs-omp .rs-s.tag { animation-delay: 1.55s; }
+.rs-omp .rs-item { animation: rsItem 620ms cubic-bezier(.3, 1.45, .5, 1) calc(.6s + var(--i) * 70ms) backwards; }
+.rs-omp .rs-bar { animation-delay: .5s; }
+/* 점수 글자 */
+.omp-pops { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.omp-pop { position: absolute; font: 20px/1 'Press Start 2P', ui-monospace, monospace; letter-spacing: .04em; white-space: nowrap; text-shadow: 2px 2px 0 #2a1430, 0 0 10px currentColor; opacity: 0; translate: -50% 0; animation: ompPop 7.2s steps(1, end) calc(2.4s + var(--i) * 1.2s) infinite; }
+@keyframes ompPop { 0% { opacity: 0; transform: translateY(0) scale(.6); } 1% { opacity: 1; transform: translateY(-4px) scale(1.15); } 2.5% { transform: translateY(-10px) scale(1); } 5% { transform: translateY(-18px); } 7.5% { transform: translateY(-24px); } 10% { opacity: 1; transform: translateY(-30px); } 11%, 100% { opacity: 0; transform: translateY(-34px); } }
+.rs-omp .rs-dev:not([data-demo]) { animation-delay: 1.1s; }
+
+/* 깨끗한 배경판이 있어 시차를 크게: 장면은 많이, 인물은 조금 */
+.rs-nightshift .rs-base, .rs-omp .rs-base { scale: 1.025; }
+.rs-nightshift .rs-scene, .rs-omp .rs-scene { translate: calc(var(--mx, 0) * -16px) calc(var(--my, 0) * -9px); }
+.rs-nightshift .rs-char-wrap, .rs-omp .rs-char-wrap { translate: calc(var(--mx, 0) * -5px) calc(var(--my, 0) * -3px); }
+
+/* 대기: 창 햇살, 간판 네온, 오락기 화면, 버튼 불빛 */
+.omp-scene { position: absolute; inset: 0; pointer-events: none; }
+.omp-ray { position: absolute; top: -80px; width: 150px; height: 1000px; transform-origin: 50% 0; background: linear-gradient(180deg, #fff3d2cc, #fff3d255 45%, #fff3d200 85%); filter: blur(14px); mix-blend-mode: screen; opacity: .3; animation: ompRay 8s ease-in-out infinite alternate; }
+.omp-ray.r1 { left: 470px; rotate: -24deg; }
+.omp-ray.r2 { left: 640px; width: 90px; rotate: -24deg; animation-delay: -3s; animation-duration: 9.5s; }
+.omp-ray.r3 { left: 800px; width: 120px; rotate: -24deg; animation-delay: -5s; animation-duration: 7s; }
+@keyframes ompRay { from { opacity: .16; translate: -20px 0; } to { opacity: .46; translate: 24px 0; } }
+.omp-sign { position: absolute; max-width: none; mix-blend-mode: screen; opacity: .6; filter: drop-shadow(0 0 5px #ffb44acc) drop-shadow(0 0 14px #ff9a3a88); animation: ompNeonOn 1.1s steps(1, end) 1.2s backwards, ompNeon 7s steps(1, end) 2.4s infinite; }
+@keyframes ompNeonOn { 0% { opacity: 0; } 18% { opacity: .6; } 26% { opacity: 0; } 40% { opacity: .6; } 46% { opacity: .1; } 60%, 100% { opacity: .6; } }
+@keyframes ompNeon { 0%, 70%, 74%, 78%, 100% { opacity: .6; } 71% { opacity: .15; } 76% { opacity: .25; } }
+.omp-screen { position: absolute; overflow: hidden; }
+.omp-screen .cloud { position: absolute; top: 40px; left: 0; width: 8px; height: 8px; background: #fff; opacity: .7; box-shadow: 8px 0 #fff, 16px 0 #fff, 24px 0 #fff, -8px 8px #fff, 0 8px #fff, 8px 8px #fff, 16px 8px #fff, 24px 8px #fff, 32px 8px #fff, -16px 16px #fff, -8px 16px #fff, 0 16px #fff, 8px 16px #fff, 16px 16px #fff, 24px 16px #fff, 32px 16px #fff, 40px 16px #fff; animation: ompCloud 28s linear infinite; }
+.omp-screen .cloud.c2 { top: 92px; opacity: .55; scale: .7; animation-duration: 36s; animation-delay: -16s; }
+@keyframes ompCloud { from { translate: 220px 0; } to { translate: -80px 0; } }
+.omp-screen .roll { position: absolute; left: 0; right: 0; top: -40px; height: 40px; background: linear-gradient(#ffffff00, #ffffff40, #ffffff00); mix-blend-mode: screen; animation: ompRoll 4.2s linear infinite; }
+@keyframes ompRoll { from { translate: 0 0; } to { translate: 0 290px; } }
+.omp-screen .lines { position: absolute; inset: 0; background: repeating-linear-gradient(#0000 0 2px, #0a1a3022 2px 3px); mix-blend-mode: multiply; }
+.omp-nocoin { position: absolute; max-width: none; opacity: 0; animation: ompCoin 1.2s steps(1, end) 2s infinite; }
+@keyframes ompCoin { 0% { opacity: 0; } 55% { opacity: 1; } }
+.omp-btn { position: absolute; border-radius: 50%; background: radial-gradient(closest-side, var(--c), #0000); mix-blend-mode: screen; opacity: 0; animation: ompBtn 3.4s ease-out calc(1.6s + var(--i) * .2s) infinite; }
+@keyframes ompBtn { 0%, 100% { opacity: 0; } 5% { opacity: .95; } 28% { opacity: 0; } }
+.omp-floor { position: absolute; left: 380px; top: 650px; width: 600px; height: 170px; border-radius: 50%; background: radial-gradient(closest-side, #fff2d0aa, #fff2d000); mix-blend-mode: soft-light; animation: ompFloor 6s ease-in-out infinite alternate; }
+@keyframes ompFloor { from { opacity: .4; translate: -20px 0; } to { opacity: .9; translate: 30px 0; } }
+
+/* 동작 줄이기: 전환 덮개·모자이크·잔상 없이 최종 모습 */
+.ui-rscene.ui-reduced :is(.omp-crt, .omp-pop, .ns-wash, .ns-dim, .ns-platform, .ns-intro, .omp-intro, .omp-px, .ns-ghost, .ns-trace, .ns-window, .ns-charlight, .omp-star, .omp-btn, .omp-screen .roll) { display: none; }

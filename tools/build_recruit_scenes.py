@@ -117,6 +117,31 @@ def grabcut(img, box, iters=6):
     return np.where((m == cv2.GC_FGD) | (m == cv2.GC_PR_FGD), 255, 0).astype(np.uint8)
 
 
+PLATES = 'tools/recruit_plates' if os.path.isdir('tools/recruit_plates') else os.path.join(SRC, 'plates')  # 선택: <배너>.jpg = 인물·제목·UI를 지운 배경판(Creative Claw nano-banana-2 편집으로 만든 것)
+
+
+def aligned_plate(name, img, hole):
+    f = os.path.join(PLATES, f'{name}.jpg')
+    if not os.path.exists(f): return None
+    pl = cv2.resize(cv2.imread(f), (W, H), interpolation=cv2.INTER_AREA)
+    keep = np.full((H, W), 255, np.uint8); keep[:90] = 0; keep[790:] = 0; keep[:, :310] = 0
+    keep[cv2.dilate(hole, np.ones((31, 31), np.uint8)) > 0] = 0
+    sift = cv2.SIFT_create(6000)
+    k1, d1 = sift.detectAndCompute(cv2.cvtColor(pl, cv2.COLOR_BGR2GRAY), None)
+    k2, d2 = sift.detectAndCompute(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY), keep)
+    good = [a for a, b in cv2.BFMatcher().knnMatch(d1, d2, k=2) if a.distance < 0.72 * b.distance]
+    Hm, _ = cv2.findHomography(np.float32([k1[g.queryIdx].pt for g in good]), np.float32([k2[g.trainIdx].pt for g in good]), cv2.RANSAC, 3.0)
+    wp = cv2.warpPerspective(pl, Hm, (W, H), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+    # 색 맞춤: 배경이 보이는 곳 기준 Lab 평균·표준편차를 시안에 맞춤
+    a = cv2.cvtColor(wp, cv2.COLOR_BGR2LAB).astype(np.float32); b = cv2.cvtColor(img, cv2.COLOR_BGR2LAB).astype(np.float32)
+    sel = keep > 0
+    for ch in range(3):
+        ma, sa = a[..., ch][sel].mean(), a[..., ch][sel].std() + 1e-3
+        mb, sb = b[..., ch][sel].mean(), b[..., ch][sel].std()
+        a[..., ch] = (a[..., ch] - ma) * (sb / sa) + mb
+    return cv2.cvtColor(np.clip(a, 0, 255).astype(np.uint8), cv2.COLOR_LAB2BGR).astype(np.float32)
+
+
 meta_all = {}
 thumbs = {}
 for name, c in C.items():
@@ -304,10 +329,16 @@ for name, c in C.items():
     # ── 기본 장면 ──
     hole[BAR - 2:] = 0
     base = big_inpaint(img, hole)
-    # 인물 자리: 원본을 크게 흐린 그림(인물이 흐릿한 실루엣으로 남음 → 들어올 때 초점이 맞듯 보임, 시차 가장자리도 자연스러움)
-    soft = cv2.GaussianBlur(base if False else img, (0, 0), 16)
-    cf = (cv2.GaussianBlur(chole, (0, 0), 6) / 255.0)[..., None]
-    base = (base * (1 - cf) + soft * cf).astype(np.uint8)
+    plate = aligned_plate(name, img, chole | hole)
+    if plate is not None:
+        # 인물·제목·이름표 자리: 인물을 지운 배경판(이미지 모델로 만든 것)을 시안에 맞춰 정렬·색 보정해 채움
+        cf = (cv2.GaussianBlur(cv2.dilate(chole | hole, np.ones((9, 9), np.uint8)), (0, 0), 5) / 255.0)[..., None]
+        base = (base * (1 - cf) + plate * cf).astype(np.uint8)
+    else:
+        # 인물 자리: 원본을 크게 흐린 그림(인물이 흐릿한 실루엣으로 남음)
+        soft = cv2.GaussianBlur(img, (0, 0), 16)
+        cf = (cv2.GaussianBlur(chole, (0, 0), 6) / 255.0)[..., None]
+        base = (base * (1 - cf) + soft * cf).astype(np.uint8)
     nn = H - BAR
     base[BAR:] = cv2.GaussianBlur(base[BAR - nn:BAR][::-1], (0, 0), 6)
     Image.fromarray(cv2.cvtColor(base, cv2.COLOR_BGR2RGB)).save(f'{OUT}/base.webp', quality=86)

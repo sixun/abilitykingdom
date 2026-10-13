@@ -12,10 +12,6 @@
 .rs-s.char { animation: rsCharIn 1.4s cubic-bezier(.16, 1, .3, 1) .25s both, rsBreath 5.2s ease-in-out 2s infinite alternate; transform-origin: 50% 100%; }
 @keyframes rsCharIn { from { opacity: 0; filter: blur(12px) brightness(1.3); translate: 0 22px; } }
 @keyframes rsBreath { to { scale: 1.006 1.009; } }
-.rs-nightshift .rs-s.char { animation-name: rsCharSlide, rsBreath; }
-@keyframes rsCharSlide { from { opacity: 0; filter: blur(8px); translate: 80px 0; } }
-.rs-omp .rs-s.char { animation-name: rsCharPop, rsBreath; animation-timing-function: cubic-bezier(.3, 1.35, .5, 1), ease-in-out; }
-@keyframes rsCharPop { from { opacity: 0; filter: blur(6px); scale: .94; translate: 0 26px; } }
 
 /* SERENITY: 창밖 비(가까운 비·먼 비), 가끔 먼 번개, 책상 등불 */
 .rs-rain { position: absolute; left: 790px; top: 30px; width: 882px; height: 800px; background-size: 256px 256px; opacity: .55; mix-blend-mode: screen; -webkit-mask-image: linear-gradient(transparent, #000 12%, #000 80%, transparent); mask-image: linear-gradient(transparent, #000 12%, #000 80%, transparent); animation: rsRain .7s linear infinite; }
@@ -29,24 +25,10 @@
 @keyframes rsTwinkle { 0%, 100% { opacity: 0; scale: .3; } 20% { opacity: 1; scale: 1; } 45% { opacity: 0; scale: .6; rotate: 45deg; } }
 
 /* NIGHT SHIFT: 달리는 열차 — 창으로 지나가는 터널 불빛, 차체의 아주 작은 흔들림, 천장 형광등 */
-.rs-nightshift .rs-base, .rs-nightshift .rs-char-wrap > .rs-s { --sway: 1; }
-.rs-nightshift .rs-scene { animation: rsSway 2.6s ease-in-out 2s infinite; }
-.rs-nightshift .rs-char-wrap { animation: rsSway 2.6s ease-in-out 2.08s infinite; }
-@keyframes rsSway { 0%, 100% { transform: none; } 30% { transform: translateY(1.4px); } 60% { transform: translateY(-.6px) rotate(.04deg); } }
-.rs-pass { position: absolute; left: 300px; top: 90px; width: 545px; height: 680px; overflow: hidden; mix-blend-mode: screen; -webkit-mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent); mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent); }
-.rs-pass::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 120px; background: linear-gradient(90deg, #ffd9a000, #ffd9a03d 45%, #fff2d655 50%, #ffd9a03d 55%, #ffd9a000); filter: blur(6px); translate: -160px 0; animation: rsPass 3.4s linear 1.8s infinite; }
-.rs-pass.b::before { width: 70px; animation-duration: 3.4s; animation-delay: 2.9s; opacity: .7; }
-@keyframes rsPass { 0% { translate: -160px 0; } 38%, 100% { translate: 700px 0; } }
 .rs-ceiling { position: absolute; left: 1380px; top: 40px; width: 292px; height: 200px; background: radial-gradient(closest-side, #f2f6ff40, #f2f6ff00); mix-blend-mode: screen; animation: rsCeil 7s steps(1) 3s infinite; }
 @keyframes rsCeil { 0%, 61%, 63%, 100% { opacity: 1; } 62% { opacity: .35; } }
 
-/* ONE MORE PLAY?: 창 햇살, 'PLAY AGAIN TOMORROW' 간판 빛, 오락기 화면 주사선 */
-.rs-sun { position: absolute; left: 260px; top: -260px; width: 1000px; height: 760px; border-radius: 50%; background: radial-gradient(closest-side, #fff2d0, #fff2d000); mix-blend-mode: soft-light; opacity: .6; animation: rsSun 8s ease-in-out 1.6s infinite alternate; }
-@keyframes rsSun { to { opacity: 1; scale: 1.06; } }
-.rs-neon { position: absolute; left: 990px; top: 92px; width: 132px; height: 108px; border-radius: 10px; box-shadow: 0 0 22px 6px #ffb44a40; mix-blend-mode: screen; animation: rsNeon 3.2s ease-in-out 1.8s infinite alternate; }
-@keyframes rsNeon { from { box-shadow: 0 0 12px 2px #ffb44a26; } to { box-shadow: 0 0 30px 10px #ffb44a55; } }
-.rs-crt { position: absolute; left: 1500px; top: 318px; width: 172px; height: 150px; background: repeating-linear-gradient(#ffffff00 0 2px, #0a1a3018 2px 3px); background-size: 100% 6px; mix-blend-mode: multiply; animation: rsCrt 2.4s linear infinite; }
-@keyframes rsCrt { to { background-position: 0 24px; } }
+/* NIGHT SHIFT·ONE MORE PLAY? 전용 연출은 recruit-scene-fx.css */
 
 /* 제목·이름표 */
 .rs-head { z-index: 5; }
@@ -54,13 +36,6 @@
 @keyframes rsFocus { from { opacity: 0; filter: blur(12px); scale: 1.05; } }
 .rs-serenity .rs-s.t1 { animation: rsLine 1.3s cubic-bezier(.65, 0, .25, 1) 1s both; }
 @keyframes rsLine { from { clip-path: inset(0 50% 0 50%); opacity: .4; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
-.rs-nightshift .rs-s.t0 { transform-origin: 50% 55%; animation: rsSlam 760ms cubic-bezier(.2, 1.4, .4, 1) .55s both, rsOrange 3.6s ease-in-out 2.4s infinite alternate; }
-@keyframes rsSlam { 0% { opacity: 0; scale: 1.55; translate: -40px 14px; filter: blur(5px); } 55% { opacity: 1; filter: none; } }
-@keyframes rsOrange { from { filter: drop-shadow(0 0 0 #f07a2f00); } to { filter: drop-shadow(0 0 12px #f07a2f66); } }
-.rs-omp .rs-s.title { transform-origin: 50% 80%; animation: rsPop 820ms cubic-bezier(.3, 1.6, .5, 1) .55s both, rsBob 3.2s ease-in-out 2.4s infinite alternate; }
-.rs-omp .rs-s.t1 { animation-delay: .7s, 2.7s; }
-@keyframes rsPop { from { opacity: 0; scale: .55; translate: 0 34px; rotate: -5deg; } }
-@keyframes rsBob { to { translate: 0 -4px; } }
 .rs-s.tag { -webkit-mask-image: linear-gradient(90deg, #000 45%, #0000 55%); mask-image: linear-gradient(90deg, #000 45%, #0000 55%); -webkit-mask-size: 260% 100%; mask-size: 260% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: 0 0; mask-position: 0 0; animation: rsWipe 1.2s cubic-bezier(.45, .05, .3, 1) 1.25s both; }
 @keyframes rsWipe { from { -webkit-mask-position: 100% 0; mask-position: 100% 0; } }
 
@@ -152,7 +127,7 @@
 .rs-multi .rs-play-flash { animation-delay: 1.45s; }
 @keyframes rsEnd { to { opacity: 1; } }
 
-.ui-rscene.ui-reduced :is(.rs-rain, .rs-flash, .rs-pass, .rs-spark, .rs-crt) { display: none; }
+.ui-rscene.ui-reduced :is(.rs-rain, .rs-flash, .rs-spark) { display: none; }
 .ui-rscene.ui-reduced :is(.rs-scene, .rs-char-wrap) { translate: none; }
 
 /* 신규 대원 미리보기(1456×819 기준 화면)를 1672×941 캔버스에 맞춤 */

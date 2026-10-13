@@ -9,6 +9,7 @@ import { Hit } from '../ui/ref'
 import { MotionStage, AmbientFx } from '../ui/ui-motion'
 import { useReduceMotion } from '../ui/motion'
 import { fmt } from '../ui/components'
+import { fxFiles, NightWash, NightDim, NightIntro, NightWindow, NightCharLight, NightGhosts, NightTitle, OmpIntro, OmpPopups, OmpMosaic, OmpTitle, OmpScene } from './RecruitSceneFx'
 
 // 새 영입 배너 3종(SERENITY·NIGHT SHIFT·ONE MORE PLAY?) 화면. 시안(1672×941)을 tools/build_recruit_scenes.py로 조각냄.
 // - 장면·인물·제목·이름표·목록·위 UI·아래 바·뽑기 장치가 각각 따로 들어오고 움직인다
@@ -40,6 +41,27 @@ type Props = {
   onDetail: () => void
   onRates: () => void
   children?: ReactNode
+}
+
+/** 배너 화면 그림을 미리 받아 디코드해 둔다(배너를 처음 누를 때 큰 그림 디코드로 첫 장면이 멈칫하지 않게) */
+let preloaded = false
+export function preloadRecruitScenes() {
+  if (preloaded) return
+  preloaded = true
+  const files = new Set<string>()
+  for (const m of Object.values(ALL)) for (const [k, v] of Object.entries(m)) if (!k.startsWith('_') && (v as Box).file) files.add((v as Box).file)
+  for (const f of fxFiles()) files.add(f)
+  const list = [...files]
+  // 큰 그림(장면·인물)부터
+  list.sort((a, b) => Number(/base|char/.test(b)) - Number(/base|char/.test(a)))
+  const idle = (cb: () => void) => ('requestIdleCallback' in window ? (window as unknown as { requestIdleCallback: (f: () => void) => void }).requestIdleCallback(cb) : setTimeout(cb, 50))
+  let i = 0
+  const next = () => {
+    const batch = list.slice(i, i + 4); i += 4
+    if (!batch.length) return
+    Promise.all(batch.map((f) => { const im = new Image(); im.src = f; return im.decode().catch(() => undefined) })).then(() => idle(next))
+  }
+  idle(next)
 }
 
 export default function RecruitScene({ name, banner, order, wallet, newFaces, busy, onBanner, onKind, onPull, onBack, onShop, onFaces, onDetail, onRates, children }: Props) {
@@ -84,15 +106,24 @@ export default function RecruitScene({ name, banner, order, wallet, newFaces, bu
       <div className="rs-scene" aria-hidden>
         <img className="rs-base" src={R.base.file} alt="" draggable={false} />
         {name === 'serenity' && <><i className="rs-rain" style={{ backgroundImage: 'url(ref/recruit/rain-near.webp)' }} /><i className="rs-rain far" style={{ backgroundImage: 'url(ref/recruit/rain-far.webp)' }} /><i className="rs-flash" /><i className="rs-lamp" /></>}
-        {name === 'nightshift' && <><i className="rs-pass a" /><i className="rs-pass b" /><i className="rs-ceiling" /></>}
-        {name === 'omp' && <><i className="rs-sun" /><i className="rs-neon" /><i className="rs-crt" /></>}
+        {name === 'nightshift' && <><NightWindow /><i className="rs-ceiling" /><NightWash /></>}
+        {name === 'omp' && <OmpScene />}
       </div>
-      <div className="rs-char-wrap" aria-hidden>{img('char', 'char')}</div>
-      {name === 'omp' && <AmbientFx kind="dust" box={{ x: 300, y: 60, w: 1100, h: 760 }} count={22} z={4} />}
+      <div className="rs-char-wrap" aria-hidden>
+        {name === 'nightshift' && <NightGhosts src={R.char.file} box={box('char')} />}
+        {name === 'omp' && <OmpMosaic box={box('char')} />}
+        {img('char', 'char')}
+        {name === 'nightshift' && <NightCharLight src={R.char.file} box={box('char')} />}
+      </div>
+      {name === 'nightshift' && <NightDim />}
+      {name === 'omp' && <AmbientFx kind="dust" box={{ x: 300, y: 60, w: 1100, h: 760 }} count={30} z={4} />}
+      {name === 'omp' && <div className="omp-pops" aria-hidden><OmpPopups /></div>}
 
       {/* 제목·이름표 */}
       <div className="rs-head" aria-label={`${banner.title} · ${f.name} ${'★'.repeat(f.rarity)}`}>
-        {Object.keys(R).filter((k) => k.startsWith('title')).sort().map((k, i) => <span key={k}>{img(k, `title t${i}`)}</span>)}
+        {name === 'serenity' && Object.keys(R).filter((k) => k.startsWith('title')).sort().map((k, i) => <span key={k}>{img(k, `title t${i}`)}</span>)}
+        {name === 'nightshift' && <NightTitle />}
+        {name === 'omp' && <OmpTitle />}
         {name === 'serenity' && <i className="rs-spark" style={{ left: 664, top: 386 }} />}
         {img('tag', 'tag')}
       </div>
@@ -180,6 +211,8 @@ export default function RecruitScene({ name, banner, order, wallet, newFaces, bu
           <i className="rs-play-flash" />
         </div>
       )}
+      {name === 'nightshift' && <NightIntro />}
+      {name === 'omp' && <OmpIntro />}
       {children}
     </MotionStage>
   )

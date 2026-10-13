@@ -1,0 +1,226 @@
+{
+ "nightshift": {
+  "titleText": "ref/recruit/nightshift/fx-title-text.webp",
+  "titleFrame": "ref/recruit/nightshift/fx-title-frame.webp",
+  "title": {
+   "x": 326,
+   "y": 299,
+   "w": 413,
+   "h": 351
+  },
+  "frame": [
+   [
+    736,
+    413
+   ],
+   [
+    721,
+    556
+   ],
+   [
+    348,
+    647
+   ],
+   [
+    367,
+    490
+   ]
+  ]
+ },
+ "omp": {
+  "letters": [
+   {
+    "x": 356,
+    "y": 238,
+    "w": 104,
+    "h": 144,
+    "file": "ref/recruit/omp/fx-l0.webp",
+    "row": 0
+   },
+   {
+    "x": 442,
+    "y": 238,
+    "w": 91,
+    "h": 141,
+    "file": "ref/recruit/omp/fx-l1.webp",
+    "row": 0
+   },
+   {
+    "x": 515,
+    "y": 238,
+    "w": 87,
+    "h": 141,
+    "file": "ref/recruit/omp/fx-l2.webp",
+    "row": 0
+   },
+   {
+    "x": 600,
+    "y": 238,
+    "w": 100,
+    "h": 141,
+    "file": "ref/recruit/omp/fx-l3.webp",
+    "row": 0
+   },
+   {
+    "x": 686,
+    "y": 239,
+    "w": 84,
+    "h": 140,
+    "file": "ref/recruit/omp/fx-l4.webp",
+    "row": 0
+   },
+   {
+    "x": 748,
+    "y": 239,
+    "w": 90,
+    "h": 140,
+    "file": "ref/recruit/omp/fx-l5.webp",
+    "row": 0
+   },
+   {
+    "x": 823,
+    "y": 240,
+    "w": 89,
+    "h": 139,
+    "file": "ref/recruit/omp/fx-l6.webp",
+    "row": 0
+   },
+   {
+    "x": 394,
+    "y": 378,
+    "w": 112,
+    "h": 152,
+    "file": "ref/recruit/omp/fx-l7.webp",
+    "row": 1
+   },
+   {
+    "x": 488,
+    "y": 383,
+    "w": 91,
+    "h": 144,
+    "file": "ref/recruit/omp/fx-l8.webp",
+    "row": 1
+   },
+   {
+    "x": 577,
+    "y": 383,
+    "w": 113,
+    "h": 141,
+    "file": "ref/recruit/omp/fx-l9.webp",
+    "row": 1
+   },
+   {
+    "x": 688,
+    "y": 383,
+    "w": 96,
+    "h": 138,
+    "file": "ref/recruit/omp/fx-l10.webp",
+    "row": 1
+   },
+   {
+    "x": 770,
+    "y": 378,
+    "w": 98,
+    "h": 146,
+    "file": "ref/recruit/omp/fx-l11.webp",
+    "row": 1
+   }
+  ],
+  "mosaic": [
+   {
+    "file": "ref/recruit/omp/fx-px28.webp",
+    "w": 504,
+    "h": 756,
+    "bs": 28
+   },
+   {
+    "file": "ref/recruit/omp/fx-px14.webp",
+    "w": 518,
+    "h": 770,
+    "bs": 14
+   },
+   {
+    "file": "ref/recruit/omp/fx-px7.webp",
+    "w": 518,
+    "h": 770,
+    "bs": 7
+   }
+  ],
+  "sign": {
+   "x": 996,
+   "y": 96,
+   "w": 122,
+   "h": 98,
+   "file": "ref/recruit/omp/fx-sign.webp"
+  },
+  "nocoin": {
+   "x": 1526,
+   "y": 414,
+   "w": 112,
+   "h": 38,
+   "file": "ref/recruit/omp/fx-nocoin.webp"
+  },
+  "screen": [
+   [
+    1508,
+    328
+   ],
+   [
+    1672,
+    318
+   ],
+   [
+    1672,
+    522
+   ],
+   [
+    1484,
+    520
+   ]
+  ],
+  "buttons": [
+   [
+    1452,
+    534,
+    17,
+    "#ff5a5a"
+   ],
+   [
+    1484,
+    563,
+    13,
+    "#ffd34a"
+   ],
+   [
+    1511,
+    571,
+    13,
+    "#4a7dff"
+   ],
+   [
+    1559,
+    568,
+    14,
+    "#ff5a5a"
+   ],
+   [
+    1605,
+    550,
+    15,
+    "#ff5a5a"
+   ],
+   [
+    1631,
+    565,
+    13,
+    "#ffd34a"
+   ],
+   [
+    1326,
+    530,
+    15,
+    "#ff5a5a"
+   ]
+  ]
+ }
+}

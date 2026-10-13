@@ -17,7 +17,7 @@ import { MotionVideo } from '../ui/motion'
 import '../styles/motion.css'
 import { MotionStage as RefStage, MotionItem, MotionTitle, MotionTicker, AmbientFx, Glint, glintOf } from '../ui/ui-motion'
 import NewFaces from './NewFaces'
-import RecruitScene, { type SceneName } from './RecruitScene'
+import RecruitScene, { preloadRecruitScenes, type SceneName } from './RecruitScene'
 import { CHARACTERS } from '../game/data/characters'
 
 // 신규 대원 미리보기: 설정 미확정 대원 중 배너 픽업이 아닌 대원(배너 픽업 대원은 배너에서 소개)
@@ -59,6 +59,7 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
   const f = CHAR_BY_ID[b.featuredId]
   const isRefBanner = bannerId === 'b_rion'
   // 리온 배너로 들어올 때마다 전환 효과를 다시 재생(다른 배너에서는 리온 영상을 그리지 않음)
+  useEffect(() => { preloadRecruitScenes() }, [])
   const [enterKey, setEnterKey] = useState(0)
   useEffect(() => { if (isRefBanner) setEnterKey((k) => k + 1) }, [isRefBanner])
 
