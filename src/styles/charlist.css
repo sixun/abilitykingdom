@@ -1,0 +1,148 @@
+/* 캐릭터 목록(시안 CHARACTERS) — 캔버스 1672×941 좌표 */
+.ui-clist {
+  --cl-bg: #f4f5f8; --cl-head: #fbfbfd; --cl-panel: #fafbfc; --cl-line: #e2e5ea; --cl-text: #1b2232; --cl-sub: #616a7a;
+  --cl-on: #e4eefb; --cl-accent: #2f6fd6; --cl-card: #ffffff; --cl-card-line: #eceef2; --cl-star: #f1ab17; --cl-star-off: #c8ccd3;
+  --cl-shadow: 0 2px 8px #18233a14; --cl-shadow-hi: 0 14px 28px #18233a2e; --cl-art: #e9edf3;
+  --ui-accent: #2f6fd6; --ui-accent-soft: #8fb8f48c;
+  background: var(--cl-bg);
+}
+.ui-clist.cl-dark {
+  --cl-bg: #0e1218; --cl-head: #121720; --cl-panel: #11161e; --cl-line: #252c38; --cl-text: #eef1f6; --cl-sub: #9aa3b3;
+  --cl-on: #1b2940; --cl-accent: #6aa4ff; --cl-card: #19202b; --cl-card-line: #262e3b; --cl-star: #f4b733; --cl-star-off: #3d4553;
+  --cl-shadow: 0 2px 10px #0008; --cl-shadow-hi: 0 16px 32px #000a; --cl-art: #222a37;
+  --ui-accent: #6aa4ff; --ui-accent-soft: #6aa4ff8c;
+}
+.ui-clist .ref-canvas { color: var(--cl-text); font-family: 'Noto Sans KR', Inter, sans-serif; background: var(--cl-bg); transition: background-color 450ms ease; }
+.ui-clist .ui-intro::before { background: var(--cl-bg); animation-duration: 650ms; }
+.ui-clist button { font: inherit; color: inherit; }
+.cl-head, .cl-side, .ccard, .cl-back, .cl-theme, .cl-sort-btn, .cl-sort-menu, .cl-side-hl, .art { transition: background-color 450ms ease, border-color 450ms ease, color 450ms ease, box-shadow 220ms ease; }
+
+/* 배경: 천천히 떠도는 빛 */
+.cl-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.cl-bg i { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; }
+.cl-bg .b1 { left: 380px; top: 260px; width: 520px; height: 420px; background: #cfe0fb; animation: clBlob 16s ease-in-out infinite alternate; }
+.cl-bg .b2 { left: 1080px; top: 520px; width: 560px; height: 420px; background: #f7e1cc; animation: clBlob 19s ease-in-out -6s infinite alternate-reverse; }
+.cl-bg .b3 { left: 760px; top: 60px; width: 380px; height: 300px; background: #e3daf7; animation: clBlob 22s ease-in-out -11s infinite alternate; }
+.cl-dark .cl-bg i { opacity: .35; }
+.cl-dark .cl-bg .b1 { background: #1d3b6e; } .cl-dark .cl-bg .b2 { background: #3a2a4f; } .cl-dark .cl-bg .b3 { background: #173c4a; }
+@keyframes clBlob { from { translate: -60px -30px; scale: 1; } to { translate: 70px 40px; scale: 1.15; } }
+.cl-theme-wave { position: absolute; left: 1244px; top: 50px; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; z-index: 60; pointer-events: none; border: 3px solid var(--cl-accent); opacity: 0; animation: clWave 900ms cubic-bezier(.2, .7, .3, 1) both; }
+@keyframes clWave { 0% { opacity: .7; transform: scale(1); } 100% { opacity: 0; transform: scale(380); border-width: .05px; } }
+
+/* 상단 */
+.cl-head { position: absolute; left: 0; top: 0; width: 1672px; height: 95px; z-index: 20; background: var(--cl-head); border-bottom: 1px solid var(--cl-line); animation: clDown 700ms cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes clDown { from { translate: 0 -100%; } to { translate: 0 0; } }
+.cl-back { position: absolute; left: 34px; top: 21px; width: 86px; height: 57px; display: grid; place-items: center; border-radius: 9px; border: 1.5px solid var(--cl-line); background: var(--cl-card); cursor: pointer; animation: clFromL 700ms cubic-bezier(.16, 1, .3, 1) 200ms both; transition: transform 160ms, background-color 450ms, border-color 450ms; }
+.cl-back:hover, .cl-back:focus-visible { transform: translateX(-4px); border-color: var(--cl-accent); color: var(--cl-accent); }
+.cl-back:active { transform: translateX(-2px) scale(.95); }
+.cl-vbar { position: absolute; top: 30px; width: 2px; height: 40px; background: var(--cl-line); transform-origin: 50% 50%; animation: clGrowY 600ms cubic-bezier(.16, 1, .3, 1) 380ms both; }
+@keyframes clGrowY { from { transform: scaleY(0); } to { transform: none; } }
+.cl-title { position: absolute; left: 200px; top: 17px; margin: 0; font: 800 47px/1.25 Inter, 'Noto Sans KR', sans-serif; letter-spacing: .005em; }
+.cl-title .ui-letter-mask > i { animation-duration: 700ms; animation-delay: calc(260ms + var(--letter-i) * 45ms); }
+.cl-theme { position: absolute; left: 1100px; top: 21px; width: 288px; height: 57px; border-radius: 11px; border: 1.5px solid var(--cl-line); background: var(--cl-card); display: flex; overflow: hidden; animation: clFromR 700ms cubic-bezier(.16, 1, .3, 1) 260ms both; }
+.cl-theme .pill { position: absolute; top: 0; width: 144px; height: 100%; background: var(--cl-on); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--cl-accent) 45%, transparent); border-radius: 10px; transition: left 420ms cubic-bezier(.3, 1.4, .5, 1), background-color 450ms; }
+.cl-theme button { position: relative; flex: 1; display: flex; align-items: center; justify-content: center; gap: 12px; border: 0; background: none; cursor: pointer; font: 700 19px/1 Inter, sans-serif; letter-spacing: .02em; color: var(--cl-sub); transition: color 300ms; }
+.cl-theme button.on { color: var(--cl-accent); }
+.cl-theme button:not(.on):hover { color: var(--cl-text); }
+.cl-theme .on .sun { animation: clSpin 14s linear infinite; }
+.cl-theme .on .moon { animation: clSwing 3s ease-in-out infinite alternate; }
+.cl-theme button:active svg { transform: scale(.85); }
+@keyframes clSpin { to { rotate: 360deg; } }
+@keyframes clSwing { from { rotate: -12deg; } to { rotate: 10deg; } }
+.cl-sort { position: absolute; left: 1442px; top: 21px; width: 203px; height: 57px; animation: clFromR 700ms cubic-bezier(.16, 1, .3, 1) 340ms both; }
+.cl-sort-btn { width: 100%; height: 100%; display: flex; align-items: center; gap: 14px; padding: 0 20px 0 22px; border-radius: 11px; border: 1.5px solid var(--cl-line); background: var(--cl-card); cursor: pointer; }
+.cl-sort-btn:hover, .cl-sort-btn:focus-visible, .cl-sort-btn[aria-expanded="true"] { border-color: var(--cl-accent); }
+.cl-sort-btn .lbl { flex: 1; text-align: left; font: 700 19px/1 'Noto Sans KR', sans-serif; padding-left: 14px; animation: clLbl 320ms cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes clLbl { from { opacity: 0; translate: 0 10px; } to { opacity: 1; translate: 0 0; } }
+.cl-sort-btn .chev { transition: rotate 260ms cubic-bezier(.16, 1, .3, 1); }
+.cl-sort-btn[aria-expanded="true"] .chev { rotate: 180deg; }
+.cl-sort-menu { position: absolute; top: 66px; left: 0; width: 203px; padding: 6px; border-radius: 12px; border: 1.5px solid var(--cl-line); background: var(--cl-card); box-shadow: var(--cl-shadow-hi); z-index: 40; transform-origin: top; animation: clMenu 240ms cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes clMenu { from { opacity: 0; transform: scaleY(.6) translateY(-8px); } to { opacity: 1; transform: none; } }
+.cl-sort-menu button { display: block; width: 100%; height: 48px; padding: 0 16px; border: 0; border-radius: 8px; background: none; text-align: left; font: 700 18px/1 'Noto Sans KR', sans-serif; cursor: pointer; animation: clLbl 260ms cubic-bezier(.16, 1, .3, 1) both; }
+.cl-sort-menu button:hover, .cl-sort-menu button:focus-visible { background: var(--cl-on); }
+.cl-sort-menu button.on { color: var(--cl-accent); }
+@keyframes clFromL { from { opacity: 0; translate: -60px 0; } to { opacity: 1; translate: 0 0; } }
+@keyframes clFromR { from { opacity: 0; translate: 80px 0; } to { opacity: 1; translate: 0 0; } }
+
+/* 왼쪽 필터 */
+.cl-side { position: absolute; left: 0; top: 95px; width: 210px; height: 846px; z-index: 10; background: var(--cl-panel); border-right: 1px solid var(--cl-line); animation: clFromL 700ms cubic-bezier(.16, 1, .3, 1) 120ms both; }
+.cl-side-hl { position: absolute; left: 21px; width: 173px; height: 83px; border-radius: 10px; background: var(--cl-on); transition: top 420ms cubic-bezier(.3, 1.3, .5, 1), background-color 450ms; }
+.cl-side-hl::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 4px; border-radius: 3px; background: var(--cl-accent); animation: clBar 420ms cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes clBar { from { transform: scaleY(0); } to { transform: none; } }
+.cl-side-item { position: absolute; left: 21px; width: 173px; height: 83px; display: flex; align-items: center; border: 0; background: none; border-radius: 10px; cursor: pointer; color: var(--cl-text); animation: clFromL 600ms cubic-bezier(.16, 1, .3, 1) both; transition: color 200ms; }
+.cl-side-item .ic { position: absolute; left: 22px; top: 50%; translate: 0 -50%; display: grid; color: var(--cl-text); transition: transform 240ms cubic-bezier(.3, 1.5, .5, 1), color 200ms; }
+.cl-side-item .tx { position: absolute; left: 87px; font: 700 21px/1 'Noto Sans KR', sans-serif; }
+.cl-side-item .ct { position: absolute; right: 14px; font: 700 13px/1 Inter, sans-serif; color: var(--cl-sub); opacity: .8; }
+.cl-side-item:hover .ic, .cl-side-item:focus-visible .ic { transform: scale(1.12) rotate(-6deg); }
+.cl-side-item:active .ic { transform: scale(.9); }
+.cl-side-item.on .ic { color: var(--cl-text); animation: clIconPop 420ms cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes clIconPop { 0% { transform: scale(.7); } 100% { transform: none; } }
+
+/* 카드 그리드 */
+.cl-grid { position: absolute; left: 232px; top: 95px; width: 1428px; height: 846px; z-index: 5; overflow-y: auto; overflow-x: hidden; padding: 32px 30px 40px 8px; display: grid; grid-template-columns: repeat(8, 154px); grid-auto-rows: 243px; column-gap: 20px; row-gap: 19px; align-content: start; scrollbar-width: thin; scrollbar-color: var(--cl-accent) transparent; }
+.cl-grid::-webkit-scrollbar { width: 6px; } .cl-grid::-webkit-scrollbar-thumb { background: var(--cl-accent); border-radius: 3px; }
+.cl-cell { position: relative; animation: clIn 680ms cubic-bezier(.3, 1.35, .5, 1) var(--d) both; transition: opacity 220ms, scale 220ms; }
+@keyframes clIn { from { opacity: 0; transform: translateY(46px) scale(.86) rotate(-2deg); } to { opacity: 1; transform: none; } }
+.cl-cell.dim { opacity: .35; scale: .97; }
+.ccard { position: absolute; inset: 0; padding: 0; border-radius: 8px; border: 1px solid var(--cl-card-line); background: var(--cl-card); box-shadow: var(--cl-shadow); cursor: pointer; text-align: center; overflow: visible; transition: transform 260ms cubic-bezier(.3, 1.5, .5, 1), box-shadow 260ms, border-color 200ms, background-color 450ms; }
+.ccard:hover, .ccard:focus-visible { transform: translateY(-9px); box-shadow: var(--cl-shadow-hi); border-color: color-mix(in srgb, var(--a) 70%, var(--cl-card-line)); outline: none; }
+.ccard:active { transform: translateY(-3px) scale(.96); transition-duration: 90ms; }
+.ccard .art { position: absolute; left: 5px; top: 5px; width: 144px; height: 177px; border-radius: 6px; overflow: hidden; background: linear-gradient(160deg, color-mix(in srgb, var(--a) 22%, var(--cl-art)), var(--cl-art) 70%); }
+.ccard .art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 22%; transition: transform 420ms cubic-bezier(.16, 1, .3, 1), filter 300ms; animation: clReveal 620ms cubic-bezier(.16, 1, .3, 1) calc(var(--d) + 140ms) both; }
+@keyframes clReveal { from { clip-path: inset(100% 0 0 0); transform: scale(1.25); } to { clip-path: inset(0); transform: none; } }
+.ccard:hover .art img, .ccard:focus-visible .art img { transform: scale(1.09); }
+.ccard .art::after { content: ''; position: absolute; inset: 0; border-radius: 6px; box-shadow: inset 0 0 0 2px var(--a); opacity: 0; transition: opacity 220ms; pointer-events: none; }
+.ccard:hover .art::after, .ccard:focus-visible .art::after { opacity: .9; }
+.ccard .mv-card { position: absolute; max-width: none; pointer-events: none; animation: clFadeIn 260ms ease both; }
+@keyframes clFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.ccard .shine { position: absolute; inset: -10% auto -10% 0; width: 55%; background: linear-gradient(100deg, transparent 20%, #ffffffa8 50%, transparent 80%); transform: translateX(-140%) skewX(-16deg); animation: clShine 7.5s cubic-bezier(.45, 0, .25, 1) calc(2.6s + var(--i) * .13s) infinite; pointer-events: none; }
+@keyframes clShine { 0% { transform: translateX(-140%) skewX(-16deg); } 13%, 100% { transform: translateX(260%) skewX(-16deg); } }
+.ccard:hover .shine { animation: clShineNow 640ms cubic-bezier(.45, 0, .25, 1) both; }
+@keyframes clShineNow { from { transform: translateX(-140%) skewX(-16deg); } to { transform: translateX(260%) skewX(-16deg); } }
+.ccard .nm { position: absolute; left: 0; right: 0; top: 189px; font: 800 18px/1.2 'Noto Sans KR', sans-serif; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 6px; }
+.ccard .stars { position: absolute; left: 0; right: 0; top: 214px; display: flex; justify-content: center; gap: 3px; }
+.ccard .stars i { font-style: normal; font-size: 17px; line-height: 1; color: var(--cl-star-off); }
+.ccard .stars i.on { color: var(--cl-star); text-shadow: 0 0 4px #f6b72066; animation: clStar 420ms cubic-bezier(.3, 1.8, .5, 1) calc(var(--d) + 360ms + var(--k) * 55ms) both, clTwinkle 5.5s ease-in-out calc(3s + var(--i) * .27s + var(--k) * .09s) infinite; }
+@keyframes clStar { from { transform: scale(0) rotate(-60deg); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes clTwinkle { 0%, 88%, 100% { filter: none; } 93% { filter: brightness(1.5) drop-shadow(0 0 4px #ffd36b); } }
+.ccard .tbd { position: absolute; left: 0; right: 0; top: 216px; font: 700 12px/1 'Noto Sans KR', sans-serif; color: var(--cl-sub); }
+.ccard .ex, .ccard .new { position: absolute; left: 6px; top: 7px; padding: 2px 9px 3px; border-radius: 6px; font: italic 800 19px/1 Inter, sans-serif; }
+.ccard .ex { background: #1b2234; color: #f2c94c; box-shadow: inset 0 0 0 1.5px #d5a53a; overflow: hidden; }
+.ccard .ex::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 30%, #fff6 50%, transparent 70%); animation: clShine 4s ease-in-out 2s infinite; }
+.ccard .new { background: var(--cl-accent); color: #fff; font-size: 13px; letter-spacing: .06em; animation: clNewPulse 1.8s ease-in-out 2.4s infinite alternate; }
+@keyframes clNewPulse { from { box-shadow: 0 0 0 0 color-mix(in srgb, var(--cl-accent) 0%, transparent); } to { box-shadow: 0 0 0 5px color-mix(in srgb, var(--cl-accent) 25%, transparent); } }
+.ccard .lv { position: absolute; left: 6px; bottom: 6px; padding: 3px 7px; border-radius: 5px; background: #0d1220b8; color: #fff; font: italic 800 12px/1 Inter, sans-serif; letter-spacing: .02em; }
+.ccard .lock { position: absolute; right: 6px; bottom: 6px; width: 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: #0d1220b8; color: #fff; }
+.ccard .lock svg { width: 16px; height: 16px; }
+.ccard.unowned .art img { filter: grayscale(.8) brightness(.9) contrast(.95); }
+.cl-dark .ccard.unowned .art img { filter: grayscale(.8) brightness(.7); }
+.ccard.unowned:hover .art img { filter: grayscale(.2); }
+.ccard.unowned .nm { color: var(--cl-sub); }
+.ccard.pending .art img { filter: none; }
+
+/* 즐겨찾기 하트: 마우스를 올리거나 켜져 있으면 보인다 */
+.cl-fav { position: absolute; right: 9px; top: 9px; z-index: 3; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #ffffffd9; color: #e0466a; cursor: pointer; opacity: 0; transform: scale(.7); transition: opacity 180ms, transform 220ms cubic-bezier(.3, 1.6, .5, 1); box-shadow: 0 2px 6px #0002; }
+.cl-fav svg { width: 20px; height: 20px; }
+.cl-cell:hover .cl-fav, .cl-fav:focus-visible, .cl-fav.on { opacity: 1; transform: none; }
+.cl-cell:hover .cl-fav { transform: translateY(-9px); }
+.cl-fav:hover { transform: translateY(-9px) scale(1.12) !important; }
+.cl-fav.burst svg { animation: clHeart 600ms cubic-bezier(.3, 1.8, .5, 1); }
+.cl-fav.burst::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid #e0466a; animation: clRing 600ms ease-out both; }
+@keyframes clHeart { 0% { transform: scale(.4); } 50% { transform: scale(1.35); } 100% { transform: none; } }
+@keyframes clRing { from { transform: scale(.6); opacity: 1; } to { transform: scale(2.2); opacity: 0; } }
+
+/* 누르면: 카드가 앞으로 튀어나오며 빛나고 상세로 넘어간다 */
+.cl-cell.launch { z-index: 30; }
+.cl-cell.launch .ccard { animation: clLaunch 300ms cubic-bezier(.3, 1.2, .5, 1) both; }
+@keyframes clLaunch { 0% { transform: scale(.96); } 60% { transform: scale(1.14); filter: brightness(1.25); box-shadow: 0 0 0 4px var(--a), var(--cl-shadow-hi); } 100% { transform: scale(1.1); filter: brightness(1.4); box-shadow: 0 0 0 4px var(--a), var(--cl-shadow-hi); } }
+
+.cl-empty { grid-column: 1 / -1; margin-top: 120px; display: grid; justify-items: center; gap: 12px; color: var(--cl-sub); animation: clLbl 420ms cubic-bezier(.16, 1, .3, 1) both; }
+.cl-empty b { font: 800 24px/1.2 'Noto Sans KR', sans-serif; color: var(--cl-text); }
+.cl-empty span { font: 600 16px/1.4 'Noto Sans KR', sans-serif; }
+
+/* 동작 줄이기: 진입·반복 효과를 끄고 바로 보인다 */
+.ui-clist.ui-reduced .cl-bg i, .ui-clist.ui-reduced .shine, .ui-clist.ui-reduced .cl-theme-wave { display: none; }
+@media (prefers-reduced-motion: reduce) { .ui-clist .cl-bg i, .ui-clist .shine, .ui-clist .cl-theme-wave { display: none; } }
+.ccard .nm.long { font-size: 15px; top: 191px; }
+/* 터치 화면: 호버가 없으니 하트를 늘 보여 준다 */
+@media (hover: none) { .cl-fav { opacity: .9; transform: none; } .cl-cell:hover .cl-fav { transform: none; } }

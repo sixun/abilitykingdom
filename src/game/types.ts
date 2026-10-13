@@ -34,6 +34,8 @@ export interface CharacterDefinition {
   /** 설정 미확정 캐릭터(신규 추가 패키지). 이름·역할·희귀도·수치·스킬·획득 경로가 정해지지 않아 화면에 표시하지 않는다.
    *  role/attribute/rarity/baseStats 등은 형식을 맞추기 위한 자리값이며 게임 데이터로 쓰지 않는다. 영입 풀·교환소에 넣지 않는다 */
   pending?: true
+  /** Ex(강화 버전) 여부. Ex 체계는 아직 정해지지 않아 현재 데이터에는 없다(목록의 Ex 필터·배지만 준비) */
+  ex?: true
 }
 
 export interface EquipmentSlots {
@@ -156,6 +158,8 @@ export interface Settings {
   quality: 'high' | 'low'
   reduceMotion: boolean
   openingSeen: boolean
+  /** 캐릭터 목록 화면 테마(목록 화면 안에서만 적용). 없으면 light */
+  charListTheme?: 'light' | 'dark'
 }
 
 export interface GameState {
@@ -179,4 +183,6 @@ export interface GameState {
   seenEvents: string[]
   settings: Settings
   processed: Record<string, unknown> // requestId → 결과 (중복 요청 방지)
+  /** 즐겨찾기한 캐릭터 id(보유 여부와 무관). 이전 저장 데이터에는 없을 수 있다 */
+  favorites?: string[]
 }

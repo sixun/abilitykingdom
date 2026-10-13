@@ -448,6 +448,14 @@ export class LocalGameService implements GameService {
 
   setArenaDefense(teamId: string) { this.commit((s) => { s.content.arenaDefenseTeam = teamId }) }
   updateSettings(patch: Partial<Settings>) { this.commit((s) => { s.settings = { ...s.settings, ...patch } }) }
+  /** 즐겨찾기 켜기/끄기(로컬 저장만, 재화·보유와 무관) */
+  toggleFavorite(characterId: string) {
+    this.commit((s) => {
+      const f = new Set(s.favorites ?? [])
+      if (f.has(characterId)) f.delete(characterId); else f.add(characterId)
+      s.favorites = [...f]
+    })
+  }
   resetAll() {
     const keepSettings = { ...this.state.settings }
     this.state = createInitialState()

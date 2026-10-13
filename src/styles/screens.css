@@ -1,30 +1,9 @@
 .scr { position: absolute; inset: 0; overflow: hidden; }
 
-/* ───────── 캐릭터 목록: 능력자 파일 ───────── */
-.chars { background: #1a1c21; }
-.chars-bg { position: absolute; inset: 0; background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.025) 0 1.4rem, transparent 1.4rem 2.8rem), radial-gradient(ellipse at 80% 0%, #2c3140 0%, transparent 60%); }
-.chars-bg span { position: absolute; right: -2rem; bottom: -3rem; font-family: var(--f-en); font-size: 22rem; line-height: 1; color: rgba(255, 255, 255, 0.035); letter-spacing: 0.02em; }
-.chars-filters { position: absolute; top: 9rem; left: calc(2.4rem + var(--sal)); right: calc(2.4rem + var(--sar)); display: flex; align-items: center; gap: 2rem; z-index: 2; }
-.chars-right { margin-left: auto; display: flex; gap: 1.2rem; align-items: center; }
+/* (캐릭터 목록은 charlist.css) 공용 토글·선택 상자─ */
 .toggle { display: flex; align-items: center; gap: 0.8rem; font-size: 1.5rem; font-weight: 700; cursor: pointer; }
 .toggle input { width: 2rem; height: 2rem; accent-color: var(--teal); }
 select { height: 4.2rem; padding: 0 1.2rem; font: inherit; font-size: 1.5rem; font-weight: 700; background: var(--charcoal-2); color: var(--ivory); border: 0.1rem solid var(--line-dark); }
-.chars-grid { position: absolute; top: 15.6rem; bottom: 0; left: calc(2.4rem + var(--sal)); right: calc(2.4rem + var(--sar)); display: grid; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); gap: 1.4rem; padding-bottom: 3rem; align-content: start; }
-.ccard { position: relative; height: 30rem; overflow: hidden; text-align: left; background: linear-gradient(170deg, color-mix(in srgb, var(--a) 30%, #20232a) 0%, #17191e 60%); clip-path: polygon(0 0, calc(100% - 2rem) 0, 100% 2rem, 100% 100%, 0 100%); animation: ccardIn 360ms var(--ease-snap) both; transition: transform 140ms var(--ease-snap); }
-.ccard:hover { transform: translateY(-0.4rem); }
-.ccard:active { transform: scale(0.97); }
-@keyframes ccardIn { from { transform: translateY(2rem); opacity: 0; } to { transform: none; opacity: 1; } }
-.ccard-art { position: absolute; inset: 0 0 8rem 0; overflow: hidden; }
-.ccard-art img { position: absolute; left: 50%; top: 0; width: 140%; translate: -50% 0; transition: transform 400ms var(--ease-out); }
-.ccard:hover .ccard-art img { transform: scale(1.04); }
-.ccard-tab { position: absolute; top: 1rem; left: 1rem; padding: 0.2rem 0.8rem; font-family: var(--f-en); font-size: 1.3rem; letter-spacing: 0.12em; background: var(--a); color: var(--ink); }
-.ccard-info { position: absolute; left: 0; right: 0; bottom: 0; height: 8.8rem; padding: 1rem 1.4rem; background: #121418; display: flex; flex-direction: column; gap: 0.3rem; border-top: 0.3rem solid var(--a); }
-.ccard-row { display: flex; align-items: center; gap: 0.8rem; }
-.ccard-row strong { font-size: 2rem; font-weight: 900; }
-.ccard-row.small { font-size: 1.3rem; opacity: 0.8; }
-.ccard-role { width: 2.6rem; height: 2.6rem; display: grid; place-items: center; border: 0.15rem solid #fff; }
-.ccard.unowned .ccard-art img { filter: grayscale(1) brightness(0.45); }
-.ccard-unowned { color: var(--yellow); font-weight: 800; }
 
 /* ───────── 캐릭터 상세 ───────── */
 .cd { background: var(--ivory); color: var(--ink); }
