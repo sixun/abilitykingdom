@@ -9,6 +9,7 @@ import Opening from './screens/Opening'
 import Lobby from './screens/Lobby'
 import Formation from './screens/Formation'
 import Pass from './screens/Pass'
+import PassSummer from './screens/PassSummer'
 import Characters from './screens/Characters'
 import CharacterDetail from './screens/CharacterDetail'
 import Recruit from './screens/Recruit'
@@ -31,7 +32,7 @@ const SCREENS: Record<ScreenName, (p: { params: Record<string, unknown> }) => Re
   boot: Boot, opening: Opening, lobby: Lobby, formation: Formation, characters: Characters, characterDetail: CharacterDetail,
   recruit: Recruit, recruitResult: RecruitResult, recruitHistory: RecruitHistory, shop: Shop, bag: Bag,
   story: Story, explore: Explore, wanted: Wanted, training: Training, arena: Arena, raid: Raid, prep: Prep, battle: Battle,
-  mail: Mail, missions: Missions, notices: Notices, events: Events, attendance: Attendance, profile: Profile, settings: Settings, pass: Pass,
+  mail: Mail, missions: Missions, notices: Notices, events: Events, attendance: Attendance, profile: Profile, settings: Settings, pass: Pass, passSummer: PassSummer,
 }
 
 let keySeq = 1

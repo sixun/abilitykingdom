@@ -139,7 +139,7 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
 
           {/* 왼쪽: 픽업·아이콘·카드. 겹친 카드는 실제 앞뒤 순서대로 클릭(현상수배 > 훈련 > 상점) */}
           <div className="mg mg-left" style={g('left')}>
-            {/* 픽업 배너 → 슬라이드(원본 픽업 배너 + S01 패스). 원본에 그려진 점 표시는 가리고 실제 장 수만큼 점을 그린다 */}
+            {/* 픽업 배너 → 슬라이드(원본 픽업 배너 + S01 패스 + FP1 썸머 패스). 원본에 그려진 점 표시는 가리고 실제 장 수만큼 점을 그린다 */}
             <MotionItem order={0} z={50} className="ui-side-card" idle={false}>
               <BannerCarousel x={27} y={124} w={353} h={113} dotsY={247} mask={files.pickup}
                 slides={[
@@ -147,6 +147,8 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
                     art: <img src={files.pickup} alt="" draggable={false} className="bc-zoom" style={{ left: 0, top: 0, width: 353, height: 133 }} /> },
                   { id: 'pass', label: 'S01 패스: 센카', onOpen: () => go('pass'),
                     art: <><img src="ref/pass/banner-s01.webp" alt="" draggable={false} className="bc-zoom" style={{ left: 0, top: -3, width: 353, height: 118 }} /><b className="bc-tag">SEASON PASS</b></> },
+                  { id: 'summer', label: 'FP1 썸머 패스', onOpen: () => go('passSummer'),
+                    art: <img src="ref/pass/banner-summer.webp" alt="" draggable={false} className="bc-zoom" style={{ left: 0, top: -3, width: 353, height: 118 }} /> },
                 ]} />
             </MotionItem>
             <MotionItem order={1} z={50} className="ui-side-card">
@@ -260,7 +262,7 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
         {pop === 'menu' && (
           <div className="rl-more rs-menu" style={{ left: 1196, top: 90 }} onClick={(e) => e.stopPropagation()}>
             {([
-              ['미션', 'missions', b.mission], ['패스', 'pass', false], ['출석', 'attendance', b.attendance], ['우편함', 'mail', b.mail], ['공지', 'notices', b.notice],
+              ['미션', 'missions', b.mission], ['패스', 'pass', false], ['썸머 패스', 'passSummer', false], ['출석', 'attendance', b.attendance], ['우편함', 'mail', b.mail], ['공지', 'notices', b.notice],
               ['이벤트', 'events', b.event], ['가방', 'bag', false], ['프로필', 'profile', false], ['설정', 'settings', false],
             ] as [string, ScreenName, boolean][]).map(([label, sc, d]) => (
               <button key={sc} onClick={() => { audio.sfx('tap'); go(sc) }}>{label}{d && <span className="dot" />}</button>

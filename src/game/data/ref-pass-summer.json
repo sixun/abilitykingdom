@@ -1,0 +1,156 @@
+{
+ "title": {
+  "x": 42,
+  "y": 84,
+  "w": 335,
+  "h": 151,
+  "file": "ref/pass/summer/title.webp"
+ },
+ "sun": {
+  "x": 263,
+  "y": 134,
+  "w": 83,
+  "h": 80,
+  "file": "ref/pass/summer/sun.webp"
+ },
+ "fp1": {
+  "x": 65,
+  "y": 229,
+  "w": 235,
+  "h": 54,
+  "file": "ref/pass/summer/fp1.webp"
+ },
+ "stamp": {
+  "x": 413,
+  "y": 45,
+  "w": 189,
+  "h": 127,
+  "file": "ref/pass/summer/stamp.webp"
+ },
+ "hw1": {
+  "x": 71,
+  "y": 299,
+  "w": 225,
+  "h": 60,
+  "file": "ref/pass/summer/hw1.webp"
+ },
+ "hw2": {
+  "x": 1279,
+  "y": 131,
+  "w": 151,
+  "h": 92,
+  "file": "ref/pass/summer/hw2.webp"
+ },
+ "ticket": {
+  "x": 14,
+  "y": 376,
+  "w": 369,
+  "h": 219,
+  "file": "ref/pass/summer/ticket.webp"
+ },
+ "polaroid": {
+  "x": 325,
+  "y": 310,
+  "w": 236,
+  "h": 288,
+  "file": "ref/pass/summer/polaroid.webp"
+ },
+ "tag": {
+  "x": 1562,
+  "y": 429,
+  "w": 106,
+  "h": 162,
+  "file": "ref/pass/summer/tag.webp"
+ },
+ "base": {
+  "x": 0,
+  "y": 0,
+  "w": 1672,
+  "h": 941,
+  "file": "ref/pass/summer/base.webp"
+ },
+ "strip": {
+  "x": 0,
+  "y": 598,
+  "w": 1672,
+  "h": 343,
+  "file": "ref/pass/summer/strip.webp"
+ },
+ "col31": {
+  "x": 186,
+  "y": 618,
+  "w": 184,
+  "h": 286,
+  "file": "ref/pass/summer/col31.webp"
+ },
+ "col32": {
+  "x": 386,
+  "y": 618,
+  "w": 186,
+  "h": 286,
+  "file": "ref/pass/summer/col32.webp"
+ },
+ "col33": {
+  "x": 586,
+  "y": 618,
+  "w": 184,
+  "h": 286,
+  "file": "ref/pass/summer/col33.webp"
+ },
+ "col34": {
+  "x": 786,
+  "y": 618,
+  "w": 184,
+  "h": 286,
+  "file": "ref/pass/summer/col34.webp"
+ },
+ "col35": {
+  "x": 976,
+  "y": 616,
+  "w": 196,
+  "h": 290,
+  "file": "ref/pass/summer/col35.webp"
+ },
+ "col36": {
+  "x": 1183,
+  "y": 618,
+  "w": 187,
+  "h": 286,
+  "file": "ref/pass/summer/col36.webp"
+ },
+ "basic": {
+  "x": 20,
+  "y": 680,
+  "w": 158,
+  "h": 58,
+  "file": "ref/pass/summer/basic.webp"
+ },
+ "premium": {
+  "x": 20,
+  "y": 773,
+  "w": 161,
+  "h": 60,
+  "file": "ref/pass/summer/premium.webp"
+ },
+ "getp": {
+  "x": 1424,
+  "y": 657,
+  "w": 244,
+  "h": 206,
+  "file": "ref/pass/summer/getp.webp"
+ },
+ "arrow1": {
+  "x": 376,
+  "y": 736,
+  "w": 24,
+  "h": 30,
+  "file": "ref/pass/summer/arrow1.webp"
+ },
+ "arrow2": {
+  "x": 1385,
+  "y": 745,
+  "w": 20,
+  "h": 28,
+  "file": "ref/pass/summer/arrow2.webp"
+ }
+}

@@ -16,3 +16,24 @@ export const PASS_S01 = {
     { id: 'card-xmas', name: '크리스마스 스킨', term: '영구', kind: '스킨', note: '센카 크리스마스 스킨(시안 그림).' },
   ],
 } as const
+
+// FP1 썸머 패스(시안: Summer days). 화면 표시용 샘플 값이며 패스 경험치·구매·보상 지급 규칙은 아직 정해지지 않았다.
+// - 레벨 35/50, 경험치 380/1,000은 시안 값. 보상은 시안에 보이는 Lv.31~36만(그 밖의 레벨은 미정)
+// - 보상 이름은 시안 그림을 보고 붙인 임시 이름이다(재화 종류·아이템 데이터와는 아직 연결하지 않음)
+export const PASS_FP1 = {
+  season: 'FP1',
+  title: 'SUMMER PASS',
+  level: 35,
+  maxLevel: 50,
+  exp: 380,
+  expMax: 1000,
+  premium: false,
+  levels: [
+    { lv: 31, basic: { name: '골드 코인', amount: 20000 }, premium: { name: '여름 음료', amount: 1, note: '소모품(효과 미정)' } },
+    { lv: 32, basic: { name: '크리스탈', amount: 300 }, premium: { name: '미니 캐릭터 스티커', amount: 1, note: '프로필 장식(시안 그림)' } },
+    { lv: 33, basic: { name: '파란 카드', amount: 5, note: '용도 미정' }, premium: { name: '프로필 초상', amount: 1, note: '프로필 아이콘(시안 그림)' } },
+    { lv: 34, basic: { name: '여행 상자', amount: 1, note: '내용물 미정' }, premium: { name: '"Summer" 로비 사진', amount: 1, note: '해변 카페 로비 장면(시안 그림)' } },
+    { lv: 35, basic: { name: '크리스탈', amount: 300 }, premium: { name: '여름 사진', amount: 1, note: '캐릭터 일러스트 카드(시안 그림)' } },
+    { lv: 36, basic: { name: '골드 코인', amount: 30000 }, premium: { name: '여름 수영복 스킨', amount: 1, note: '스킨(시안 그림)' } },
+  ],
+} as const
