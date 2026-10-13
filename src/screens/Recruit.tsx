@@ -171,7 +171,7 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
         {/* 배너 선택 */}
         {BANNER_SLICES.map((id, i) => {
           const bb = BANNER_BY_ID[BANNER_IDS[i]]
-          return <MotionItem key={id} order={i} z={40} className={`ui-banner-item ${i === selIdx ? 'is-selected' : ''}`} glint={glintOf(L, id)}>
+          return <MotionItem key={id} order={i} z={40} className={`ui-banner-item ${i === selIdx ? 'is-selected' : ''}`}>
             <RefLayers layout={L} ids={[id]} z={1} />
             {selIdx !== 0 && <div className="rf-slot-overlay" style={boxStyle(rectOf(L, id), { zIndex: 30 })}>
               {i === selIdx ? <img src={SKIN('banner-frame-selected')} alt="" /> : <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,6,14,.45)' }} />}

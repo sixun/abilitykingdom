@@ -32,7 +32,7 @@
 @keyframes nfScene { from { transform: scale(1.12); filter: brightness(.4); } to { transform: scale(1.02); filter: none; } }
 @keyframes nfBreath { from { transform: scale(1.02); } to { transform: scale(1.06); } }
 .nf-fig { position: absolute; left: 50%; bottom: 0; height: 100%; translate: -50% 0; }
-.nf-wipe { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.nf-wipe { display: none; }
 .nf-wipe::before { content: ''; position: absolute; top: -10%; bottom: -10%; left: -40%; width: 38%; transform: skewX(-20deg); background: linear-gradient(90deg, transparent, #c8f53b 40%, #15121d 60%, transparent); animation: nfWipe 460ms cubic-bezier(.7, 0, .2, 1) both; }
 @keyframes nfWipe { from { translate: 0 0; } to { translate: 1600px 0; visibility: hidden; } }
 .nf-name { position: absolute; left: 34px; bottom: 26px; z-index: 4; text-shadow: 0 3px 18px #000c; }

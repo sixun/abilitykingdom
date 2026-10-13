@@ -19,7 +19,7 @@ import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 import fitJson from '../game/data/motion-fit.json'
 import { MotionVideo } from '../ui/motion'
 import '../styles/motion.css'
-import { MotionStage as RefStage, MotionTitle, MotionTicker, AmbientFx, Fx, Glint, glintOf } from '../ui/ui-motion'
+import { MotionStage as RefStage, MotionTitle, MotionTicker, AmbientFx } from '../ui/ui-motion'
 
 // 캐릭터 상세 원본(지안, 1672×941)을 원본 조각 29개로 재현.
 // - 능력치 조각은 유지하고, 이름·배경 타이포·탭은 실제 텍스트/그래픽으로 연출한다.
@@ -156,8 +156,7 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
         <div className="cd2-fill" style={{ left: 930, top: 161, width: 445, height: 202 }} />
         <div className="cd2-fill" style={{ left: 926, top: 480, width: 690, height: 164 }} />
 
-        {STAT_LAYERS.map((sl, i) => <div key={`${sl}-${id}-${tab}`} className="cdx cdx-stat" style={{ animationDelay: `${statBase + i * 110}ms` }}><RefLayers layout={L} ids={[sl]} z={1} /><Glint g={glintOf(L, sl)!} order={i} className="ui-glint-row" /></div>)}
-        {isRef && <Glint g={glintOf(L, 'faction-emblem')!} order={0} className="ui-glint-emblem" />}
+        {STAT_LAYERS.map((sl, i) => <div key={`${sl}-${id}-${tab}`} className="cdx cdx-stat" style={{ animationDelay: `${statBase + i * 110}ms` }}><RefLayers layout={L} ids={[sl]} z={1} /></div>)}
         {(
           <>
             <div className="cd2-pill" style={{ left: 44, top: 20, width: 122, height: 64 }}><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden><path d="M15 4 7 12l8 8" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /></svg></div>
@@ -198,8 +197,6 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
             <span className="abs cd2-bar" style={{ left: 12, top: 51 }}><i style={{ width: `${o ? lvPct : 0}%` }} /></span>
           </TextlessPatch>
         )}
-        {/* 경험치 막대 위를 주기적으로 지나가는 빛 */}
-        {o && <Fx r={{ x: 962, y: 441, w: isRef && level === REF.level ? 160 : Math.round(231 * lvPct / 100), h: 9 }} className="ui-bar-shine" />}
         {/* 역할 */}
         {(c.role !== REF.role || pend) && (
           <TextlessPatch m={T['role-content']} className="cdx-role">

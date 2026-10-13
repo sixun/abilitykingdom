@@ -105,3 +105,20 @@ export function AmbientFx({ kind, box, count = 26, z = 5, clip }: { kind: 'dust'
 export function Fx({ r, className, z = 31, style }: { r: Box; className: string; z?: number; style?: CSSProperties }) {
   return <div className={`ui-fx ${className}`} aria-hidden style={{ left: r.x, top: r.y, width: r.w, height: r.h, zIndex: z, ...style }} />
 }
+
+/** 카드 기울기 + 마우스 위치 빛(호버 전용). el에 --rx --ry --gx --gy를 쓴다. 터치·동작 줄이기에서는 쓰지 않는다 */
+export const tilt = {
+  move(e: { clientX: number; clientY: number; currentTarget: Element }, el: HTMLElement | null = e.currentTarget as HTMLElement, max = 7) {
+    if (!el || !FINE_POINTER || document.querySelector('.ui-reduced')) return
+    const r = e.currentTarget.getBoundingClientRect()
+    const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height
+    el.style.setProperty('--ry', `${((px - 0.5) * 2 * max).toFixed(2)}deg`)
+    el.style.setProperty('--rx', `${((0.5 - py) * 2 * max * 0.8).toFixed(2)}deg`)
+    el.style.setProperty('--gx', `${(px * 100).toFixed(1)}%`)
+    el.style.setProperty('--gy', `${(py * 100).toFixed(1)}%`)
+  },
+  leave(el: HTMLElement | null) {
+    if (!el) return
+    for (const k of ['--rx', '--ry', '--gx', '--gy']) el.style.removeProperty(k)
+  },
+}

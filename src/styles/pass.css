@@ -34,7 +34,7 @@
 .pp-lv span { font-size: 22px; font-weight: 700; }
 .pp-bar { position: absolute; left: 1107px; top: 236px; width: 510px; height: 12px; border-radius: 6px; background: #d9d5cf; box-shadow: inset 0 1px 2px #0002; overflow: hidden; z-index: 2; animation: ppUp 600ms cubic-bezier(.16, 1, .3, 1) 780ms both; }
 .pp-bar i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #1b4fcc, #3f86f2); transform-origin: left; animation: ppGrowX 1200ms cubic-bezier(.33, 1, .68, 1) 900ms both; position: relative; overflow: hidden; }
-.pp-bar i::after { content: ''; position: absolute; top: 0; bottom: 0; left: -60px; width: 60px; background: linear-gradient(90deg, transparent, #ffffffb0, transparent); animation: ppBarShine 3s ease-in-out 2.4s infinite; }
+
 @keyframes ppBarShine { from { translate: 0 0; } 60%, 100% { translate: 460px 0; } }
 
 /* Basic / Premium */
@@ -44,7 +44,7 @@
 .pp-tracks .premium { flex: 1; clip-path: polygon(0 0, 100% 0, 100% 78%, 97% 100%, 0 100%); }
 .pp-tracks button svg { color: #d7b263; transition: transform 300ms cubic-bezier(.3, 1.6, .5, 1); }
 .pp-tracks button.on { background: #11141e; color: #e8c77d; }
-.pp-tracks button.on::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, #ffe6a826 50%, transparent 65%); background-size: 300% 100%; animation: ppTabSheen 4s ease-in-out 1.8s infinite; }
+
 @keyframes ppTabSheen { 0%, 40% { background-position: 150% 0; } 80%, 100% { background-position: -60% 0; } }
 .pp-tracks button:not(.on):hover { color: #6d675f; background: #e2ded8; }
 .pp-tracks button:active { transform: scale(.98); }
@@ -58,9 +58,12 @@
 .pp-card .pp-glint { z-index: 2; }
 .pp-card .pp-glint::before { animation-duration: 6s; animation-delay: calc(2.6s + var(--i) * .2s); }
 .pp-card-hit { position: absolute; inset: 0; z-index: 3; border: 0; background: none; cursor: pointer; }
-.pp-card:hover, .pp-card:has(.pp-card-hit:focus-visible) { transform: translateY(-7px); filter: drop-shadow(0 12px 16px #0003) brightness(1.04); z-index: 3; }
-.pp-card:has(.pp-card-hit:active) { transform: translateY(-2px) scale(.98); }
-@keyframes ppCard { from { opacity: 0; transform: translateY(40px) scale(.9); } to { opacity: 1; transform: none; } }
+.pp-card { transform: translateY(var(--lift, 0px)) perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); }
+.pp-card:hover, .pp-card:has(.pp-card-hit:focus-visible) { --lift: -7px; filter: drop-shadow(0 12px 16px #0003); z-index: 3; transition: transform 180ms ease-out, filter 200ms; }
+.pp-card::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(circle at var(--gx, 50%) var(--gy, 30%), #ffffff3a, #ffffff0c 30%, transparent 58%); opacity: 0; transition: opacity 260ms; mix-blend-mode: soft-light; }
+.pp-card:hover::after { opacity: 1; }
+.pp-card:has(.pp-card-hit:active) { --lift: -2px; scale: .98; }
+@keyframes ppCard { from { opacity: 0; translate: 0 40px; scale: .9; } to { opacity: 1; translate: 0 0; scale: 1; } }
 .pp-7star { position: absolute; left: 1150px; top: 362px; width: 30px; height: 30px; z-index: 4; pointer-events: none; background: radial-gradient(circle, #fff 0 18%, #ffe39a 30%, transparent 62%); clip-path: polygon(50% 0, 58% 42%, 100% 50%, 58% 58%, 50% 100%, 42% 58%, 0 50%, 42% 42%); animation: ppTwinkle 2.8s ease-in-out 2.2s infinite; opacity: 0; }
 @keyframes ppTwinkle { 0%, 100% { opacity: 0; transform: scale(.3) rotate(0); } 30% { opacity: 1; transform: scale(1.2) rotate(45deg); } 60% { opacity: 0; transform: scale(.6) rotate(90deg); } }
 .pp-basic { position: absolute; left: 783px; top: 345px; width: 856px; height: 462px; z-index: 2; display: grid; place-content: center; gap: 12px; text-align: center; border: 2px dashed #b9b2a6; border-radius: 6px; color: #5d5850; animation: ppUp 420ms cubic-bezier(.16, 1, .3, 1) both; }
@@ -115,7 +118,7 @@
 .pp-buy-glow { position: absolute; left: 1326px; top: 832px; width: 328px; height: 74px; z-index: 1; border-radius: 3px; pointer-events: none; animation: ppFade 500ms ease 2.1s both, ppGlow 2.2s ease-in-out 2.4s infinite alternate; overflow: hidden; }
 @keyframes ppGlow { from { box-shadow: 0 0 0 0 #c9a24a00; } to { box-shadow: 0 0 22px 4px #c9a24a99; } }
 .pp-buy-hit { overflow: hidden; }
-.pp-buy-hit::before { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, #ffffff40 50%, transparent 65%); background-size: 300% 100%; animation: ppTabSheen 3.6s ease-in-out 2.6s infinite; pointer-events: none; }
+.pp-buy-hit::before { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, #ffffff40 50%, transparent 65%); background-size: 300% 100%; animation: ppTabSheen 9s ease-in-out 3.2s infinite; pointer-events: none; opacity: .55; }
 .pp-buy-hit:hover { background: #ffffff14; }
 
 .pp-modal-art { width: 100%; border-radius: 8px; margin-bottom: 12px; }

@@ -309,3 +309,10 @@
 .ui-amb-wisp .ui-amb-light { background: radial-gradient(ellipse 30% 40% at 50% 45%, #3c8dff22, transparent 70%); mix-blend-mode: screen; animation: uiFlare 3.6s ease-in-out infinite alternate; }
 /* 전용 장면 정지 그림(영상 없음): 영상과 같은 카메라 숨쉬기를 쓴다 */
 .ui-motion img.mv.scene { object-fit: cover; }
+
+/* v0.5.3 정리: 화면 곳곳의 사선 반짝임 띠를 걷어낸다
+   - 진입 때 지나가던 사선 빛 띠 제거(어두운 막만 걷힘)
+   - 반짝임은 핵심 버튼(영입 10회)에만, 느리고 옅게 */
+.ui-intro > i { display: none; }
+.ui-detail .cd2-up::before { display: none; }
+.ui-glint-cta::before { width: 34%; background: linear-gradient(100deg, transparent 0 30%, #ffffff4d 50%, transparent 70%); animation: uiGlint 9s cubic-bezier(.45, 0, .25, 1) 3s infinite; }

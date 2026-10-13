@@ -7,7 +7,7 @@ import { MISSIONS } from '../game/data/catalog'
 import { PASS_S01 as P } from '../game/data/pass'
 import passJson from '../game/data/ref-pass.json'
 import { Hit, boxStyle } from '../ui/ref'
-import { MotionStage, AmbientFx, Glint } from '../ui/ui-motion'
+import { MotionStage, AmbientFx, tilt } from '../ui/ui-motion'
 import { Modal, Btn } from '../ui/components'
 import { useReduceMotion } from '../ui/motion'
 
@@ -53,7 +53,6 @@ export default function Pass(_: { params: Record<string, unknown> }) {
         {/* 왼쪽: 센카 그림(숨쉬는 확대·빛줄기·떠다니는 빛) */}
         <div className="pp-hero" aria-hidden>
           <img src={R.hero.file} alt="" draggable={false} />
-          <i className="sweep" />
         </div>
         <AmbientFx kind="dust" box={{ x: 0, y: 0, w: 836, h: 941 }} count={26} z={3} clip="polygon(0 0, 836px 0, 836px 272px, 772px 272px, 772px 941px, 0 941px)" />
         <button type="button" className="pp-back" aria-label="뒤로" onClick={() => { audio.sfx('tap'); nav.back() }}>
@@ -88,8 +87,7 @@ export default function Pass(_: { params: Record<string, unknown> }) {
                   {CARDS.map((k, i) => (
                     <div key={k} className="pp-card" style={{ '--i': i, ...boxStyle({ x: R[k].x, y: R[k].y, w: R[k].w, h: R[k].h }) } as CSSProperties}>
                       <img src={R[k].file} alt="" draggable={false} />
-                      <Glint g={{ src: R[k].file, r: { x: 0, y: 0, w: R[k].w, h: R[k].h } }} order={i} className="pp-glint" />
-                      <button type="button" className="pp-card-hit" aria-label={`${P.rewards[i].name} · ${P.rewards[i].term}, 자세히`} onClick={() => { audio.sfx('tap'); setPick(k) }} />
+                      <button type="button" className="pp-card-hit" onPointerMove={(e) => tilt.move(e, e.currentTarget.parentElement, 5)} onPointerLeave={(e) => tilt.leave(e.currentTarget.parentElement)} aria-label={`${P.rewards[i].name} · ${P.rewards[i].term}, 자세히`} onClick={() => { audio.sfx('tap'); setPick(k) }} />
                     </div>
                   ))}
                   <i className="pp-7star" aria-hidden />

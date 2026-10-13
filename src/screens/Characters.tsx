@@ -5,7 +5,7 @@ import { audio } from '../app/audio'
 import { game, useGame, charPower } from '../game/store'
 import { CHARACTERS } from '../game/data/characters'
 import type { CharacterDefinition } from '../game/types'
-import { MotionStage, MotionTitle } from '../ui/ui-motion'
+import { MotionStage, MotionTitle, tilt } from '../ui/ui-motion'
 import { useReduceMotion } from '../ui/motion'
 
 // 캐릭터 목록(시안: CHARACTERS 그리드). 캔버스 1672×941 고정 배율, 라이트/다크, 정렬, 왼쪽 필터(전체·즐겨찾기·미보유·Ex).
@@ -170,6 +170,7 @@ export default function Characters(_: { params: Record<string, unknown> }) {
                 style={{ '--d': `${(first.current ? 380 : 40) + (row + col) * (first.current ? 55 : 22)}ms`, '--i': row + col, '--a': c.accent } as CSSProperties}
                 onPointerEnter={() => setHover(c.id)} onPointerLeave={() => setHover((h) => (h === c.id ? null : h))}>
                 <button type="button" className={`ccard ${o ? '' : 'unowned'} ${c.pending ? 'pending' : ''}`} onClick={() => open(c)}
+                  onPointerMove={(e) => tilt.move(e)} onPointerLeave={(e) => tilt.leave(e.currentTarget)}
                   aria-label={`${c.name}${c.pending ? ', 신규 · 설정 미정' : ''}${o ? `, 레벨 ${o.level}` : ', 미보유'}${fav ? ', 즐겨찾기' : ''}`}>
                   <span className="art">
                     <img src={c.assets.portrait} alt="" loading="lazy" draggable={false} />

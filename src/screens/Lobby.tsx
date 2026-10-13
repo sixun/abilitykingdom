@@ -12,7 +12,7 @@ import { MotionVideo, fitBox } from '../ui/motion'
 import fitJson from '../game/data/motion-fit.json'
 import matteJson from '../game/data/ref-matte.json'
 import '../styles/motion.css'
-import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx, Fx, glintOf } from '../ui/ui-motion'
+import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx, Fx } from '../ui/ui-motion'
 import layoutJson from '../game/data/ref-lobby.json'
 import LobbyStation from './LobbyStation'
 import { LOBBY_SCENES } from '../game/data/lobbyScenes'
@@ -139,7 +139,7 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
           <div className="mg mg-right" style={g('right')}>
             <RefLayers layout={L} ids={['event-terminal']} z={1} files={MATTE} />
             {([{ id: 'event-story', screen: 'story', label: '스토리' }, { id: 'event-explore', screen: 'explore', label: '도시 탐색' }, { id: 'event-wanted', screen: 'wanted', label: '현상수배' }] as const).map((n, i) => (
-              <MotionItem key={n.id} order={i} className="ui-side-card" glint={glintOf(L, n.id, MATTE)}>
+              <MotionItem key={n.id} order={i} className="ui-side-card">
                 <RefLayers layout={L} ids={[n.id]} z={1} files={MATTE} />
                 <Hit r={rectOf(L, n.id)} label={`이벤트: ${n.label}`} onClick={() => go(n.screen)} />
               </MotionItem>
@@ -148,7 +148,7 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
           {/* 하단 메뉴 띠 */}
           <div className="mg mg-bottom" style={g('bottom')}>
             <RefLayers layout={L} ids={['navbar-remainder']} z={1} files={MATTE} />
-            {NAV.map((n, i) => <MotionItem key={n.id} order={i} className="ui-nav-item" glint={glintOf(L, n.id, MATTE)}>
+            {NAV.map((n, i) => <MotionItem key={n.id} order={i} className="ui-nav-item">
               <RefLayers layout={L} ids={[n.id]} z={1} files={MATTE} />
               <Hit r={rectOf(L, n.id)} label={n.label} onClick={() => go(n.screen)} className={`lb-nav-${n.screen}`} />
             </MotionItem>)}

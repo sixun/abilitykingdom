@@ -7,11 +7,12 @@
 .bc-inner { position: absolute; inset: 0; transition: translate 640ms cubic-bezier(.7, 0, .2, 1); }
 .bc-track.dragging .bc-inner { transition: none; }
 .bc-slide img { position: absolute; max-width: none; pointer-events: none; }
-.bc-slide.on img.bc-zoom { animation: bcKen 6s ease-out both; }
+.bc-slide.on img.bc-zoom { animation: bcKen 6s ease-out both, bcSettle 700ms cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes bcSettle { from { filter: brightness(1.18) saturate(.85); } to { filter: none; } }
 @keyframes bcKen { from { transform: scale(1.08); } to { transform: none; } }
-.bc-wipe { position: absolute; top: -20%; bottom: -20%; left: -60%; width: 45%; pointer-events: none; transform: skewX(-22deg); background: linear-gradient(90deg, transparent, #ffffffcc 45%, #9fd2ff88 60%, transparent); mix-blend-mode: screen; animation: bcWipe 700ms cubic-bezier(.6, 0, .3, 1) 120ms both; }
+.bc-wipe { display: none; position: absolute; top: -20%; bottom: -20%; left: -60%; width: 45%; pointer-events: none; transform: skewX(-22deg); background: linear-gradient(90deg, transparent, #ffffffcc 45%, #9fd2ff88 60%, transparent); mix-blend-mode: screen; animation: bcWipe 700ms cubic-bezier(.6, 0, .3, 1) 120ms both; }
 @keyframes bcWipe { from { translate: 0 0; } to { translate: 700px 0; } }
-.bc-sheen { position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; pointer-events: none; background: linear-gradient(100deg, transparent, #ffffff55 50%, transparent); transform: skewX(-18deg); animation: bcSheen 5.5s ease-in-out 2.4s infinite; }
+.bc-sheen { display: none; position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; pointer-events: none; background: linear-gradient(100deg, transparent, #ffffff55 50%, transparent); transform: skewX(-18deg); animation: bcSheen 5.5s ease-in-out 2.4s infinite; }
 @keyframes bcSheen { 0% { translate: 0 0; } 18%, 100% { translate: 650px 0; } }
 .bc-hit { position: absolute; left: 0; top: 0; border: 0; padding: 0; background: none; cursor: pointer; border-radius: 8px; transition: background-color 160ms, transform 160ms; }
 .bc:hover .bc-view { filter: brightness(1.08); }
