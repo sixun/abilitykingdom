@@ -9,7 +9,7 @@ import { Hit } from '../ui/ref'
 import { MotionStage, AmbientFx } from '../ui/ui-motion'
 import { useReduceMotion } from '../ui/motion'
 import { fmt } from '../ui/components'
-import { fxFiles, NightWash, NightDim, NightIntro, NightWindow, NightCharLight, NightGhosts, NightTitle, OmpIntro, OmpPopups, OmpMosaic, OmpTitle, OmpScene } from './RecruitSceneFx'
+import { FX_TAG, fxFiles, NightWash, NightDim, NightIntro, NightWindow, NightCharLight, NightGhosts, NightTitle, OmpIntro, OmpPopups, OmpMosaic, OmpTitle, OmpScene } from './RecruitSceneFx'
 
 // 새 영입 배너 3종(SERENITY·NIGHT SHIFT·ONE MORE PLAY?) 화면. 시안(1672×941)을 tools/build_recruit_scenes.py로 조각냄.
 // - 장면·인물·제목·이름표·목록·위 UI·아래 바·뽑기 장치가 각각 따로 들어오고 움직인다
@@ -23,6 +23,14 @@ const ALL = json as unknown as Record<SceneName, Meta>
 // NIGHT SHIFT 시안에는 NEW FACES 버튼이 없어 다른 두 화면과 같은 버튼을 같은 줄 빈자리에 둔다
 const FACES_FALLBACK = { ...ALL.serenity.faces, x: 768, y: 16 }
 // NEW FACES 버튼 안 얼굴 자리(버튼 조각 기준)
+/** 왼쪽 배너 목록 그림(배너 일러스트 2017×780). 영입 화면 두 종류가 같이 쓴다 */
+export const LIST_ART: Record<string, string> = { b_rion: 'ref/recruit/list-rion.webp', b_serenity: 'ref/recruit/list-serenity.webp', b_nightshift: 'ref/recruit/list-nightshift.webp', b_omp: 'ref/recruit/list-omp.webp' }
+export const LIST_TITLE: Record<string, string> = { b_rion: '주파수 너머', b_serenity: 'SERENITY', b_nightshift: 'NIGHT SHIFT', b_omp: 'ONE MORE PLAY?' }
+/** 목록 칸: 시안 목록 영역(첫 칸 위 ~ 마지막 칸 아래)을 같은 크기 4칸으로 */
+export function listSlots(x: number, top: number, bottom: number, w: number, gap = 10) {
+  const h = (bottom - top - gap * 3) / 4
+  return [0, 1, 2, 3].map((i) => ({ x, y: Math.round(top + i * (h + gap)), w, h: Math.round(h) }))
+}
 const FACE_SLOT: Record<SceneName, { x: number; y: number }> = { serenity: { x: 12, y: 8 }, nightshift: { x: 12, y: 8 }, omp: { x: 16, y: 10 } }
 
 type Props = {
@@ -81,7 +89,8 @@ export default function RecruitScene({ name, banner, order, wallet, newFaces, bu
   const pts = wallet.scoutPoint, cap = GAME_CONFIG.scoutPointCap
   const [pnx, pny, , pny1] = cfg.points_num
   const [bx0, by0, bx1, by1] = cfg.points_bar
-  const list3 = cfg.list[3]
+  const SL = listSlots(Math.min(...cfg.list.map((l) => l[0])) + 2, cfg.list[0][1], cfg.list[3][3], 280)
+  const list3 = [SL[3].x, SL[3].y, SL[3].x + SL[3].w, SL[3].y + SL[3].h]
   const multi = GAME_CONFIG.multiPullCount
 
   // 영입 버튼: 결과 확정 후 직접 조작 연출(PullRitual)이 이어진다(Recruit.tsx)
@@ -122,7 +131,9 @@ export default function RecruitScene({ name, banner, order, wallet, newFaces, bu
         {name === 'nightshift' && <NightTitle />}
         {name === 'omp' && <OmpTitle />}
         {name === 'serenity' && <i className="rs-spark" style={{ left: 664, top: 386 }} />}
-        {img('tag', 'tag')}
+        {name === 'omp'
+          ? <span className="rs-tagwrap"><img className="rs-s tag" src={FX_TAG.file} alt="" draggable={false} style={{ left: R.tag.x, top: R.tag.y, width: R.tag.w, height: R.tag.h }} /><b className="rs-tagname" style={{ left: FX_TAG.name.x, top: FX_TAG.name.y, height: FX_TAG.name.h }}>{f.name}</b></span>
+          : img('tag', 'tag')}
       </div>
 
       {/* 위 UI */}
@@ -148,11 +159,11 @@ export default function RecruitScene({ name, banner, order, wallet, newFaces, bu
       {/* 배너 목록 */}
       <div className="rs-list">
         {order.map((id, i) => {
-          const k = `list${i}`; const sel = id === banner.id
+          const r = SL[i]; const sel = id === banner.id
           return (
-            <div key={id} className={`rs-item ${sel ? 'on' : ''}`} style={{ left: R[k].x, top: R[k].y, width: R[k].w, height: R[k].h, '--i': i } as CSSProperties}>
-              <img src={R[k].file} alt="" draggable={false} />
-              <Hit r={{ x: 0, y: 0, w: R[k].w, h: R[k].h }} label={`${i === 0 || id === 'b_nightshift' ? '한정' : '상시'} 배너 ${['주파수 너머', 'SERENITY', 'NIGHT SHIFT', 'ONE MORE PLAY?'][i]}${sel ? ' (선택됨)' : ''}`} onClick={() => { if (!sel) onBanner(id) }} sfx={sel ? 'none' : 'select'} className="hit-banner" />
+            <div key={id} className={`rs-item rb-item ${sel ? 'on' : ''}`} style={{ left: r.x, top: r.y, width: r.w, height: r.h, '--i': i } as CSSProperties}>
+              <img src={LIST_ART[id]} alt="" draggable={false} />
+              <Hit r={{ x: 0, y: 0, w: r.w, h: r.h }} label={`${i === 0 || id === 'b_nightshift' ? '한정' : '상시'} 배너 ${LIST_TITLE[id]}${sel ? ' (선택됨)' : ''}`} onClick={() => { if (!sel) onBanner(id) }} sfx={sel ? 'none' : 'select'} className="hit-banner" />
             </div>
           )
         })}

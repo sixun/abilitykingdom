@@ -5,13 +5,16 @@ import fxJson from '../game/data/ref-recruit-fx.json'
 // NIGHT SHIFT · ONE MORE PLAY? 전용 연출 층(입력 받지 않음). 좌표는 시안 캔버스(1672×941).
 type Box = { x: number; y: number; w: number; h: number; file: string }
 const FX = fxJson as unknown as {
-  nightshift: { titleText: string; titleFrame: string; title: Omit<Box, 'file'>; frame: number[][] }
-  omp: { letters: (Box & { row: number })[]; mosaic: { file: string; w: number; h: number; bs: number }[]; sign: Box; nocoin: Box; screen: number[][]; buttons: [number, number, number, string][] }
+  nightshift: { titleText: string; titleFrame: string; night: string; shift: string; title: Omit<Box, 'file'>; frame: number[][] }
+  omp: { tagNoName: string; tagName: { x: number; y: number; h: number }; letters: (Box & { row: number })[]; mosaic: { file: string; w: number; h: number; bs: number }[]; sign: Box; nocoin: Box; screen: number[][]; buttons: [number, number, number, string][] }
 }
+
+/** ONE MORE PLAY? 이름표: 이름 글자를 지운 그림 + 실제 이름 위치 */
+export const FX_TAG = { file: FX.omp.tagNoName, name: FX.omp.tagName }
 
 /** 미리 받아 둘 연출용 그림 */
 export function fxFiles(): string[] {
-  return [FX.nightshift.titleText, FX.nightshift.titleFrame, ...FX.omp.letters.map((l) => l.file), ...FX.omp.mosaic.map((m) => m.file), FX.omp.sign.file, FX.omp.nocoin.file]
+  return [FX.nightshift.night, FX.nightshift.shift, FX.nightshift.titleFrame, FX.omp.tagNoName, ...FX.omp.letters.map((l) => l.file), ...FX.omp.mosaic.map((m) => m.file), FX.omp.sign.file, FX.omp.nocoin.file]
 }
 
 function rng(seed: number) {
@@ -22,35 +25,26 @@ const at = (b: { x: number; y: number; w: number; h: number }): CSSProperties =>
 
 /* ───────────── NIGHT SHIFT ───────────── */
 
-/** 진입: 어두운 터널을 고속으로 지나는 느낌 — 불빛 줄이 오른쪽에서 왼쪽으로 쏟아지고, 터널등이 두 번 번쩍 지나간 뒤 장면이 드러남 */
+/** 진입: 어두운 막이 걷히며 터널등 빛 한 번 — 줄(짝대기) 효과 없음. 속도감은 글자·인물·UI가 좌우에서 꽂히는 것으로 */
 export function NightIntro() {
-  const lines = useMemo(() => {
-    const r = rng(42)
-    return Array.from({ length: 64 }, () => {
-      const warm = r() < 0.5
-      return { top: r() * 941, w: 260 + r() * 900, d: r() * 400, dur: 150 + r() * 200, o: 0.45 + r() * 0.55, h: r() < 0.25 ? 3.5 : r() < 0.6 ? 2 : 1.2, warm }
-    })
-  }, [])
   return (
     <div className="ns-intro" aria-hidden>
       <i className="ns-veil" />
-      <i className="ns-flash a" /><i className="ns-flash b" />
-      {lines.map((l, i) => <i key={i} className={`ns-line ${l.warm ? 'warm' : ''}`} style={{ top: l.top, width: l.w, height: l.h, opacity: l.o, animationDelay: `${l.d}ms`, animationDuration: `${l.dur}ms` } as CSSProperties} />)}
+      <i className="ns-flash a" />
     </div>
   )
 }
 
-/** 장면 층: 창밖으로 흐르는 불빛 줄, 지나가는 터널등 */
+/** 장면 층: 달리는 열차 — 창밖 도시 불빛(둥근 번짐)이 흘러가고, 터널등이 주기적으로 지나간다 */
 export function NightWindow() {
-  const streaks = useMemo(() => {
+  const lights = useMemo(() => {
     const r = rng(7)
-    return Array.from({ length: 28 }, () => ({ top: 100 + r() * 620, w: 90 + r() * 360, dur: 0.45 + r() * 0.8, d: -r() * 3, o: 0.45 + r() * 0.55, warm: r() < 0.55, h: r() < 0.3 ? 3 : 2 }))
+    return Array.from({ length: 34 }, () => ({ top: 110 + r() * 600, s: 14 + r() * 40, dur: 1.2 + r() * 2, d: -r() * 4, o: 0.5 + r() * 0.5, warm: r() < 0.6 }))
   }, [])
   return (
     <div className="ns-window" aria-hidden>
-      {streaks.map((s, i) => <i key={i} className={`ns-streak ${s.warm ? 'warm' : ''}`} style={{ top: s.top, width: s.w, height: s.h, opacity: s.o, animationDuration: `${s.dur}s`, animationDelay: `${s.d}s` } as CSSProperties} />)}
+      {lights.map((l, i) => <i key={i} className={`ns-bokeh ${l.warm ? 'warm' : ''}`} style={{ top: l.top, width: l.s, height: l.s, opacity: l.o, animationDuration: `${l.dur}s`, animationDelay: `${l.d}s` } as CSSProperties} />)}
       <i className="ns-lamp a" /><i className="ns-lamp b" />
-      <span className="ns-platform">{Array.from({ length: 9 }, (_, i) => <i key={i} style={{ left: i * 130 }} />)}</span>
     </div>
   )
 }
@@ -74,16 +68,14 @@ export function NightGhosts({ src, box }: { src: string; box: { x: number; y: nu
   return <>{[1, 2, 3].map((k) => <img key={k} className={`ns-ghost g${k}`} src={src} alt="" aria-hidden draggable={false} style={at(box)} />)}</>
 }
 
-/** 제목: 글자는 왼쪽에서 쾅, 주황 틀은 그려지고, 빛이 틀을 따라 돈다 */
+/** 제목: NIGHT는 왼쪽에서, SHIFT는 오른쪽에서 날아와 박히고, 주황 틀이 그려진다 */
 export function NightTitle() {
   const t = FX.nightshift.title
-  const p = FX.nightshift.frame
-  const d = `M${p.map((q) => q.join(' ')).join(' L')} Z`
   return (
     <>
       <img className="rs-s ns-frame" src={FX.nightshift.titleFrame} alt="" draggable={false} style={at(t)} />
-      <img className="rs-s ns-text" src={FX.nightshift.titleText} alt="" draggable={false} style={at(t)} />
-      <span className="ns-trace" aria-hidden>{[0, 1, 2].map((k) => <i key={k} className={`k${k}`} style={{ offsetPath: `path('${d}')` } as CSSProperties} />)}</span>
+      <img className="rs-s ns-night" src={FX.nightshift.night} alt="" draggable={false} style={at(t)} />
+      <img className="rs-s ns-shift" src={FX.nightshift.shift} alt="" draggable={false} style={at(t)} />
     </>
   )
 }

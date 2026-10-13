@@ -32,7 +32,7 @@ export const BANNERS: RecruitmentBanner[] = [
     skin: 'broadcast', quote: '자, 어디까지 들리니? 지금, 더 멀리 가보자.',
   },
   // 아래 3개는 2026-10-13 배너 시안(SERENITY·NIGHT SHIFT·ONE MORE PLAY?). 목록 순서도 시안과 같다.
-  // 픽업 대원(세렌·이안·채린)은 설정 확정 전(pending)이라 영입 풀에 넣지 않았다: 지금은 기존 대원만 나온다(pickupShare 0).
+  // 픽업 대원(세렌·이안·칸나)은 설정 확정 전(pending)이라 영입 풀에 넣지 않았다: 지금은 기존 대원만 나온다(pickupShare 0).
   // 비용은 기존 영입 티켓 1장/회. 시안의 캡슐·추첨권·쿠지 그림은 배너별 표시용이다(재화 분리는 미정).
   {
     id: 'b_serenity', kind: 'standard', title: 'SERENITY', subtitle: 'STANDARD SCOUTING', featuredId: 'seren',

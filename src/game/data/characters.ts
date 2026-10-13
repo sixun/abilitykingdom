@@ -172,7 +172,7 @@ export const CHARACTERS: CharacterDefinition[] = [
   ...([
     { id: 'seren', name: '세렌', nameEn: 'SEREN', accent: '#9fb3e6', idleSeed: 0.31 },
     { id: 'ian', name: '이안', nameEn: 'IAN', accent: '#f0782f', idleSeed: 0.57 },
-    { id: 'chaerin', name: '채린', nameEn: 'CHAERIN', accent: '#ef5a45', idleSeed: 0.83 },
+    { id: 'chaerin', name: '칸나', nameEn: 'KANNA', accent: '#ef5a45', idleSeed: 0.83 },
   ] as const).map(({ idleSeed, ...x }): CharacterDefinition => ({
     ...x, role: 'attack', attribute: 'blade', rarity: 5,
     tagline: '설정 확정 전입니다.',

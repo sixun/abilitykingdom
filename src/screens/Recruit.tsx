@@ -17,7 +17,7 @@ import { MotionVideo } from '../ui/motion'
 import '../styles/motion.css'
 import { MotionStage as RefStage, MotionItem, MotionTitle, MotionTicker, AmbientFx, Glint, glintOf } from '../ui/ui-motion'
 import NewFaces from './NewFaces'
-import RecruitScene, { preloadRecruitScenes, type SceneName } from './RecruitScene'
+import RecruitScene, { preloadRecruitScenes, LIST_ART, listSlots, type SceneName } from './RecruitScene'
 import PullRitual, { type RitualKind } from './PullRitual'
 import { CHARACTERS } from '../game/data/characters'
 
@@ -27,7 +27,8 @@ const NEW_FACES = CHARACTERS.filter((c) => c.pending && !BANNERS.some((b) => b.f
 const SCENE: Record<string, SceneName> = { b_serenity: 'serenity', b_nightshift: 'nightshift', b_omp: 'omp' }
 // 배너별 직접 조작 영입 연출(스토리보드): 카드팩·캡슐가차·회전추첨기·이치방쿠지
 const RITUAL: Record<string, RitualKind> = { b_rion: 'pack', b_serenity: 'capsule', b_nightshift: 'lottery', b_omp: 'kuji' }
-const THUMB: Record<string, string> = { b_serenity: 'ref/recruit/thumb-serenity.webp', b_nightshift: 'ref/recruit/thumb-nightshift.webp', b_omp: 'ref/recruit/thumb-omp.webp' }
+// 왼쪽 배너 목록: 배너 일러스트 4장(원본 목록 영역에 같은 크기 4칸)
+const RION_SLOTS = listSlots(9, 106, 519, 250, 9)
 
 // 방송 콘셉트 영입 원본(1456×819)을 원본 조각 24개로 재현.
 // 이 화면(원본 키비주얼)은 '주파수 너머(리온)' 배너. 나머지 3종(SERENITY·NIGHT SHIFT·ONE MORE PLAY?)은 RecruitScene(배너 시안)으로 그리고,
@@ -192,12 +193,12 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
         {/* 배너 선택 */}
         {BANNER_SLICES.map((id, i) => {
           const bb = BANNER_BY_ID[BANNER_IDS[i]]
+          const r = RION_SLOTS[i]
           return <MotionItem key={id} order={i} z={40} className={`ui-banner-item ${i === selIdx ? 'is-selected' : ''}`}>
-            {i === 0 ? <RefLayers layout={L} ids={[id]} z={1} /> : <img className="rr-thumb" src={THUMB[bb.id]} alt="" draggable={false} style={boxStyle(rectOf(L, id), { zIndex: 1 })} />}
-            <Hit r={rectOf(L, id)} label={`${bb.kind === 'limited' ? '한정' : '상시'} 배너 ${bb.title}${i === selIdx ? ' (선택됨)' : ''}`} onClick={() => { setBannerId(bb.id); setKind(bb.kind) }} sfx="select" className="hit-banner" />
+            <div className={`rb-item ${i === selIdx ? 'on' : ''}`} style={boxStyle(r, { zIndex: 1 })}><img src={LIST_ART[bb.id]} alt="" draggable={false} /></div>
+            <Hit r={r} label={`${bb.kind === 'limited' ? '한정' : '상시'} 배너 ${bb.title}${i === selIdx ? ' (선택됨)' : ''}`} onClick={() => { setBannerId(bb.id); setKind(bb.kind) }} sfx="select" className="hit-banner" />
           </MotionItem>
         })}
-        <div className="ui-banner-cursor" aria-hidden style={{ top: rectOf(L, BANNER_SLICES[Math.max(0, selIdx)]).y + 12, height: rectOf(L, BANNER_SLICES[Math.max(0, selIdx)]).h - 24 }} />
         {overlays}
         {faces && <NewFaces onClose={() => setFaces(false)} />}
       </RefStage>

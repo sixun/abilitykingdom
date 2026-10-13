@@ -30,25 +30,16 @@
 .ns-flash { position: absolute; top: -10%; left: 1672px; width: 360px; height: 120%; background: radial-gradient(closest-side, #fff4dccc, #ffc77a55 45%, #ffc77a00); filter: blur(18px); animation: nsFlash 260ms cubic-bezier(.4, 0, .9, .6) both; }
 .ns-flash.a { animation-delay: 0ms; } .ns-flash.b { animation-delay: 150ms; width: 260px; }
 @keyframes nsFlash { from { translate: 0 0; } to { translate: -2100px 0; } }
-.ns-line { position: absolute; left: 1672px; border-radius: 2px; background: linear-gradient(90deg, #dbe8ff00, #eef4ff 25%, #dbe8ff 70%, #dbe8ff00); box-shadow: 0 0 6px #dbe8ff66; animation: nsLine 300ms cubic-bezier(.3, 0, .8, .6) both; }
-.ns-line.warm { background: linear-gradient(90deg, #ffcf8a00, #fff1d8 25%, #ffcf8a 70%, #ffcf8a00); box-shadow: 0 0 6px #ffb46a66; }
-@keyframes nsLine { 0% { translate: 0 0; opacity: 0; } 10% { opacity: 1; } 100% { translate: -2700px 0; opacity: 1; } }
 .rs-nightshift .rs-base { animation: nsBaseIn 900ms cubic-bezier(.16, .9, .2, 1) .05s backwards; }
 @keyframes nsBaseIn { from { translate: 220px 0; scale: 1.08; filter: blur(16px) brightness(1.5) saturate(.6); } }
 
 /* 대기(3.2초 박자): 창밖 불빛 줄이 쉼 없이 흐르고, 터널등이 지날 때마다 창 → 실내 → 인물 순으로 따뜻한 빛이 훑고 지나감.
    가끔 승강장 불빛 줄이 지나가고, 덜컹·전력 깜빡임 */
 .rs-nightshift { --ns-beat: 3.2s; }
-.ns-window { position: absolute; left: 300px; top: 90px; width: 545px; height: 640px; overflow: hidden; mix-blend-mode: screen; -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
-.ns-streak { position: absolute; left: 100%; border-radius: 2px; background: linear-gradient(90deg, #dbe8ff00, #f4f8ff 35%, #dbe8ff 70%, #dbe8ff00); box-shadow: 0 0 8px #bcd4ff88; animation: nsStreak linear infinite; }
-.ns-streak.warm { background: linear-gradient(90deg, #ffcf8a00, #fff0d4 35%, #ffbf70 70%, #ffcf8a00); box-shadow: 0 0 8px #ffb46a88; }
-@keyframes nsStreak { from { translate: 0 0; } to { translate: -1000px 0; } }
+.ns-window { position: absolute; left: 90px; top: 70px; width: 750px; height: 640px; overflow: hidden; mix-blend-mode: screen; -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
 .ns-lamp { position: absolute; top: 20px; left: 100%; width: 260px; height: 620px; border-radius: 50%; background: radial-gradient(closest-side, #fff0d0, #ffb46a99 45%, #ffb46a00); filter: blur(8px); animation: nsLamp var(--ns-beat) cubic-bezier(.45, 0, .55, 1) 1.4s infinite; }
 .ns-lamp.b { top: 140px; height: 420px; animation-delay: 3s; opacity: .8; }
 @keyframes nsLamp { 0% { translate: 0 0; } 30%, 100% { translate: -1100px 0; } }
-.ns-platform { position: absolute; left: 100%; top: 470px; height: 30px; width: 1200px; animation: nsPlatform 9.6s linear 5s infinite; }
-.ns-platform i { position: absolute; top: 0; width: 70px; height: 16px; border-radius: 3px; background: #f6fbff; box-shadow: 0 0 16px 4px #cfe3ffaa; }
-@keyframes nsPlatform { 0% { translate: 0 0; } 9%, 100% { translate: -1900px 0; } }
 .ns-wash { position: absolute; left: 0; top: 0; width: 1672px; height: 941px; background: linear-gradient(90deg, #ffc58000 0, #ffc58000 40%, #ffd8a0 48%, #ffe7c4 50%, #ffd8a0 52%, #ffc58000 60%, #ffc58000 100%); background-size: 300% 100%; background-position: 100% 0; mix-blend-mode: soft-light; opacity: .75; animation: nsWash var(--ns-beat) cubic-bezier(.45, 0, .55, 1) 1.75s infinite; }
 @keyframes nsWash { 0% { background-position: 100% 0; } 36%, 100% { background-position: 0% 0; } }
 /* 인물 위로 지나가는 터널등 빛(인물 모양대로 잘림) — 실내 빛과 같은 박자 */
@@ -56,25 +47,28 @@
 @keyframes nsCharLight { 0% { background-position: 100% 0; } 36%, 100% { background-position: 0% 0; } }
 .ns-dim { position: absolute; inset: 0; z-index: 4; pointer-events: none; background: #05070c; opacity: 0; animation: nsDim 11s steps(1, end) 6s infinite; }
 @keyframes nsDim { 0%, 100% { opacity: 0; } 90% { opacity: .42; } 91% { opacity: .08; } 92% { opacity: .5; } 94% { opacity: 0; } }
-.rs-nightshift .rs-scene { animation: nsRide 6.4s ease-in-out 1.8s infinite; }
-.rs-nightshift .rs-char-wrap { animation: nsRide 6.4s ease-in-out 1.86s infinite; }
-@keyframes nsRide { 0%, 100% { transform: none; } 12% { transform: translateY(1.4px); } 24% { transform: translateY(-.5px); } 36% { transform: translateY(1.2px); } 62% { transform: none; } 66% { transform: translateY(4.5px) rotate(.08deg); } 69% { transform: translateY(-2px); } 73% { transform: translateY(1px); } 78% { transform: none; } }
+.rs-nightshift .rs-scene { animation: nsRide 1.6s ease-in-out 1.8s infinite; }
+.rs-nightshift .rs-char-wrap { animation: nsRide 1.6s ease-in-out 1.85s infinite; }
+@keyframes nsRide { 0%, 100% { transform: none; } 6% { transform: translate(-1px, 2.2px); } 10% { transform: translateY(-.6px); } 14% { transform: translateY(1px); } 50% { transform: translateX(.6px); } 56% { transform: translate(-1px, 2.4px); } 60% { transform: translateY(-.8px); } 64% { transform: translateY(1px); } 70% { transform: none; } }
+/* 창밖 도시 불빛: 둥근 번짐이 빠르게 왼쪽으로 흐름(달리는 열차) */
+.ns-bokeh { position: absolute; left: 100%; border-radius: 50%; background: radial-gradient(closest-side, #e4eeff, #a9c4ff88 55%, #a9c4ff00); filter: blur(2px); animation: nsBokeh linear infinite; }
+.ns-bokeh.warm { background: radial-gradient(closest-side, #fff0d0, #ffc27a88 55%, #ffc27a00); }
+@keyframes nsBokeh { from { translate: 0 0; } to { translate: -760px 0; } }
 /* 진입 잔상 */
 .ns-ghost { position: absolute; max-width: none; pointer-events: none; opacity: 0; mix-blend-mode: screen; filter: blur(3px) brightness(1.5) saturate(.5); animation: nsGhost 620ms cubic-bezier(.16, .9, .2, 1) backwards; }
 .ns-ghost.g1 { animation-delay: .23s; } .ns-ghost.g2 { animation-delay: .28s; } .ns-ghost.g3 { animation-delay: .33s; }
 @keyframes nsGhost { 0% { opacity: 0; translate: 380px 0; transform: skewX(-18deg) scaleX(1.3); } 20% { opacity: .55; } 100% { opacity: 0; translate: 0 0; transform: none; } }
 
 /* 제목: 글자 쾅 → 주황 틀이 그려짐 → 빛이 틀을 따라 돎 */
-.rs-s.ns-text { animation: nsSlam 660ms cubic-bezier(.2, .9, .25, 1) .36s backwards; }
-@keyframes nsSlam { 0% { opacity: 0; translate: -440px 0; transform: skewX(20deg) scaleX(1.45); filter: blur(14px); } 52% { opacity: 1; translate: 20px 0; transform: skewX(-5deg) scale(1.04); filter: none; } 74% { translate: -5px 0; transform: scale(.995); } 100% { opacity: 1; translate: 0 0; transform: none; } }
-.rs-s.ns-frame { animation: nsDraw 720ms cubic-bezier(.65, 0, .25, 1) .68s backwards, nsGlow 1.6s ease-in-out 1.8s infinite alternate; }
+.rs-s.ns-night { animation: nsNight 620ms cubic-bezier(.2, .9, .25, 1) .3s backwards; }
+@keyframes nsNight { 0% { opacity: 0; translate: -620px 0; transform: skewX(24deg) scaleX(1.5); filter: blur(10px); } 55% { opacity: 1; translate: 24px 0; transform: skewX(-6deg) scale(1.03); filter: none; } 78% { translate: -6px 0; transform: none; } 100% { opacity: 1; translate: 0 0; transform: none; } }
+.rs-s.ns-shift { animation: nsShift 620ms cubic-bezier(.2, .9, .25, 1) .46s backwards; }
+@keyframes nsShift { 0% { opacity: 0; translate: 760px 0; transform: skewX(-24deg) scaleX(1.5); filter: blur(10px); } 55% { opacity: 1; translate: -24px 0; transform: skewX(6deg) scale(1.03); filter: none; } 78% { translate: 6px 0; transform: none; } 100% { opacity: 1; translate: 0 0; transform: none; } }
+.rs-nightshift .rs-head { animation: nsImpact 360ms ease-out 1.02s backwards; }
+@keyframes nsImpact { 0% { transform: none; } 30% { transform: translate(3px, -2px); } 60% { transform: translate(-2px, 1px); } 100% { transform: none; } }
+.rs-s.ns-frame { animation: nsDraw 600ms cubic-bezier(.65, 0, .25, 1) .9s backwards, nsGlow 1.6s ease-in-out 1.8s infinite alternate; }
 @keyframes nsDraw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 @keyframes nsGlow { from { filter: drop-shadow(0 0 2px #f07a2f44); } to { filter: drop-shadow(0 0 14px #f07a2fcc); } }
-.ns-trace { position: absolute; inset: 0; pointer-events: none; z-index: 1; mix-blend-mode: screen; }
-.ns-trace i { position: absolute; left: 0; top: 0; width: 26px; height: 26px; border-radius: 50%; offset-rotate: 0deg; background: radial-gradient(closest-side, #fff, #ffd2a0 30%, #ff8a3d 55%, #ff7a2f00); box-shadow: 0 0 18px 6px #ff8a3d66; opacity: 0; animation: nsTrace 3.2s cubic-bezier(.45, .05, .55, .95) 1.8s infinite; }
-.ns-trace i.k1 { width: 18px; height: 18px; box-shadow: none; animation-delay: 1.75s; opacity: .7; }
-.ns-trace i.k2 { width: 12px; height: 12px; box-shadow: none; animation-delay: 1.7s; }
-@keyframes nsTrace { 0% { offset-distance: 0%; opacity: 0; } 5% { opacity: 1; } 82% { opacity: 1; } 88%, 100% { offset-distance: 100%; opacity: 0; } }
 
 /* ════════════ ONE MORE PLAY? ════════════ */
 /* 진입: 브라운관 켜짐 — 검은 화면 가운데 밝은 가로줄 → 위아래로 열림(살짝 넘쳤다 자리 잡음) → 주사선·색 번짐이 걷힘 */
@@ -144,4 +138,4 @@
 @keyframes ompFloor { from { opacity: .4; translate: -20px 0; } to { opacity: .9; translate: 30px 0; } }
 
 /* 동작 줄이기: 전환 덮개·모자이크·잔상 없이 최종 모습 */
-.ui-rscene.ui-reduced :is(.omp-crt, .omp-pop, .ns-wash, .ns-dim, .ns-platform, .ns-intro, .omp-intro, .omp-px, .ns-ghost, .ns-trace, .ns-window, .ns-charlight, .omp-star, .omp-btn, .omp-screen .roll) { display: none; }
+.ui-rscene.ui-reduced :is(.omp-crt, .omp-pop, .ns-wash, .ns-dim, .ns-intro, .omp-intro, .omp-px, .ns-ghost, .ns-window, .ns-charlight, .omp-star, .omp-btn, .omp-screen .roll) { display: none; }

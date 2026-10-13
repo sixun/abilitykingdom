@@ -25,7 +25,9 @@
     367,
     490
    ]
-  ]
+  ],
+  "night": "ref/recruit/nightshift/fx-night.webp",
+  "shift": "ref/recruit/nightshift/fx-shift.webp"
  },
  "omp": {
   "letters": [
@@ -221,6 +223,12 @@
     15,
     "#ff5a5a"
    ]
-  ]
+  ],
+  "tagNoName": "ref/recruit/omp/fx-tag-noname.webp",
+  "tagName": {
+   "x": 406,
+   "y": 568,
+   "h": 38
+  }
  }
 }

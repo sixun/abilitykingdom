@@ -16,7 +16,7 @@ const A = '.screen-active '
 await page.goto(BASE + '?screen=recruit'); await W(2400)
 const labels = await page.locator(A + '.hit-banner').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')))
 check(labels.length === 4 && labels[1].startsWith('상시 배너 SERENITY') && labels[2].startsWith('한정 배너 NIGHT SHIFT') && labels[3].startsWith('상시 배너 ONE MORE PLAY?'), '목록 4칸 = 주파수 너머·SERENITY·NIGHT SHIFT·ONE MORE PLAY?')
-check(await page.locator(A + 'img.rr-thumb').count() === 3, '새 배너 썸네일 3장')
+check(await page.locator(A + '.rb-item img').count() === 4 && await page.locator(A + '.rb-item.on img[src*="list-rion"]').count() === 1, '왼쪽 목록 = 배너 일러스트 4장, 주파수 너머 선택')
 
 // 2) 목록·탭 전환
 await page.click(A + '.hit-banner[aria-label^="상시 배너 SERENITY"]'); await W(1600)
@@ -38,7 +38,7 @@ check(await page.locator(A + '.ui-rscene.rs-omp').count() === 1, 'ONE MORE PLAY?
 // 3) 안내·장치 시연(재화 변화 없음)
 const w0 = JSON.stringify((await st()).wallet)
 await page.click(A + '.rs-info button:has-text("확률 정보")'); await W(400)
-check(await page.locator('.rate-table').count() === 1 && await page.locator('.modal:has-text("채린")').count() === 1, '확률 정보 + 픽업 채린 안내')
+check(await page.locator('.rate-table').count() === 1 && await page.locator('.modal:has-text("칸나")').count() === 1, '확률 정보 + 픽업 칸나 안내')
 await page.keyboard.press('Escape'); await W(300)
 await page.click(A + '.rs-info button:has-text("상세 정보")'); await W(400)
 check(await page.locator('.modal:has-text("아직 영입 대상에 넣지 않았습니다")').count() === 1, '상세 정보: 픽업 설정 확정 전 안내')

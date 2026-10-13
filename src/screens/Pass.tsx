@@ -52,7 +52,11 @@ export default function Pass(_: { params: Record<string, unknown> }) {
       <MotionStage canvas={{ width: 1672, height: 941 }} className="ui-pass">
         {/* 왼쪽: 센카 그림(숨쉬는 확대·빛줄기·떠다니는 빛) */}
         <div className="pp-hero" aria-hidden>
-          <img src={R.hero.file} alt="" draggable={false} />
+          <div className="pp-hero-art">
+            <img src={R.hero.file} alt="" draggable={false} />
+            {/* 'SENKA' 큰 글자: 트레이딩 카드 홀로그램처럼 무지개 빛 띠가 마우스(기울기)를 따라 흐르고 반짝이 입자가 빛난다 */}
+            <div className="pp-holo" style={{ WebkitMaskImage: 'url(ref/pass/senka-holo-mask.webp)', maskImage: 'url(ref/pass/senka-holo-mask.webp)' }}><i className="foil" /><i className="glare" /><i className="spark" /></div>
+          </div>
         </div>
         <AmbientFx kind="dust" box={{ x: 0, y: 0, w: 836, h: 941 }} count={26} z={3} clip="polygon(0 0, 836px 0, 836px 272px, 772px 272px, 772px 941px, 0 941px)" />
         <button type="button" className="pp-back" aria-label="뒤로" onClick={() => { audio.sfx('tap'); nav.back() }}>
