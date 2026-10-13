@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "fonts": "python3 tools/subset_font.py",
-    "test:e2e": "mkdir -p test-results && node tests/formation-flow.mjs && node tests/menus-and-transactions.mjs && node tests/station-and-detail.mjs && node tests/new-characters.mjs && node tests/pass-and-carousel.mjs && node tests/recruit-banners.mjs",
+    "test:e2e": "mkdir -p test-results && node tests/formation-flow.mjs && node tests/menus-and-transactions.mjs && node tests/station-and-detail.mjs && node tests/new-characters.mjs && node tests/pass-and-carousel.mjs && node tests/recruit-banners.mjs && node tests/pull-rituals.mjs",
     "icons": "python3 tools/make_app_icons.py app-icons/rion-source.png app-icons && python3 tools/apply_native_assets.py app-icons",
     "cap:sync": "npx cap sync",
     "android:apk": "npx cap sync android && cd android && ./gradlew assembleDebug",

@@ -47,34 +47,38 @@ await page.click(A + 'button[aria-label="뽑기 장치(움직여 보기)"]'); aw
 check((await page.locator(A + '.rs-tip').textContent()).includes('종이를 벗겨'), '쿠지 장치 누름 = 벗겨 보기 시연 + 안내')
 check(JSON.stringify((await st()).wallet) === w0, '시연·안내로 재화 변화 없음')
 
-// 4) 1회 영입: 장치 연출 후 결과 화면
+// 4) 1회 영입: 결과 확정 → 직접 조작 연출(쿠지) → 건너뛰기 → 결과 카드 → 확인하면 배너 화면 그대로
 let s1 = await st()
-await page.click(A + '.hit-pull1'); await W(500)
-check(await page.locator('.rs-play.play-peel').count() === 1, '1회 영입 → 쿠지 벗기기 연출')
-await W(1800)
+await page.click(A + '.hit-pull1'); await W(700)
 let s2 = await st()
-check(s2.wallet.ticket === s1.wallet.ticket - 1 && s2.recruitTx.length === s1.recruitTx.length + 1, '티켓 1장 차감 + 영입 기록 1건')
-check(await page.locator('.screen-active.rr, .screen-active .rr').count() >= 1, '연출 뒤 결과 화면')
+check(s2.wallet.ticket === s1.wallet.ticket - 1 && s2.recruitTx.length === s1.recruitTx.length + 1, '버튼 누르는 순간 티켓 1장 차감 + 영입 기록 1건(연출 전에 확정)')
+check(await page.locator('.pr.pr-kuji').count() === 1, 'ONE MORE PLAY? → 이치방쿠지 연출')
 check(s2.recruitTx[0].results.every((r) => !['seren', 'ian', 'chaerin'].includes(r.characterId)), '설정 미확정 픽업 대원은 결과에 없음')
+await page.click('.pr-skip'); await W(900)
+check(await page.locator('.pr-result .pr-ok:has-text("확인")').count() === 1, '건너뛰기 → 결과 카드 + 확인')
+await page.click('.pr-ok'); await W(800)
+check(await page.locator('.pr-overlay').count() === 0 && await page.locator(A + '.ui-rscene.rs-omp').count() === 1, '확인 → 고르던 배너(ONE MORE PLAY?) 그대로')
+check(JSON.stringify((await st()).wallet) === JSON.stringify(s2.wallet), '연출·건너뛰기로 재화 변화 없음')
 
-for (let i = 0; i < 6; i++) { await page.mouse.click(800, 400); await W(450) }
-await page.click(A + 'button:has-text("확인")'); await W(1500)
-check(await page.locator(A + '.ui-rscene.rs-omp').count() === 1, '결과에서 돌아오면 고르던 배너(ONE MORE PLAY?) 유지')
-
-// 5) NIGHT SHIFT 10회: 추첨기 연출, 한정이라 포인트 적립
+// 5) NIGHT SHIFT 10회: 회전추첨기 연출, 한정이라 포인트 적립, 확인 → 전체 결과
 await page.goto(BASE + '?screen=recruit&id=b_nightshift'); await W(2600)
 s1 = await st()
-await page.click(A + '.hit-pull10'); await W(600)
-check(await page.locator('.rs-play.play-lottery.multi').count() === 1, '10회 영입 → 추첨기 연출(여러 개)')
-await W(2200)
+await page.click(A + '.hit-pull10'); await W(700)
 s2 = await st()
+check(await page.locator('.pr.pr-lottery').count() === 1, 'NIGHT SHIFT → 회전추첨기 연출')
 check(s2.wallet.ticket === s1.wallet.ticket - 10 && s2.wallet.scoutPoint === s1.wallet.scoutPoint + 100, '티켓 10장 차감 · 한정 배너 포인트 +100')
+await page.keyboard.press('Escape'); await W(900)
+check(await page.locator('.pr-ok:has-text("전체 결과 보기 (10)")').count() === 1, 'Esc = 건너뛰기, 10회는 전체 결과 보기')
+await page.click('.pr-ok'); await W(1000)
+check(await page.locator('.rr-cell').count() === 10, '전체 결과 10명')
 
-// 6) SERENITY: 캡슐 기계
+// 6) SERENITY: 캡슐 가차 / 주파수 너머: 카드팩
 await page.goto(BASE + '?screen=recruit&id=b_serenity'); await W(2600)
-await page.click(A + '.hit-pull1'); await W(500)
-check(await page.locator('.rs-play.play-capsule').count() === 1 && await page.locator('.ui-rscene.rs-playing').count() === 1, '1회 영입 → 캡슐 기계 연출')
-await W(1800)
+await page.click(A + '.hit-pull1'); await W(700)
+check(await page.locator('.pr.pr-capsule').count() === 1, 'SERENITY → 캡슐 가차 연출')
+await page.goto(BASE + '?screen=recruit'); await W(2600)
+await page.click(A + '.hit-pull1'); await W(700)
+check(await page.locator('.pr.pr-pack').count() === 1, '주파수 너머 → 카드팩 연출')
 
 console.log('errors:', errs.length ? errs : 'none')
 console.log('FAILS', fails + (errs.length ? 1 : 0))

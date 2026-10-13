@@ -18,12 +18,15 @@ import '../styles/motion.css'
 import { MotionStage as RefStage, MotionItem, MotionTitle, MotionTicker, AmbientFx, Glint, glintOf } from '../ui/ui-motion'
 import NewFaces from './NewFaces'
 import RecruitScene, { preloadRecruitScenes, type SceneName } from './RecruitScene'
+import PullRitual, { type RitualKind } from './PullRitual'
 import { CHARACTERS } from '../game/data/characters'
 
 // 신규 대원 미리보기: 설정 미확정 대원 중 배너 픽업이 아닌 대원(배너 픽업 대원은 배너에서 소개)
 const NEW_FACES = CHARACTERS.filter((c) => c.pending && !BANNERS.some((b) => b.featuredId === c.id))
 // 새 배너 3종은 시안 화면(1672×941)으로 그린다
 const SCENE: Record<string, SceneName> = { b_serenity: 'serenity', b_nightshift: 'nightshift', b_omp: 'omp' }
+// 배너별 직접 조작 영입 연출(스토리보드): 카드팩·캡슐가차·회전추첨기·이치방쿠지
+const RITUAL: Record<string, RitualKind> = { b_rion: 'pack', b_serenity: 'capsule', b_nightshift: 'lottery', b_omp: 'kuji' }
 const THUMB: Record<string, string> = { b_serenity: 'ref/recruit/thumb-serenity.webp', b_nightshift: 'ref/recruit/thumb-nightshift.webp', b_omp: 'ref/recruit/thumb-omp.webp' }
 
 // 방송 콘셉트 영입 원본(1456×819)을 원본 조각 24개로 재현.
@@ -53,6 +56,7 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
   const setBannerId = (id: string) => { LAST_BANNER.set(routeKey, id); setBannerIdRaw(id) }
   const [kind, setKind] = useState<'limited' | 'standard'>(BANNER_BY_ID[bannerId]?.kind ?? 'limited')
   const [modal, setModal] = useState<null | 'detail' | 'rates'>(null)
+  const [ritual, setRitual] = useState<null | { txId: string; kind: RitualKind; bg: string }>(null)
   const [faces, setFaces] = useState(false) // 신규 대원 미리보기(소개용, 영입 풀과 무관)
   const { run, pending, failed, clearFailed } = useAction()
   const b = BANNER_BY_ID[bannerId]
@@ -65,7 +69,7 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
 
   const pull = async (count: number, play?: () => Promise<void>) => {
     const res = await run(`pull${count}`, (rid) => game.recruit(bannerId, count, rid))
-    if (res?.ok) { if (play) await play(); audio.sfx('open'); nav.push('recruitResult', { txId: res.value.requestId }) }
+    if (res?.ok) { if (play) await play(); audio.sfx('open'); setRitual({ txId: res.value.requestId, kind: RITUAL[bannerId] ?? 'pack', bg: SCENE[bannerId] ? `ref/recruit/${SCENE[bannerId]}/base.webp` : 'ref/restored/recruitment-bg.webp' }) }
   }
   const scene = SCENE[bannerId]
   const pickKind = (k: 'limited' | 'standard') => {
@@ -235,6 +239,10 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
           <div className="confirm-actions"><Btn variant="dark" onClick={() => setModal(null)}>닫기</Btn></div>
         </Modal>
       )}
+      {ritual && (() => {
+        const tx = s.recruitTx.find((t) => t.requestId === ritual.txId)
+        return tx ? <PullRitual key={ritual.txId} kind={ritual.kind} tx={tx} bg={ritual.bg} onClose={(summary) => { setRitual(null); if (summary) nav.push('recruitResult', { txId: ritual.txId, summary: true }) }} /> : null
+      })()}
     </div>
   )
 }

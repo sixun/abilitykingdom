@@ -80,7 +80,7 @@ await shot('rr-reveal')
 s = await st()
 const tx = s.recruitTx[0]
 check(s.wallet.ticket === t0 - 10 && tx.results.length === 10, `10회 영입: 티켓 ${t0}→${s.wallet.ticket}`)
-await page.click('.rr-skip'); await W(800)
+await page.click('.pr-skip'); await W(700); await page.click('.pr-ok'); await W(900)
 await shot('rr-summary')
 const names1 = await page.$$eval('.rr-cell strong', (e) => e.map((x) => x.textContent).join())
 check((await st()).recruitTx.length === 1 && (await st()).wallet.ticket === t0 - 10, '스킵해도 결과 재실행 없음')
@@ -97,8 +97,8 @@ await page.click('.screen-active button.hit-pull1'); await page.click('.screen-a
 await W(1000)
 s = await st()
 check(s.wallet.ticket === t1 - 1 && s.recruitTx.length === n1 + 1, `1회 영입 연타 → 1회만 차감 (${t1}→${s.wallet.ticket})`)
-await page.click('.rr-skip').catch(() => {}); await W(500)
-await page.click('.rr-actions button:has-text("확인")'); await W(600)
+await page.click('.pr-skip'); await W(500)
+await page.click('.pr-ok'); await W(600)
 await back()
 
 // 상점: 응답 유실 시뮬레이션 + 재시도 → 1회만 차감·지급

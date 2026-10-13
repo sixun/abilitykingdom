@@ -84,14 +84,11 @@ export default function RecruitScene({ name, banner, order, wallet, newFaces, bu
   const list3 = cfg.list[3]
   const multi = GAME_CONFIG.multiPullCount
 
+  // 영입 버튼: 결과 확정 후 직접 조작 연출(PullRitual)이 이어진다(Recruit.tsx)
   const pull = (n: number) => {
-    if (busy || play) return
-    onPull(n, () => new Promise((done) => {
-      if (reduce) { done(); return }
-      audio.sfx('select')
-      setPlay({ n, k: Date.now() })
-      window.setTimeout(() => { done(); window.setTimeout(() => setPlay(null), 600) }, n > 1 ? 1900 : 1500)
-    }))
+    if (busy) return
+    audio.sfx('select')
+    onPull(n, () => Promise.resolve())
   }
   const tryDevice = () => {
     audio.sfx('tap'); setDemo((d) => d + 1); setTip(true)

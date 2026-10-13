@@ -1,0 +1,65 @@
+{
+ "pack": {
+  "body": "ref/pull/pack-body.webp",
+  "strip": "ref/pull/pack-strip.webp",
+  "w": 520,
+  "h": 884,
+  "tearY": 78.4
+ },
+ "capsule": {
+  "file": "ref/pull/capsule.webp",
+  "w": 601,
+  "h": 729,
+  "knob": {
+   "file": "ref/pull/capsule-knob.webp",
+   "c": [
+    416.0,
+    430.4
+   ],
+   "r": 96.8
+  },
+  "chute": [
+   63.2,
+   442.4,
+   243.2,
+   654.4
+  ]
+ },
+ "lottery": {
+  "drum": "ref/pull/lottery-drum.webp",
+  "stand": "ref/pull/lottery-stand.webp",
+  "crank": "ref/pull/lottery-crank.webp",
+  "w": 697,
+  "h": 689,
+  "axle": [
+   296.0,
+   227.2
+  ],
+  "exit": [
+   407.2,
+   447.2
+  ],
+  "tray": [
+   79.2,
+   541.6,
+   527.2,
+   597.6
+  ]
+ },
+ "kujibox": {
+  "file": "ref/pull/kujibox.webp",
+  "w": 964,
+  "h": 616,
+  "open": [
+   143.3,
+   49.0,
+   884.9,
+   308.2
+  ]
+ },
+ "ticket": {
+  "file": "ref/pull/ticket.webp",
+  "w": 654,
+  "h": 437
+ }
+}
