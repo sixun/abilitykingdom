@@ -1,0 +1,130 @@
+/* S01 패스(시안 1672×941 좌표) */
+.ui-pass { --ui-accent: #c9a24a; --ui-accent-soft: #e9cf8a8c; background: #0a0d16; }
+.ui-pass .ref-canvas { background: #0a0d16; color: #1d2230; }
+.ui-pass .ui-intro::before { background: #0a0d16; }
+.pp-slice { position: absolute; max-width: none; pointer-events: none; user-select: none; }
+
+/* 왼쪽 그림 */
+.pp-hero { position: absolute; left: 0; top: 0; width: 860px; height: 941px; z-index: 1; overflow: hidden; clip-path: polygon(0 0, 836px 0, 836px 272px, 772px 272px, 772px 941px, 0 941px); }
+.pp-hero img { position: absolute; left: 0; top: 0; width: 860px; height: 941px; max-width: none; transform-origin: 32% 38%; animation: ppHeroIn 1400ms cubic-bezier(.16, 1, .3, 1) both, ppBreath 12s ease-in-out 1400ms infinite alternate; translate: calc(var(--mx, 0) * -10px) calc(var(--my, 0) * -6px); transition: translate 1100ms cubic-bezier(.2, .8, .2, 1); }
+@keyframes ppHeroIn { from { opacity: 0; transform: translateX(-120px) scale(1.12); filter: brightness(.3) saturate(.6); } to { opacity: 1; transform: scale(1.02); filter: none; } }
+@keyframes ppBreath { from { transform: scale(1.02); } to { transform: scale(1.06) translateY(-6px); } }
+.pp-hero .sweep { position: absolute; top: -20%; bottom: -20%; left: -40%; width: 30%; background: linear-gradient(100deg, transparent, #fff1d655 50%, transparent); mix-blend-mode: screen; transform: skewX(-18deg); animation: ppSweep 7s cubic-bezier(.45, 0, .25, 1) 1.6s infinite; }
+@keyframes ppSweep { 0% { translate: 0 0; } 22%, 100% { translate: 1500px 0; } }
+.pp-back { position: absolute; left: 24px; top: 22px; z-index: 20; width: 70px; height: 54px; display: grid; place-items: center; border-radius: 28px; border: 1.5px solid #ffffff40; background: #0a0d16b8; color: #fff; cursor: pointer; backdrop-filter: blur(6px); animation: ppFadeL 700ms cubic-bezier(.16, 1, .3, 1) 300ms both; transition: transform 160ms, background-color 160ms; }
+.pp-back:hover, .pp-back:focus-visible { transform: translateX(-4px); background: #0a0d16e6; }
+.pp-back:active { transform: scale(.94); }
+
+/* 오른쪽 패널: 통째로 들어온 뒤 안의 요소가 차례로 */
+.pp-panel { position: absolute; inset: 0; z-index: 4; animation: ppPanelIn 950ms cubic-bezier(.16, 1, .3, 1) 120ms both; }
+@keyframes ppPanelIn { from { opacity: 0; transform: translateX(140px); } to { opacity: 1; transform: none; } }
+.pp-slice.title { animation: ppReveal 1000ms cubic-bezier(.16, 1, .3, 1) 480ms both; }
+@keyframes ppReveal { from { clip-path: inset(0 100% 0 0); translate: -30px 0; } to { clip-path: inset(0 0 0 0); translate: 0 0; } }
+.pp-spark { position: absolute; width: 22px; height: 22px; z-index: 2; background: #1d2230; clip-path: polygon(50% 0, 60% 40%, 100% 50%, 60% 60%, 50% 100%, 40% 60%, 0 50%, 40% 40%); animation: ppSpark 3.6s ease-in-out 1.6s infinite; opacity: 0; }
+@keyframes ppSpark { 0%, 100% { opacity: 0; transform: scale(.4) rotate(0); } 40% { opacity: 1; transform: scale(1.3) rotate(90deg); } 70% { opacity: .6; transform: scale(.9) rotate(150deg); } }
+.pp-slice.tabs { animation: ppUp 700ms cubic-bezier(.16, 1, .3, 1) 640ms both; }
+.pp-uline { position: absolute; top: 187px; height: 3px; border-radius: 2px; background: #2f62d6; z-index: 2; transition: left 440ms cubic-bezier(.3, 1.3, .5, 1), width 440ms cubic-bezier(.3, 1.3, .5, 1); transform-origin: left; animation: ppGrowX 700ms cubic-bezier(.16, 1, .3, 1) 950ms both; box-shadow: 0 0 8px #2f62d688; }
+@keyframes ppGrowX { from { transform: scaleX(0); } to { transform: none; } }
+.pp-slice.emblem { animation: ppEmblem 900ms cubic-bezier(.3, 1.5, .5, 1) 720ms both, ppWobble 8s ease-in-out 2s infinite alternate; }
+@keyframes ppEmblem { from { opacity: 0; transform: scale(.4) rotate(-120deg); } to { opacity: 1; transform: none; } }
+@keyframes ppWobble { from { rotate: -6deg; } to { rotate: 6deg; } }
+.pp-lv { position: absolute; left: 945px; top: 214px; z-index: 2; display: flex; align-items: baseline; gap: 6px; font-family: Cinzel, 'Noto Serif KR', Georgia, serif; color: #1d2230; animation: ppUp 600ms cubic-bezier(.16, 1, .3, 1) 760ms both; }
+.pp-lv small { font-size: 22px; font-weight: 700; }
+.pp-lv b { font-size: 37px; font-weight: 700; min-width: 44px; letter-spacing: -.01em; }
+.pp-lv span { font-size: 22px; font-weight: 700; }
+.pp-bar { position: absolute; left: 1107px; top: 236px; width: 510px; height: 12px; border-radius: 6px; background: #d9d5cf; box-shadow: inset 0 1px 2px #0002; overflow: hidden; z-index: 2; animation: ppUp 600ms cubic-bezier(.16, 1, .3, 1) 780ms both; }
+.pp-bar i { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, #1b4fcc, #3f86f2); transform-origin: left; animation: ppGrowX 1200ms cubic-bezier(.33, 1, .68, 1) 900ms both; position: relative; overflow: hidden; }
+.pp-bar i::after { content: ''; position: absolute; top: 0; bottom: 0; left: -60px; width: 60px; background: linear-gradient(90deg, transparent, #ffffffb0, transparent); animation: ppBarShine 3s ease-in-out 2.4s infinite; }
+@keyframes ppBarShine { from { translate: 0 0; } 60%, 100% { translate: 460px 0; } }
+
+/* Basic / Premium */
+.pp-tracks { position: absolute; left: 783px; top: 277px; width: 856px; height: 54px; z-index: 2; display: flex; gap: 2px; animation: ppDown 650ms cubic-bezier(.16, 1, .3, 1) 820ms both; }
+.pp-tracks button { position: relative; height: 100%; border: 0; display: flex; align-items: center; justify-content: center; gap: 22px; cursor: pointer; font: 700 31px/1 Cinzel, Georgia, serif; letter-spacing: .01em; color: #9b968f; background: #d8d4ce; transition: background-color 280ms, color 280ms, transform 160ms; }
+.pp-tracks .basic { width: 410px; clip-path: polygon(16px 0, 100% 0, 100% 100%, 0 100%, 0 16px); }
+.pp-tracks .premium { flex: 1; clip-path: polygon(0 0, 100% 0, 100% 78%, 97% 100%, 0 100%); }
+.pp-tracks button svg { color: #d7b263; transition: transform 300ms cubic-bezier(.3, 1.6, .5, 1); }
+.pp-tracks button.on { background: #11141e; color: #e8c77d; }
+.pp-tracks button.on::after { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, #ffe6a826 50%, transparent 65%); background-size: 300% 100%; animation: ppTabSheen 4s ease-in-out 1.8s infinite; }
+@keyframes ppTabSheen { 0%, 40% { background-position: 150% 0; } 80%, 100% { background-position: -60% 0; } }
+.pp-tracks button:not(.on):hover { color: #6d675f; background: #e2ded8; }
+.pp-tracks button:active { transform: scale(.98); }
+.pp-tracks .premium.on svg { animation: ppCrown 2.4s ease-in-out 2s infinite; }
+@keyframes ppCrown { 0%, 70%, 100% { transform: none; } 80% { transform: translateY(-4px) rotate(-8deg); } 90% { transform: translateY(0) rotate(5deg); } }
+
+/* 보상 카드 */
+.pp-card { position: absolute; z-index: 2; animation: ppCard 760ms cubic-bezier(.3, 1.4, .5, 1) calc(980ms + var(--i) * 110ms) both; transition: transform 260ms cubic-bezier(.3, 1.5, .5, 1), filter 200ms; }
+.pp-rewards .pp-card { animation-delay: calc(980ms + var(--i) * 110ms); }
+.pp-card img { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; pointer-events: none; }
+.pp-card .pp-glint { z-index: 2; }
+.pp-card .pp-glint::before { animation-duration: 6s; animation-delay: calc(2.6s + var(--i) * .2s); }
+.pp-card-hit { position: absolute; inset: 0; z-index: 3; border: 0; background: none; cursor: pointer; }
+.pp-card:hover, .pp-card:has(.pp-card-hit:focus-visible) { transform: translateY(-7px); filter: drop-shadow(0 12px 16px #0003) brightness(1.04); z-index: 3; }
+.pp-card:has(.pp-card-hit:active) { transform: translateY(-2px) scale(.98); }
+@keyframes ppCard { from { opacity: 0; transform: translateY(40px) scale(.9); } to { opacity: 1; transform: none; } }
+.pp-7star { position: absolute; left: 1150px; top: 362px; width: 30px; height: 30px; z-index: 4; pointer-events: none; background: radial-gradient(circle, #fff 0 18%, #ffe39a 30%, transparent 62%); clip-path: polygon(50% 0, 58% 42%, 100% 50%, 58% 58%, 50% 100%, 42% 58%, 0 50%, 42% 42%); animation: ppTwinkle 2.8s ease-in-out 2.2s infinite; opacity: 0; }
+@keyframes ppTwinkle { 0%, 100% { opacity: 0; transform: scale(.3) rotate(0); } 30% { opacity: 1; transform: scale(1.2) rotate(45deg); } 60% { opacity: 0; transform: scale(.6) rotate(90deg); } }
+.pp-basic { position: absolute; left: 783px; top: 345px; width: 856px; height: 462px; z-index: 2; display: grid; place-content: center; gap: 12px; text-align: center; border: 2px dashed #b9b2a6; border-radius: 6px; color: #5d5850; animation: ppUp 420ms cubic-bezier(.16, 1, .3, 1) both; }
+.pp-basic b { font: 700 34px/1 Cinzel, Georgia, serif; color: #1d2230; }
+.pp-basic span { font: 700 19px/1.4 'Noto Sans KR', sans-serif; }
+.pp-basic small { font: 600 15px/1.4 'Noto Sans KR', sans-serif; opacity: .8; }
+
+/* 미션 */
+.pp-missions { position: absolute; left: 783px; top: 270px; width: 856px; z-index: 2; display: grid; gap: 9px; animation: ppUp 420ms cubic-bezier(.16, 1, .3, 1) both; }
+.pp-mhead { display: flex; align-items: baseline; gap: 18px; margin-bottom: 4px; }
+.pp-mhead b { font: 700 26px/1 Cinzel, Georgia, serif; color: #1d2230; }
+.pp-mhead span { font: 600 15px/1 'Noto Sans KR', sans-serif; color: #6d675f; }
+.pp-mrow { display: grid; grid-template-columns: 250px 1fr 90px 92px; align-items: center; gap: 18px; height: 62px; padding: 0 20px; background: #fffaf2cc; border: 1.5px solid #d8d1c4; border-radius: 6px; font-family: 'Noto Sans KR', sans-serif; animation: ppRow 520ms cubic-bezier(.3, 1.4, .5, 1) calc(var(--i) * 60ms) both; transition: transform 200ms, border-color 200ms; }
+.pp-mrow:hover { transform: translateX(6px); border-color: #2f62d6; }
+@keyframes ppRow { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+.pp-mrow strong { font-size: 20px; font-weight: 800; color: #1d2230; }
+.pp-mrow .bar { height: 10px; border-radius: 5px; background: #ddd8d0; overflow: hidden; }
+.pp-mrow .bar i { display: block; height: 100%; background: linear-gradient(90deg, #1b4fcc, #3f86f2); transform-origin: left; animation: ppGrowX 700ms cubic-bezier(.33, 1, .68, 1) calc(200ms + var(--i) * 60ms) both; }
+.pp-mrow em { font-style: normal; font-size: 17px; font-weight: 700; color: #4b463f; text-align: right; }
+.pp-mrow .st { justify-self: end; padding: 6px 12px; border-radius: 14px; font-size: 14px; background: #e6e1d8; color: #6d675f; }
+.pp-mrow.done .st { background: #2f62d6; color: #fff; animation: ppPulse 1.6s ease-in-out infinite alternate; }
+.pp-mrow.claimed { opacity: .65; }
+@keyframes ppPulse { from { box-shadow: 0 0 0 0 #2f62d600; } to { box-shadow: 0 0 0 5px #2f62d633; } }
+.pp-mlink { justify-self: end; margin-top: 4px; border: 0; background: none; font: 800 17px/1 'Noto Sans KR', sans-serif; color: #2f62d6; cursor: pointer; padding: 8px 4px; transition: transform 160ms; }
+.pp-mlink:hover { transform: translateX(5px); }
+
+/* 마일스톤 */
+.pp-track { position: absolute; inset: 0; width: 1672px; height: 941px; z-index: 2; pointer-events: none; overflow: visible; }
+.pp-track .base { stroke: #c8c2b8; stroke-width: 2; }
+.pp-track .prog { stroke: #2f62d6; stroke-width: 2.6; stroke-dasharray: var(--len) 2000; stroke-dashoffset: var(--len); animation: ppDraw 1400ms cubic-bezier(.33, 1, .68, 1) 1300ms forwards; }
+@keyframes ppDraw { to { stroke-dashoffset: 0; } }
+.pp-track .tail { stroke: #2a2d34; stroke-width: 1.6; stroke-dasharray: 2 4; animation: ppFade 600ms ease 2.1s both; }
+.pp-track .tail-arrow { fill: none; stroke: #2a2d34; stroke-width: 1.6; animation: ppFade 600ms ease 2.2s both, ppNudge 1.6s ease-in-out 3s infinite; }
+@keyframes ppNudge { 0%, 60%, 100% { transform: none; } 80% { transform: translateX(4px); } }
+.pp-track .ms { transform-box: fill-box; animation: ppMs 520ms cubic-bezier(.3, 1.7, .5, 1) calc(1300ms + var(--i) * 140ms) both; }
+@keyframes ppMs { from { opacity: 0; } to { opacity: 1; } }
+.pp-track .dia { fill: #f3efe8; stroke: #9f988c; stroke-width: 2; }
+.pp-track .done .dia { fill: #2f62d6; stroke: #2f62d6; }
+.pp-track .next .dia { stroke: #2f62d6; stroke-width: 2.4; }
+.pp-track .next > g { animation: ppNext 1.4s ease-in-out 2.4s infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes ppNext { 0%, 100% { filter: none; } 50% { filter: drop-shadow(0 0 6px #2f62d6); } }
+.pp-track .chk { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 16; stroke-dashoffset: 16; animation: ppDraw 360ms ease-out calc(1500ms + var(--i) * 140ms) forwards; }
+.pp-track .lock-ring { fill: #f6f2eb; stroke: #1d2230; stroke-width: 2; }
+.pp-track .lock-ic { fill: none; stroke: #1d2230; stroke-width: 2; stroke-linejoin: round; }
+.pp-track .lockg { animation: ppLock 3.2s ease-in-out 3s infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes ppLock { 0%, 86%, 100% { rotate: 0deg; } 90% { rotate: -12deg; } 94% { rotate: 9deg; } }
+.pp-track .lbl { font: 700 15px Cinzel, Georgia, serif; fill: #24272e; }
+
+/* GET PREMIUM */
+.pp-slice.buy { z-index: 2; animation: ppBuy 800ms cubic-bezier(.3, 1.5, .5, 1) 1600ms both; }
+@keyframes ppBuy { from { opacity: 0; transform: translateX(60px) scale(.9); } to { opacity: 1; transform: none; } }
+.pp-buy-glow { position: absolute; left: 1326px; top: 832px; width: 328px; height: 74px; z-index: 1; border-radius: 3px; pointer-events: none; animation: ppFade 500ms ease 2.1s both, ppGlow 2.2s ease-in-out 2.4s infinite alternate; overflow: hidden; }
+@keyframes ppGlow { from { box-shadow: 0 0 0 0 #c9a24a00; } to { box-shadow: 0 0 22px 4px #c9a24a99; } }
+.pp-buy-hit { overflow: hidden; }
+.pp-buy-hit::before { content: ''; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 35%, #ffffff40 50%, transparent 65%); background-size: 300% 100%; animation: ppTabSheen 3.6s ease-in-out 2.6s infinite; pointer-events: none; }
+.pp-buy-hit:hover { background: #ffffff14; }
+
+.pp-modal-art { width: 100%; border-radius: 8px; margin-bottom: 12px; }
+.pp-modal h2 small { font-size: .6em; color: #2f62d6; margin-left: 8px; }
+
+@keyframes ppUp { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
+@keyframes ppDown { from { opacity: 0; translate: 0 -18px; } to { opacity: 1; translate: 0 0; } }
+@keyframes ppFadeL { from { opacity: 0; translate: -30px 0; } to { opacity: 1; translate: 0 0; } }
+@keyframes ppFade { from { opacity: 0; } to { opacity: 1; } }
+.ui-pass.ui-reduced .pp-hero .sweep, .ui-pass.ui-reduced .pp-spark, .ui-pass.ui-reduced .pp-7star { display: none; }
+.ui-pass.ui-reduced .pp-track .prog, .ui-pass.ui-reduced .pp-track .chk { stroke-dashoffset: 0; }
+@media (prefers-reduced-motion: reduce) { .ui-pass .pp-track .prog, .ui-pass .pp-track .chk { stroke-dashoffset: 0; animation: none; } }

@@ -1,0 +1,61 @@
+// 역 로비 배너 슬라이드 + S01 패스 화면 검증. dev 서버 실행 중에: node tests/pass-and-carousel.mjs [BASE]
+import { chromium } from 'playwright'
+const BASE = process.argv[2] || 'http://127.0.0.1:5173/'
+const browser = await chromium.launch()
+const page = await (await browser.newContext({ viewport: { width: 1672, height: 941 } })).newPage()
+const errs = []
+page.on('pageerror', (e) => errs.push('PAGEERR ' + e.message))
+page.on('console', (m) => { if (m.type() === 'error' && !m.text().includes('ERR_TUNNEL')) errs.push('CONSOLE ' + m.text()) })
+let fails = 0
+const check = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++ }
+const W = (ms = 500) => page.waitForTimeout(ms)
+const st = () => page.evaluate(() => window.__AK__.getState())
+const hitLabel = () => page.locator('.screen-active .bc-hit').getAttribute('aria-label')
+
+// 1) 역 로비 배너 슬라이드
+await page.goto(BASE + '?screen=lobby'); await W(600)
+await page.evaluate(() => window.__AK__.setLobbyTheme('station')); await W(2200)
+check(await page.locator('.screen-active .bc-dots button').count() === 2, '배너 2장 = 점 2개(원본 점 9개 대신 실제 장 수)')
+check((await hitLabel()).startsWith('픽업 영입'), '첫 장 = 픽업 영입')
+await page.click('.screen-active .bc-dots button:nth-child(2)'); await W(900)
+check((await hitLabel()).startsWith('S01 패스'), '점 누르면 S01 패스 배너로')
+const box = await page.locator('.screen-active .bc-hit').boundingBox()
+await page.mouse.move(box.x + box.width * .7, box.y + box.height / 2); await page.mouse.down(); await page.mouse.move(box.x + box.width * .2, box.y + box.height / 2, { steps: 6 }); await page.mouse.up(); await W(900)
+check((await hitLabel()).startsWith('픽업 영입'), '끌어서 넘기기(마지막 장 → 첫 장)')
+await page.mouse.move(800, 600); await W(6800)
+check((await hitLabel()).startsWith('S01 패스'), '가만히 두면 자동으로 다음 장')
+await page.click('.screen-active .bc-hit'); await W(1200)
+check(await page.locator('.screen-active .ui-pass').count() === 1, '패스 배너 누르면 패스 화면')
+
+// 2) 패스 화면
+await W(1600)
+check((await page.locator('.pp-lv b').textContent()).trim() === '35', '레벨 숫자 0 → 35')
+const bw = await page.locator('.pp-bar i').evaluate((e) => e.style.width)
+check(bw === '70%', '경험치 막대 35/50 = 70%')
+check(await page.locator('.pp-track .ms.done').count() === 4 && await page.locator('.pp-track .ms.next').count() === 1 && await page.locator('.pp-track .ms.final').count() === 1, '마일스톤: 0~30 달성, 40 다음 목표, 50 잠금')
+check(await page.locator('.pp-card').count() === 5, 'Premium 보상 카드 5장')
+const wallet = JSON.stringify((await st()).wallet)
+await page.click('.pp-card-hit[aria-label^="7성 센카"]'); await W(500)
+check(await page.locator('.modal h2:has-text("7성 센카")').count() === 1, '보상 카드 → 상세 안내')
+await page.keyboard.press('Escape'); await W(400)
+await page.click('button[aria-label^="GET PREMIUM"]'); await W(500)
+check(await page.locator('.modal:has-text("결제는 아직 연결되지 않았습니다")').count() === 1, 'GET PREMIUM = 결제 미연결 안내')
+await page.keyboard.press('Escape'); await W(400)
+check(JSON.stringify((await st()).wallet) === wallet, '재화 변화 없음')
+await page.click('button[role="tab"]:has-text("Basic")'); await W(500)
+check(await page.locator('.pp-basic').count() === 1 && await page.locator('.pp-card').count() === 0, 'Basic = 구성 미정 안내')
+await page.click('.screen-active button[aria-label^="MISSIONS"]'); await W(800)
+check(await page.locator('.pp-mrow').count() === 6, 'MISSIONS = 일일 미션 6개 진행 상황')
+await page.click('.screen-active button[aria-label^="REWARDS"]'); await W(500)
+check(await page.locator('.pp-tracks').count() === 1, 'REWARDS로 복귀')
+await page.click('.screen-active .pp-back'); await W(900)
+check(await page.locator('.screen-active .bc').count() === 1, '뒤로 → 역 로비')
+await page.evaluate(() => window.__AK__.setLobbyTheme('sofa')); await W(600)
+await page.click('.screen-active button[aria-label="더보기 메뉴"]'); await W(300)
+await page.click('.rl-more button:has-text("패스")'); await W(1000)
+check(await page.locator('.screen-active .ui-pass').count() === 1, '카페 로비 더보기 메뉴 → 패스')
+
+console.log('errors:', errs.length ? errs : 'none')
+console.log('FAILS', fails + (errs.length ? 1 : 0))
+await browser.close()
+process.exit(fails || errs.length ? 1 : 0)

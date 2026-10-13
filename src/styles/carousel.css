@@ -1,0 +1,29 @@
+/* 로비 배너 슬라이드 */
+.bc { position: absolute; z-index: 3; touch-action: pan-y; user-select: none; }
+.bc-view { position: absolute; left: 0; top: 0; overflow: hidden; border-radius: 8px; }
+.bc-track { position: absolute; left: 0; top: 0; height: 100%; transition: transform 640ms cubic-bezier(.7, 0, .2, 1); }
+.bc-track.dragging { transition: none; }
+.bc-slide { position: absolute; top: 0; overflow: hidden; }
+.bc-inner { position: absolute; inset: 0; transition: translate 640ms cubic-bezier(.7, 0, .2, 1); }
+.bc-track.dragging .bc-inner { transition: none; }
+.bc-slide img { position: absolute; max-width: none; pointer-events: none; }
+.bc-slide.on img.bc-zoom { animation: bcKen 6s ease-out both; }
+@keyframes bcKen { from { transform: scale(1.08); } to { transform: none; } }
+.bc-wipe { position: absolute; top: -20%; bottom: -20%; left: -60%; width: 45%; pointer-events: none; transform: skewX(-22deg); background: linear-gradient(90deg, transparent, #ffffffcc 45%, #9fd2ff88 60%, transparent); mix-blend-mode: screen; animation: bcWipe 700ms cubic-bezier(.6, 0, .3, 1) 120ms both; }
+@keyframes bcWipe { from { translate: 0 0; } to { translate: 700px 0; } }
+.bc-sheen { position: absolute; top: 0; bottom: 0; left: -40%; width: 30%; pointer-events: none; background: linear-gradient(100deg, transparent, #ffffff55 50%, transparent); transform: skewX(-18deg); animation: bcSheen 5.5s ease-in-out 2.4s infinite; }
+@keyframes bcSheen { 0% { translate: 0 0; } 18%, 100% { translate: 650px 0; } }
+.bc-hit { position: absolute; left: 0; top: 0; border: 0; padding: 0; background: none; cursor: pointer; border-radius: 8px; transition: background-color 160ms, transform 160ms; }
+.bc:hover .bc-view { filter: brightness(1.08); }
+.bc .bc-view { transition: filter 200ms, transform 220ms cubic-bezier(.3, 1.5, .5, 1); }
+.bc:has(.bc-hit:active) .bc-view { transform: scale(.97); }
+.bc-hit:focus-visible { outline: 3px solid #9fd2ff; outline-offset: 2px; }
+.bc-dots { position: absolute; left: 0; right: 0; display: flex; justify-content: center; gap: 7px; }
+.bc-dots button { position: relative; width: 9px; height: 9px; padding: 0; border: 0; border-radius: 5px; background: #ffffff80; box-shadow: 0 1px 3px #0006; cursor: pointer; overflow: hidden; transition: width 360ms cubic-bezier(.3, 1.4, .5, 1), background-color 200ms; }
+.bc-dots button:hover { background: #ffffffcc; }
+.bc-dots button.on { width: 30px; background: #ffffff70; }
+.bc-dots button.on i { position: absolute; inset: 0; background: #fff; transform-origin: left; transform: scaleX(1); }
+.bc-dots button.on i.run { animation: bcFill linear both; }
+@keyframes bcFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.bc-tag { position: absolute; right: 10px; top: 8px; padding: 3px 8px; border-radius: 4px; background: #0b0f1acc; color: #e8c77d; font: 700 11px/1 Cinzel, Georgia, serif; letter-spacing: .08em; }
+.ui-reduced .bc-wipe, .ui-reduced .bc-sheen { display: none; }

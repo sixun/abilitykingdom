@@ -1,0 +1,79 @@
+{
+ "plate": {
+  "x": 760,
+  "y": 0,
+  "w": 912,
+  "h": 941,
+  "file": "ref/pass/panel-plate.webp"
+ },
+ "hero": {
+  "x": 0,
+  "y": 0,
+  "w": 860,
+  "h": 941,
+  "file": "ref/pass/hero.webp"
+ },
+ "title": {
+  "x": 884,
+  "y": 12,
+  "w": 784,
+  "h": 122,
+  "file": "ref/pass/title.webp"
+ },
+ "tabs": {
+  "x": 880,
+  "y": 134,
+  "w": 750,
+  "h": 67,
+  "file": "ref/pass/tabs.webp"
+ },
+ "emblem": {
+  "x": 866,
+  "y": 204,
+  "w": 70,
+  "h": 64,
+  "file": "ref/pass/emblem.webp"
+ },
+ "card-senka": {
+  "x": 780,
+  "y": 342,
+  "w": 418,
+  "h": 252,
+  "file": "ref/pass/card-senka.webp"
+ },
+ "card-lobby": {
+  "x": 1204,
+  "y": 342,
+  "w": 438,
+  "h": 252,
+  "file": "ref/pass/card-lobby.webp"
+ },
+ "card-icons": {
+  "x": 772,
+  "y": 597,
+  "w": 345,
+  "h": 212,
+  "file": "ref/pass/card-icons.webp"
+ },
+ "card-talk": {
+  "x": 1121,
+  "y": 597,
+  "w": 243,
+  "h": 212,
+  "file": "ref/pass/card-talk.webp"
+ },
+ "card-xmas": {
+  "x": 1368,
+  "y": 597,
+  "w": 274,
+  "h": 212,
+  "file": "ref/pass/card-xmas.webp"
+ },
+ "premium": {
+  "x": 1322,
+  "y": 828,
+  "w": 336,
+  "h": 82,
+  "file": "ref/pass/premium.webp"
+ }
+}
