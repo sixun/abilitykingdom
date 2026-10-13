@@ -1,6 +1,8 @@
 // 오프닝 영상(사용자 제공, 15.05초, 1920×1080 원본 HEVC → H.264 재인코딩).
 // 초기 로딩 화면에서 미리 버퍼링하고, 오프닝 화면이 같은 요소를 그대로 이어받는다.
 
+import { IS_IOS } from './platform'
+
 export const OPENING = {
   src1080: 'assets/video/opening_1080.mp4',
   src720: 'assets/video/opening_720.mp4',
@@ -14,6 +16,7 @@ export const OPENING = {
 let el: HTMLVideoElement | null = null
 
 export function pickSource(lowQuality: boolean) {
+  if (IS_IOS) return OPENING.src720
   // VP9/Opus WebM을 확실히 재생하는 브라우저(Chrome·Edge·Firefox)는 WebM, 그 외(Safari 등)는 H.264 MP4
   const probe = document.createElement('video')
   if (!lowQuality && probe.canPlayType('video/webm; codecs="vp9, opus"') === 'probably') return OPENING.srcWebm

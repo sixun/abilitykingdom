@@ -137,6 +137,8 @@
 .ui-sofa .mv, .ui-station .mv { transform-origin: 50% 42%; animation: uiCamIn 2100ms cubic-bezier(.2, .75, .2, 1) both, uiCamBreath 15s ease-in-out 2100ms infinite alternate; translate: calc(var(--mx, 0) * -14px) calc(var(--my, 0) * -8px); transition: translate 1100ms cubic-bezier(.2, .8, .2, 1); }
 @keyframes uiCamIn { from { transform: scale(1.17); filter: brightness(.3) saturate(.5); } 55% { filter: none; } to { transform: scale(1.035); filter: none; } }
 @keyframes uiCamBreath { from { transform: scale(1.035); } to { transform: scale(1.085) translateY(-6px); } }
+/* iOS: 재생 영상에 전체 화면 필터·추가 확대 합성을 겹치지 않는다. */
+.ui-sofa .mv.mv-ios, .ui-station .mv.mv-ios { animation: none; filter: none; translate: none; }
 .ui-detail .cdx-hero, .ui-recruit .rcx-rion { translate: calc(var(--mx, 0) * 12px) calc(var(--my, 0) * 7px); transition: translate 1100ms cubic-bezier(.2, .8, .2, 1); }
 .ui-detail .cd2-hero img { transform-origin: 50% 20%; animation: uiBreathe 5.5s ease-in-out infinite alternate; }
 @keyframes uiBreathe { from { transform: none; } to { transform: translateY(-8px) scale(1.012); } }
