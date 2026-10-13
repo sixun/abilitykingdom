@@ -31,24 +31,26 @@ export const BANNERS: RecruitmentBanner[] = [
     start: '2026-10-08', end: '2026-10-29', costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0.5,
     skin: 'broadcast', quote: '자, 어디까지 들리니? 지금, 더 멀리 가보자.',
   },
-  // 아래 3개는 원본 영입 화면의 배너 목록과 같은 순서. 원본 키비주얼은 '주파수 너머'만 있음
+  // 아래 3개는 2026-10-13 배너 시안(SERENITY·NIGHT SHIFT·ONE MORE PLAY?). 목록 순서도 시안과 같다.
+  // 픽업 대원(세렌·이안·채린)은 설정 확정 전(pending)이라 영입 풀에 넣지 않았다: 지금은 기존 대원만 나온다(pickupShare 0).
+  // 비용은 기존 영입 티켓 1장/회. 시안의 캡슐·추첨권·쿠지 그림은 배너별 표시용이다(재화 분리는 미정).
   {
-    id: 'b_daily', kind: 'standard', title: '일상의 영웅들', subtitle: 'STANDARD SCOUTING', featuredId: 'yujin',
+    id: 'b_serenity', kind: 'standard', title: 'SERENITY', subtitle: 'STANDARD SCOUTING', featuredId: 'seren',
     pool: ['jian', 'yujin', 'harin', 'doyun', 'sein', 'narin', 'seoha'],
-    start: '2026-09-01', end: null, costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0,
-    skin: 'platform', quote: '내 뒤라면 괜찮아.',
+    start: '2026-10-13', end: null, costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0,
+    skin: 'scene', quote: '',
   },
   {
-    id: 'b_rhythm', kind: 'limited', title: '불협의 리듬', subtitle: 'LIMITED SCOUTING', featuredId: 'sein',
-    pool: ['sein', 'jian', 'yujin', 'harin', 'doyun', 'narin', 'seoha'],
-    start: '2026-10-01', end: '2026-10-22', costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0.5,
-    skin: 'platform', quote: '귀찮게 하지 마. 무거워질 테니까.',
+    id: 'b_nightshift', kind: 'limited', title: 'NIGHT SHIFT', subtitle: 'LIMITED SCOUTING', featuredId: 'ian',
+    pool: ['rion', 'jian', 'yujin', 'harin', 'doyun', 'sein', 'narin', 'seoha'],
+    start: '2026-10-13', end: '2026-11-03', costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0,
+    skin: 'scene', quote: '',
   },
   {
-    id: 'b_reunion', kind: 'standard', title: '다시, 또 만나는', subtitle: 'STANDARD SCOUTING', featuredId: 'narin',
+    id: 'b_omp', kind: 'standard', title: 'ONE MORE PLAY?', subtitle: 'STANDARD SCOUTING', featuredId: 'chaerin',
     pool: ['jian', 'yujin', 'harin', 'doyun', 'sein', 'narin', 'seoha'],
-    start: '2026-09-01', end: null, costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0,
-    skin: 'platform', quote: '다친 사람, 손!',
+    start: '2026-10-13', end: null, costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0,
+    skin: 'scene', quote: '',
   },
 ]
 export const BANNER_BY_ID: Record<string, RecruitmentBanner> = Object.fromEntries(BANNERS.map((b) => [b.id, b]))

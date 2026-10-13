@@ -1,0 +1,725 @@
+{
+ "serenity": {
+  "char": {
+   "x": 965,
+   "y": 41,
+   "w": 628,
+   "h": 780,
+   "file": "ref/recruit/serenity/char.webp"
+  },
+  "title": {
+   "x": 408,
+   "y": 309,
+   "w": 372,
+   "h": 57,
+   "file": "ref/recruit/serenity/title.webp"
+  },
+  "title-line": {
+   "x": 407,
+   "y": 372,
+   "w": 375,
+   "h": 34,
+   "file": "ref/recruit/serenity/title-line.webp"
+  },
+  "tag": {
+   "x": 392,
+   "y": 596,
+   "w": 312,
+   "h": 64,
+   "file": "ref/recruit/serenity/tag.webp"
+  },
+  "back": {
+   "x": 16,
+   "y": 14,
+   "w": 244,
+   "h": 72,
+   "file": "ref/recruit/serenity/back.webp"
+  },
+  "tabs": {
+   "x": 326,
+   "y": 18,
+   "w": 450,
+   "h": 64,
+   "file": "ref/recruit/serenity/tabs.webp"
+  },
+  "gems": {
+   "x": 1222,
+   "y": 20,
+   "w": 206,
+   "h": 46,
+   "file": "ref/recruit/serenity/gems.webp"
+  },
+  "tickets": {
+   "x": 1442,
+   "y": 20,
+   "w": 208,
+   "h": 46,
+   "file": "ref/recruit/serenity/tickets.webp"
+  },
+  "faces": {
+   "x": 786,
+   "y": 18,
+   "w": 382,
+   "h": 62,
+   "file": "ref/recruit/serenity/faces.webp"
+  },
+  "list0": {
+   "x": 20,
+   "y": 108,
+   "w": 282,
+   "h": 122,
+   "file": "ref/recruit/serenity/list0.webp"
+  },
+  "list1": {
+   "x": 12,
+   "y": 232,
+   "w": 314,
+   "h": 128,
+   "file": "ref/recruit/serenity/list1.webp"
+  },
+  "list2": {
+   "x": 20,
+   "y": 364,
+   "w": 282,
+   "h": 111,
+   "file": "ref/recruit/serenity/list2.webp"
+  },
+  "list3": {
+   "x": 20,
+   "y": 485,
+   "w": 282,
+   "h": 109,
+   "file": "ref/recruit/serenity/list3.webp"
+  },
+  "bar": {
+   "x": 0,
+   "y": 818,
+   "w": 1672,
+   "h": 123,
+   "file": "ref/recruit/serenity/bar.webp"
+  },
+  "exchange": {
+   "x": 32,
+   "y": 838,
+   "w": 201,
+   "h": 70,
+   "file": "ref/recruit/serenity/exchange.webp"
+  },
+  "points": {
+   "x": 286,
+   "y": 836,
+   "w": 426,
+   "h": 74,
+   "file": "ref/recruit/serenity/points.webp"
+  },
+  "gift": {
+   "x": 718,
+   "y": 836,
+   "w": 82,
+   "h": 74,
+   "file": "ref/recruit/serenity/gift.webp"
+  },
+  "pull1": {
+   "x": 1045,
+   "y": 836,
+   "w": 268,
+   "h": 79,
+   "file": "ref/recruit/serenity/pull1.webp"
+  },
+  "pull10": {
+   "x": 1321,
+   "y": 834,
+   "w": 332,
+   "h": 82,
+   "file": "ref/recruit/serenity/pull10.webp"
+  },
+  "dev-knob": {
+   "x": 871,
+   "y": 848,
+   "w": 55,
+   "h": 55,
+   "file": "ref/recruit/serenity/dev-knob.webp"
+  },
+  "dev": {
+   "x": 798,
+   "y": 762,
+   "w": 149,
+   "h": 167,
+   "file": "ref/recruit/serenity/dev.webp"
+  },
+  "base": {
+   "x": 0,
+   "y": 0,
+   "w": 1672,
+   "h": 941,
+   "file": "ref/recruit/serenity/base.webp"
+  },
+  "_bar": 820,
+  "_cfg": {
+   "gems_num": [
+    1290,
+    27,
+    1394,
+    60
+   ],
+   "tickets_num": [
+    1528,
+    27,
+    1584,
+    60
+   ],
+   "points_num": [
+    408,
+    840,
+    528,
+    880
+   ],
+   "points_bar": [
+    296,
+    878,
+    702,
+    900
+   ],
+   "knob": [
+    898,
+    875,
+    25
+   ],
+   "dev": [
+    798,
+    754,
+    947,
+    929
+   ],
+   "dev_kind": "capsule",
+   "tag": [
+    392,
+    596,
+    704,
+    660
+   ],
+   "list": [
+    [
+     20,
+     108,
+     302,
+     230
+    ],
+    [
+     12,
+     232,
+     326,
+     360
+    ],
+    [
+     20,
+     364,
+     302,
+     475
+    ],
+    [
+     20,
+     485,
+     302,
+     594
+    ]
+   ],
+   "tabs": [
+    326,
+    18,
+    776,
+    82
+   ],
+   "hint": [
+    942,
+    832,
+    1040,
+    896
+   ]
+  }
+ },
+ "_chars": {
+  "seren": {
+   "crop": [
+    967,
+    42,
+    1591,
+    820
+   ]
+  },
+  "ian": {
+   "crop": [
+    755,
+    0,
+    1672,
+    814
+   ]
+  },
+  "chaerin": {
+   "crop": [
+    940,
+    56,
+    1461,
+    828
+   ]
+  }
+ },
+ "nightshift": {
+  "char": {
+   "x": 754,
+   "y": 0,
+   "w": 918,
+   "h": 815,
+   "file": "ref/recruit/nightshift/char.webp"
+  },
+  "title": {
+   "x": 326,
+   "y": 299,
+   "w": 413,
+   "h": 351,
+   "file": "ref/recruit/nightshift/title.webp"
+  },
+  "tag": {
+   "x": 1324,
+   "y": 558,
+   "w": 332,
+   "h": 72,
+   "file": "ref/recruit/nightshift/tag.webp"
+  },
+  "back": {
+   "x": 8,
+   "y": 14,
+   "w": 246,
+   "h": 72,
+   "file": "ref/recruit/nightshift/back.webp"
+  },
+  "tabs": {
+   "x": 320,
+   "y": 12,
+   "w": 428,
+   "h": 68,
+   "file": "ref/recruit/nightshift/tabs.webp"
+  },
+  "gems": {
+   "x": 1203,
+   "y": 20,
+   "w": 207,
+   "h": 48,
+   "file": "ref/recruit/nightshift/gems.webp"
+  },
+  "tickets": {
+   "x": 1423,
+   "y": 20,
+   "w": 215,
+   "h": 48,
+   "file": "ref/recruit/nightshift/tickets.webp"
+  },
+  "list0": {
+   "x": 10,
+   "y": 98,
+   "w": 282,
+   "h": 119,
+   "file": "ref/recruit/nightshift/list0.webp"
+  },
+  "list1": {
+   "x": 10,
+   "y": 223,
+   "w": 282,
+   "h": 112,
+   "file": "ref/recruit/nightshift/list1.webp"
+  },
+  "list2": {
+   "x": 4,
+   "y": 340,
+   "w": 296,
+   "h": 118,
+   "file": "ref/recruit/nightshift/list2.webp"
+  },
+  "list3": {
+   "x": 10,
+   "y": 461,
+   "w": 278,
+   "h": 106,
+   "file": "ref/recruit/nightshift/list3.webp"
+  },
+  "bar": {
+   "x": 0,
+   "y": 812,
+   "w": 1672,
+   "h": 129,
+   "file": "ref/recruit/nightshift/bar.webp"
+  },
+  "exchange": {
+   "x": 28,
+   "y": 838,
+   "w": 209,
+   "h": 70,
+   "file": "ref/recruit/nightshift/exchange.webp"
+  },
+  "points": {
+   "x": 286,
+   "y": 836,
+   "w": 440,
+   "h": 76,
+   "file": "ref/recruit/nightshift/points.webp"
+  },
+  "gift": {
+   "x": 734,
+   "y": 836,
+   "w": 84,
+   "h": 74,
+   "file": "ref/recruit/nightshift/gift.webp"
+  },
+  "pull1": {
+   "x": 945,
+   "y": 835,
+   "w": 296,
+   "h": 80,
+   "file": "ref/recruit/nightshift/pull1.webp"
+  },
+  "pull10": {
+   "x": 1258,
+   "y": 832,
+   "w": 390,
+   "h": 86,
+   "file": "ref/recruit/nightshift/pull10.webp"
+  },
+  "dev-stand": {
+   "x": 818,
+   "y": 846,
+   "w": 122,
+   "h": 81,
+   "file": "ref/recruit/nightshift/dev-stand.webp"
+  },
+  "dev-drum": {
+   "x": 762,
+   "y": 718,
+   "w": 182,
+   "h": 134,
+   "file": "ref/recruit/nightshift/dev-drum.webp"
+  },
+  "base": {
+   "x": 0,
+   "y": 0,
+   "w": 1672,
+   "h": 941,
+   "file": "ref/recruit/nightshift/base.webp"
+  },
+  "_bar": 814,
+  "_cfg": {
+   "gems_num": [
+    1272,
+    28,
+    1360,
+    62
+   ],
+   "tickets_num": [
+    1512,
+    28,
+    1566,
+    62
+   ],
+   "points_num": [
+    406,
+    842,
+    518,
+    878
+   ],
+   "points_bar": [
+    298,
+    878,
+    708,
+    900
+   ],
+   "axle": [
+    863,
+    790
+   ],
+   "dev": [
+    762,
+    714,
+    944,
+    928
+   ],
+   "dev_kind": "lottery",
+   "tag": [
+    1324,
+    558,
+    1656,
+    630
+   ],
+   "list": [
+    [
+     10,
+     98,
+     292,
+     217
+    ],
+    [
+     10,
+     223,
+     292,
+     335
+    ],
+    [
+     4,
+     340,
+     300,
+     458
+    ],
+    [
+     10,
+     461,
+     288,
+     567
+    ]
+   ],
+   "tabs": [
+    320,
+    12,
+    748,
+    80
+   ]
+  }
+ },
+ "omp": {
+  "char": {
+   "x": 939,
+   "y": 54,
+   "w": 523,
+   "h": 775,
+   "file": "ref/recruit/omp/char.webp"
+  },
+  "title": {
+   "x": 355,
+   "y": 237,
+   "w": 558,
+   "h": 145,
+   "file": "ref/recruit/omp/title.webp"
+  },
+  "title2": {
+   "x": 393,
+   "y": 378,
+   "w": 475,
+   "h": 152,
+   "file": "ref/recruit/omp/title2.webp"
+  },
+  "tag": {
+   "x": 376,
+   "y": 550,
+   "w": 344,
+   "h": 66,
+   "file": "ref/recruit/omp/tag.webp"
+  },
+  "back": {
+   "x": 22,
+   "y": 16,
+   "w": 244,
+   "h": 72,
+   "file": "ref/recruit/omp/back.webp"
+  },
+  "tabs": {
+   "x": 320,
+   "y": 22,
+   "w": 443,
+   "h": 61,
+   "file": "ref/recruit/omp/tabs.webp"
+  },
+  "gems": {
+   "x": 1210,
+   "y": 22,
+   "w": 208,
+   "h": 48,
+   "file": "ref/recruit/omp/gems.webp"
+  },
+  "tickets": {
+   "x": 1436,
+   "y": 22,
+   "w": 214,
+   "h": 48,
+   "file": "ref/recruit/omp/tickets.webp"
+  },
+  "faces": {
+   "x": 782,
+   "y": 22,
+   "w": 381,
+   "h": 61,
+   "file": "ref/recruit/omp/faces.webp"
+  },
+  "list0": {
+   "x": 18,
+   "y": 106,
+   "w": 284,
+   "h": 124,
+   "file": "ref/recruit/omp/list0.webp"
+  },
+  "list1": {
+   "x": 18,
+   "y": 236,
+   "w": 282,
+   "h": 111,
+   "file": "ref/recruit/omp/list1.webp"
+  },
+  "list2": {
+   "x": 18,
+   "y": 355,
+   "w": 282,
+   "h": 108,
+   "file": "ref/recruit/omp/list2.webp"
+  },
+  "list3": {
+   "x": 12,
+   "y": 466,
+   "w": 296,
+   "h": 117,
+   "file": "ref/recruit/omp/list3.webp"
+  },
+  "bar": {
+   "x": 0,
+   "y": 826,
+   "w": 1672,
+   "h": 115,
+   "file": "ref/recruit/omp/bar.webp"
+  },
+  "exchange": {
+   "x": 28,
+   "y": 846,
+   "w": 212,
+   "h": 69,
+   "file": "ref/recruit/omp/exchange.webp"
+  },
+  "points": {
+   "x": 282,
+   "y": 844,
+   "w": 354,
+   "h": 74,
+   "file": "ref/recruit/omp/points.webp"
+  },
+  "gift": {
+   "x": 634,
+   "y": 844,
+   "w": 84,
+   "h": 72,
+   "file": "ref/recruit/omp/gift.webp"
+  },
+  "pull1": {
+   "x": 1015,
+   "y": 843,
+   "w": 253,
+   "h": 73,
+   "file": "ref/recruit/omp/pull1.webp"
+  },
+  "pull10": {
+   "x": 1279,
+   "y": 840,
+   "w": 374,
+   "h": 79,
+   "file": "ref/recruit/omp/pull10.webp"
+  },
+  "dev-flap": {
+   "x": 826,
+   "y": 833,
+   "w": 77,
+   "h": 72,
+   "file": "ref/recruit/omp/dev-flap.webp"
+  },
+  "dev": {
+   "x": 739,
+   "y": 832,
+   "w": 165,
+   "h": 88,
+   "file": "ref/recruit/omp/dev.webp"
+  },
+  "base": {
+   "x": 0,
+   "y": 0,
+   "w": 1672,
+   "h": 941,
+   "file": "ref/recruit/omp/base.webp"
+  },
+  "_bar": 828,
+  "_cfg": {
+   "gems_num": [
+    1280,
+    31,
+    1380,
+    64
+   ],
+   "tickets_num": [
+    1540,
+    31,
+    1590,
+    64
+   ],
+   "points_num": [
+    400,
+    848,
+    505,
+    886
+   ],
+   "points_bar": [
+    294,
+    878,
+    628,
+    900
+   ],
+   "flap": [
+    826,
+    833,
+    903,
+    905
+   ],
+   "dev": [
+    738,
+    832,
+    904,
+    922
+   ],
+   "dev_kind": "peel",
+   "tag": [
+    376,
+    550,
+    720,
+    616
+   ],
+   "list": [
+    [
+     18,
+     106,
+     302,
+     230
+    ],
+    [
+     18,
+     236,
+     300,
+     347
+    ],
+    [
+     18,
+     355,
+     300,
+     463
+    ],
+    [
+     12,
+     466,
+     308,
+     583
+    ]
+   ],
+   "tabs": [
+    320,
+    22,
+    763,
+    83
+   ],
+   "hint": [
+    902,
+    840,
+    990,
+    912
+   ]
+  }
+ }
+}

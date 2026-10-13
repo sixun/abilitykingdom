@@ -101,7 +101,7 @@ export interface RecruitmentBanner {
   costPerPull: { currency: CurrencyId; amount: number }
   rates: { rarity: number; rate: number }[] // 프로토타입 샘플 값
   pickupShare: number
-  skin: 'broadcast' | 'platform'
+  skin: 'broadcast' | 'platform' | 'scene'
   quote: string
 }
 

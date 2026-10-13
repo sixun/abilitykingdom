@@ -167,6 +167,26 @@ export const CHARACTERS: CharacterDefinition[] = [
     idleSeed: 0.2 + i * 0.17,
     pending: true,
   })),
+  // ── 영입 배너 3종(2026-10-13 시안: SERENITY·NIGHT SHIFT·ONE MORE PLAY?)의 픽업 대원: 이름·5성만 시안 표기, 나머지는 미정 ──
+  // 그림은 배너 시안에서 따낸 반신(배너 아래 바에 가려진 아래쪽은 없음). 역할·수치·스킬은 자리값이며 화면에 표시하지 않는다(pending).
+  ...([
+    { id: 'seren', name: '세렌', nameEn: 'SEREN', accent: '#9fb3e6', idleSeed: 0.31 },
+    { id: 'ian', name: '이안', nameEn: 'IAN', accent: '#f0782f', idleSeed: 0.57 },
+    { id: 'chaerin', name: '채린', nameEn: 'CHAERIN', accent: '#ef5a45', idleSeed: 0.83 },
+  ] as const).map(({ idleSeed, ...x }): CharacterDefinition => ({
+    ...x, role: 'attack', attribute: 'blade', rarity: 5,
+    tagline: '설정 확정 전입니다.',
+    profile: { affiliation: '미정', ability: '미정', note: '영입 배너 픽업 대원. 이름·등급(5성)만 정해졌고 능력·소속은 아직 정해지지 않았습니다.' },
+    skills: [],
+    baseStats: { hp: 0, atk: 0, def: 0 },
+    subStats: { critRate: 0, critDmg: 0, speed: 0 },
+    en: { unit: 'PROFILE PENDING', motto: 'SETTINGS ARE NOT|CONFIRMED YET.' },
+    assets: a(x.id),
+    formation: { scale: 1.0, offsetX: 0, offsetY: 0, faceY: 0.07 },
+    lobby: { entrance: 'slash', idle: 'breath' },
+    idleSeed,
+    pending: true,
+  })),
 ]
 
 export const CHAR_BY_ID: Record<string, CharacterDefinition> = Object.fromEntries(CHARACTERS.map((c) => [c.id, c]))

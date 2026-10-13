@@ -98,5 +98,35 @@
   "top": 4,
   "bodyH": 1500,
   "headX": 401
+ },
+ "seren": {
+  "src": "ref/detail-art/seren.webp",
+  "kind": "cutout",
+  "w": 624,
+  "h": 778,
+  "top": 1,
+  "bodyH": 776,
+  "headX": 247.0,
+  "heroH": 1000
+ },
+ "ian": {
+  "src": "ref/detail-art/ian.webp",
+  "kind": "cutout",
+  "w": 917,
+  "h": 814,
+  "top": 0,
+  "bodyH": 813,
+  "headX": 451.0,
+  "heroH": 1000
+ },
+ "chaerin": {
+  "src": "ref/detail-art/chaerin.webp",
+  "kind": "cutout",
+  "w": 521,
+  "h": 772,
+  "top": 1,
+  "bodyH": 770,
+  "headX": 322.0,
+  "heroH": 1000
  }
 }

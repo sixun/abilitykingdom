@@ -57,7 +57,7 @@ export default function RecruitResult({ params }: { params: Record<string, unkno
     <div className="scr rr rr-summary">
       <div className="rr-sum-head">
         <h2>영입 결과</h2>
-        <span>{banner.title} · {tx.count}회 · {new Date(tx.createdAt).toLocaleString('ko-KR')}</span>
+        <span>{banner?.title ?? "이전 배너"} · {tx.count}회 · {new Date(tx.createdAt).toLocaleString('ko-KR')}</span>
         {tx.pointsGained > 0 && <span className="rr-pt">영입 포인트 +{tx.pointsGained}</span>}
       </div>
       <div className={`rr-grid n${tx.results.length}`}>

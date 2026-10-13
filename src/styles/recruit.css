@@ -115,3 +115,6 @@
 .rh-faces img.r4 { box-shadow: 0 0 0 0.2rem #b59bff; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .rc .topbar-sub { display: none; }
+
+/* 목록 2~4번째 칸: 새 배너 시안에서 따낸 썸네일 */
+.rr-thumb { position: absolute; max-width: none; pointer-events: none; border-radius: 4px; }

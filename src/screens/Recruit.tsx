@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import '../styles/recruit.css'
-import { useNav } from '../app/nav'
+import { useNav, useScreenKey } from '../app/nav'
 import { audio } from '../app/audio'
 import { game, useGame } from '../game/store'
 import { BANNERS, BANNER_BY_ID } from '../game/data/catalog'
@@ -17,18 +17,24 @@ import { MotionVideo } from '../ui/motion'
 import '../styles/motion.css'
 import { MotionStage as RefStage, MotionItem, MotionTitle, MotionTicker, AmbientFx, Glint, glintOf } from '../ui/ui-motion'
 import NewFaces from './NewFaces'
+import RecruitScene, { type SceneName } from './RecruitScene'
 import { CHARACTERS } from '../game/data/characters'
 
-const NEW_FACES = CHARACTERS.filter((c) => c.pending)
+// 신규 대원 미리보기: 설정 미확정 대원 중 배너 픽업이 아닌 대원(배너 픽업 대원은 배너에서 소개)
+const NEW_FACES = CHARACTERS.filter((c) => c.pending && !BANNERS.some((b) => b.featuredId === c.id))
+// 새 배너 3종은 시안 화면(1672×941)으로 그린다
+const SCENE: Record<string, SceneName> = { b_serenity: 'serenity', b_nightshift: 'nightshift', b_omp: 'omp' }
+const THUMB: Record<string, string> = { b_serenity: 'ref/recruit/thumb-serenity.webp', b_nightshift: 'ref/recruit/thumb-nightshift.webp', b_omp: 'ref/recruit/thumb-omp.webp' }
 
 // 방송 콘셉트 영입 원본(1456×819)을 원본 조각 24개로 재현.
-// 원본 키비주얼은 '주파수 너머(리온)'만 있다. 다른 배너를 고르면 복원 배경 + 임시 캐릭터 + 실제 텍스트로 대체 표시한다(원본 아님).
+// 이 화면(원본 키비주얼)은 '주파수 너머(리온)' 배너. 나머지 3종(SERENITY·NIGHT SHIFT·ONE MORE PLAY?)은 RecruitScene(배너 시안)으로 그리고,
+// 여기 목록의 2~4번째 칸은 그 시안에서 따낸 썸네일로 바꿔 그린다.
 const L = layoutJson as RefLayout
 const REF = { diamond: 12800, ticket: 24, points: 120 }
 const BANNER_SLICES = ['banner-limited', 'banner-standard', 'banner-rhythm', 'banner-reunion']
 const TOP_SLICES = ['back', 'brand-title', 'tab-limited', 'tab-standard', 'currency-gems', 'currency-tickets']
 const ACTION_SLICES = ['info-detail', 'info-probability', 'exchange', 'recruit-points', 'points-gift', 'pull-one', 'pull-ten', 'bottom-bar-remainder']
-const BANNER_IDS = ['b_rion', 'b_daily', 'b_rhythm', 'b_reunion']
+const BANNER_IDS = ['b_rion', 'b_serenity', 'b_nightshift', 'b_omp']
 const PILL = '#323840'
 const FIT = fitJson as unknown as Record<string, { s: number; x: number; y: number }>
 // 리온 배너에서 쓰는 조각: 알약 버튼은 둥근 매트, 리온과 겹치는 제목·클로즈업은 겹친 부분만 투명(tools/build_motion_plates.py)
@@ -36,10 +42,15 @@ const MATTE_R = { ...(matteJson as Record<string, Record<string, string>>).recru
 const TL = (textlessJson as Record<string, Record<string, TextlessMeta>>).recruitment
 const IVORY = '#f5ede4'
 
+// 결과 화면에서 돌아와도(화면이 다시 만들어져도) 고르던 배너를 유지: 화면 경로 키별로 기억
+const LAST_BANNER = new Map<number, string>()
+
 export default function Recruit({ params }: { params: Record<string, unknown> }) {
   const s = useGame()
   const nav = useNav()
-  const [bannerId, setBannerId] = useState<string>((params.bannerId as string) ?? 'b_rion')
+  const routeKey = useScreenKey()
+  const [bannerId, setBannerIdRaw] = useState<string>(() => LAST_BANNER.get(routeKey) ?? (BANNER_BY_ID[params.bannerId as string] ? (params.bannerId as string) : 'b_rion'))
+  const setBannerId = (id: string) => { LAST_BANNER.set(routeKey, id); setBannerIdRaw(id) }
   const [kind, setKind] = useState<'limited' | 'standard'>(BANNER_BY_ID[bannerId]?.kind ?? 'limited')
   const [modal, setModal] = useState<null | 'detail' | 'rates'>(null)
   const [faces, setFaces] = useState(false) // 신규 대원 미리보기(소개용, 영입 풀과 무관)
@@ -51,10 +62,11 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
   const [enterKey, setEnterKey] = useState(0)
   useEffect(() => { if (isRefBanner) setEnterKey((k) => k + 1) }, [isRefBanner])
 
-  const pull = async (count: number) => {
+  const pull = async (count: number, play?: () => Promise<void>) => {
     const res = await run(`pull${count}`, (rid) => game.recruit(bannerId, count, rid))
-    if (res?.ok) { audio.sfx('open'); nav.push('recruitResult', { txId: res.value.requestId }) }
+    if (res?.ok) { if (play) await play(); audio.sfx('open'); nav.push('recruitResult', { txId: res.value.requestId }) }
   }
+  const scene = SCENE[bannerId]
   const pickKind = (k: 'limited' | 'standard') => {
     if (k === kind) return
     audio.sfx('select'); setKind(k)
@@ -66,8 +78,28 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
   const tabL = rectOf(L, 'tab-limited'), tabS = rectOf(L, 'tab-standard')
   const selIdx = BANNER_IDS.indexOf(bannerId)
 
+  const overlays = (
+    <>
+      {pending && <div style={{ position: 'absolute', inset: 0, zIndex: 90, display: 'grid', placeItems: 'center', background: 'rgba(0,0,0,.35)', fontSize: 28, fontWeight: 900 }}>영입 처리 중…</div>}
+      {failed && (
+        <div style={{ position: 'absolute', right: 20, bottom: 112, zIndex: 91, width: 640 }} onClick={(e) => e.stopPropagation()}>
+          <ErrorBanner error={failed.error} onRetry={() => pull(failed.key === 'pull1' ? 1 : GAME_CONFIG.multiPullCount)} onClose={clearFailed} />
+          {failed.error.code === 'INSUFFICIENT' && <div style={{ marginTop: 6, textAlign: 'right' }}><Btn size="sm" variant="primary" onClick={() => nav.push('shop', { tab: 'recommend' })}>티켓 구매하러 가기</Btn></div>}
+        </div>
+      )}
+    </>
+  )
+
   return (
     <div className="scr">
+      {scene ? (
+        <RecruitScene key={scene} name={scene} banner={b} order={BANNER_IDS} wallet={W} newFaces={NEW_FACES.map((c) => ({ id: c.id, portrait: c.assets.portrait }))} busy={!!pending}
+          onBanner={(id) => { setBannerId(id); setKind(BANNER_BY_ID[id].kind) }} onKind={pickKind} onPull={(n, play) => pull(n, play)} onBack={() => nav.back()}
+          onShop={(tab) => nav.push('shop', { tab })} onFaces={() => setFaces(true)} onDetail={() => setModal('detail')} onRates={() => setModal('rates')}>
+          {overlays}
+          {faces && <div className="rs-nf-scale"><NewFaces onClose={() => setFaces(false)} /></div>}
+        </RecruitScene>
+      ) : (
       <RefStage canvas={L.canvas} className="ui-recruit">
         <img className="ref-bg" src="ref/restored/recruitment-bg.webp" alt="" />
         {isRefBanner ? (
@@ -96,22 +128,6 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
             <div className="rc-rec" aria-hidden />
           </>
         ) : <RefLayers layout={L} hide={new Set([...BANNER_SLICES, ...TOP_SLICES, ...ACTION_SLICES])} z={1} />}
-
-        {/* 다른 배너의 키비주얼(원본 없음 → 대체 표시) */}
-        {!isRefBanner && (
-          <div className="rr-alt ui-alt-banner" key={bannerId} style={{ left: 262, top: 0, width: 1194, height: 716, clipPath: 'polygon(0 92px, 406px 92px, 406px 0, 793px 0, 793px 62px, 1194px 62px, 1194px 645px, 808px 645px, 808px 716px, 0 716px)' }}>
-            <img className="bg" src="ref/restored/recruitment-bg.webp" alt="" style={{ left: -262, top: 0 }} />
-            <img className="fig" src={f.assets.action} alt="" />
-            <div className="copy">
-              <small>{b.subtitle}</small>
-              <h2><MotionTitle text={b.title} /></h2>
-              <div className="who">{f.name} <em>{'★'.repeat(f.rarity)}</em><span style={{ fontSize: 15, fontWeight: 600, opacity: .8 }}>{ROLE_LABEL[f.role]} · {ATTRIBUTE_LABEL[f.attribute]}</span></div>
-              <p>“{b.quote}”</p>
-            </div>
-            <span className="note">원본 키비주얼 없음 · 임시 표시</span>
-          </div>
-        )}
-        {!isRefBanner && <AmbientFx kind="lime" box={{ x: 262, y: 0, w: 1194, h: 716 }} count={20} z={2} clip="polygon(0 92px, 406px 92px, 406px 0, 793px 0, 793px 62px, 1194px 62px, 1194px 645px, 808px 645px, 808px 716px, 0 716px)" />}
 
         <div className="ui-recruit-transition" key={`transition-${bannerId}`} aria-hidden />
         <MotionItem order={0} z={32} className="ui-chrome ui-chrome-top" idle={false}>
@@ -172,32 +188,25 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
         {BANNER_SLICES.map((id, i) => {
           const bb = BANNER_BY_ID[BANNER_IDS[i]]
           return <MotionItem key={id} order={i} z={40} className={`ui-banner-item ${i === selIdx ? 'is-selected' : ''}`}>
-            <RefLayers layout={L} ids={[id]} z={1} />
-            {selIdx !== 0 && <div className="rf-slot-overlay" style={boxStyle(rectOf(L, id), { zIndex: 30 })}>
-              {i === selIdx ? <img src={SKIN('banner-frame-selected')} alt="" /> : <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,6,14,.45)' }} />}
-            </div>}
+            {i === 0 ? <RefLayers layout={L} ids={[id]} z={1} /> : <img className="rr-thumb" src={THUMB[bb.id]} alt="" draggable={false} style={boxStyle(rectOf(L, id), { zIndex: 1 })} />}
             <Hit r={rectOf(L, id)} label={`${bb.kind === 'limited' ? '한정' : '상시'} 배너 ${bb.title}${i === selIdx ? ' (선택됨)' : ''}`} onClick={() => { setBannerId(bb.id); setKind(bb.kind) }} sfx="select" className="hit-banner" />
           </MotionItem>
         })}
         <div className="ui-banner-cursor" aria-hidden style={{ top: rectOf(L, BANNER_SLICES[Math.max(0, selIdx)]).y + 12, height: rectOf(L, BANNER_SLICES[Math.max(0, selIdx)]).h - 24 }} />
-        {pending && <div style={{ position: 'absolute', inset: 0, zIndex: 90, display: 'grid', placeItems: 'center', background: 'rgba(0,0,0,.35)', fontSize: 28, fontWeight: 900 }}>영입 처리 중…</div>}
-        {failed && (
-          <div style={{ position: 'absolute', right: 20, bottom: 112, zIndex: 91, width: 640 }} onClick={(e) => e.stopPropagation()}>
-            <ErrorBanner error={failed.error} onRetry={() => pull(failed.key === 'pull1' ? 1 : GAME_CONFIG.multiPullCount)} onClose={clearFailed} />
-            {failed.error.code === 'INSUFFICIENT' && <div style={{ marginTop: 6, textAlign: 'right' }}><Btn size="sm" variant="primary" onClick={() => nav.push('shop', { tab: 'recommend' })}>티켓 구매하러 가기</Btn></div>}
-          </div>
-        )}
+        {overlays}
         {faces && <NewFaces onClose={() => setFaces(false)} />}
       </RefStage>
+      )}
 
       {modal === 'detail' && (
         <Modal onClose={() => setModal(null)} labelledBy="rd-title">
           <h2 id="rd-title">{b.title} · 상세 정보</h2>
           <div className="confirm-body">
-            <p>픽업: <b>{f.name}</b> ({f.rarity}★ · {ROLE_LABEL[f.role]})</p>
+            <p>픽업: <b>{f.name}</b> ({f.rarity}★{f.pending ? '' : ` · ${ROLE_LABEL[f.role]}`})</p>
+            {f.pending && <p className="muted">{f.name}은(는) 설정(역할·능력) 확정 전이라 아직 영입 대상에 넣지 않았습니다. 지금은 아래 대원만 나옵니다.</p>}
             <p>기간: {b.end ? `${b.start} ~ ${b.end}` : '상시'}</p>
             <p>비용: 영입 티켓 1장 / 1회 · {GAME_CONFIG.multiPullCount}회 영입은 {GAME_CONFIG.multiPullCount}장</p>
-            <p>{b.kind === 'limited' ? `영입 1회당 영입 포인트 10 적립. 포인트 ${GAME_CONFIG.scoutPointCap}으로 교환소에서 픽업 캐릭터 교환(샘플).` : '상시 영입은 포인트가 적립되지 않습니다(샘플).'}</p>
+            <p>{b.kind === 'limited' ? `영입 1회당 영입 포인트 10 적립.${f.pending ? '' : ` 포인트 ${GAME_CONFIG.scoutPointCap}으로 교환소에서 픽업 캐릭터 교환(샘플).`}` : '상시 영입은 포인트가 적립되지 않습니다(샘플).'}</p>
             <p className="muted">천장·중복 전환·보장 규칙은 아직 정해지지 않았습니다. 이 프로토타입의 결과는 기기에서 계산되며 운영용이 아닙니다.</p>
             <h3>영입 대상</h3>
             <div className="rd-pool">{b.pool.map((id) => <span key={id}><img src={CHAR_BY_ID[id].assets.portrait} alt="" />{CHAR_BY_ID[id].name} {CHAR_BY_ID[id].rarity}★</span>)}</div>
@@ -220,6 +229,7 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
               })}
             </tbody>
           </table>
+          {f.pending && <p className="muted" style={{ marginTop: '1.2rem', fontSize: '1.4rem' }}>픽업 {f.name}({f.rarity}★)은 설정 확정 전이라 아직 영입 대상이 아닙니다.</p>}
           <p className="muted" style={{ marginTop: '1.4rem', fontSize: '1.4rem' }}>실제 확률·천장·중복 처리는 기획 확정 후 서버에서 결정합니다.</p>
           <div className="confirm-actions"><Btn variant="dark" onClick={() => setModal(null)}>닫기</Btn></div>
         </Modal>

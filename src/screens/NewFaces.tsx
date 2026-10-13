@@ -3,13 +3,15 @@ import '../styles/newfaces.css'
 import { useNav } from '../app/nav'
 import { audio } from '../app/audio'
 import { CHARACTERS } from '../game/data/characters'
+import { BANNERS } from '../game/data/catalog'
 import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 import { AmbientFx, MotionTitle } from '../ui/ui-motion'
 
 // 영입 화면의 '신규 대원 미리보기'(Character-Additions 패키지 4명).
 // 소개용 그림만 보여 준다: 영입 풀·확률·비용·획득 경로는 바꾸지 않았고, 이 화면에서 얻을 수 없다.
 // 좌표는 영입 원본 캔버스(1456×819) 기준. 장식은 입력을 받지 않는다.
-const NEW = CHARACTERS.filter((c) => c.pending)
+// 배너 픽업 대원(세렌·이안·채린)은 배너에서 소개하므로 뺀다
+const NEW = CHARACTERS.filter((c) => c.pending && !BANNERS.some((b) => b.featuredId === c.id))
 
 export default function NewFaces({ onClose }: { onClose: () => void }) {
   const nav = useNav()
