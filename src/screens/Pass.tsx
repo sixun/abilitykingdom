@@ -17,6 +17,7 @@ import { useReduceMotion } from '../ui/motion'
 type Box = { x: number; y: number; w: number; h: number; file: string }
 const R = passJson as Record<string, Box>
 const CARDS = P.rewards.map((r) => r.id)
+const HOLO_MASK: CSSProperties = { WebkitMaskImage: 'url(ref/pass/senka-holo-mask.webp)', maskImage: 'url(ref/pass/senka-holo-mask.webp)' }
 // 마일스톤 칸 x 좌표(시안 기준)와 줄 높이
 const MX = [800, 891, 978, 1065, 1151, 1237]
 const MY = 862
@@ -55,7 +56,8 @@ export default function Pass(_: { params: Record<string, unknown> }) {
           <div className="pp-hero-art">
             <img src={R.hero.file} alt="" draggable={false} />
             {/* 'SENKA' 큰 글자: 트레이딩 카드 홀로그램처럼 무지개 빛 띠가 마우스(기울기)를 따라 흐르고 반짝이 입자가 빛난다 */}
-            <div className="pp-holo" style={{ WebkitMaskImage: 'url(ref/pass/senka-holo-mask.webp)', maskImage: 'url(ref/pass/senka-holo-mask.webp)' }}><i className="foil" /><i className="glare" /><i className="spark" /></div>
+            <div className="pp-holo-glow" style={HOLO_MASK} />
+            <div className="pp-holo" style={HOLO_MASK}><i className="foil" /><i className="glare" /><i className="spark" style={{ backgroundImage: 'url(ref/pass/holo-sparkle.webp), url(ref/pass/holo-sparkle.webp)' }} /></div>
           </div>
         </div>
         <AmbientFx kind="dust" box={{ x: 0, y: 0, w: 836, h: 941 }} count={26} z={3} clip="polygon(0 0, 836px 0, 836px 272px, 772px 272px, 772px 941px, 0 941px)" />
