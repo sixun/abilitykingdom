@@ -25,7 +25,7 @@ const R = Math.random
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, (a.y - b.y) * 1.6)
 const alive = (e: Ent) => e.dead === 0
 
-const ALLY: Record<string, Omit<Ent, 'id' | 'side' | 'x' | 'y' | 'hp' | 'cd' | 'shield' | 'shieldT' | 'taunt' | 'act' | 'dead' | 'dealt' | 'heal'>> = {
+const ALLY: Record<string, Omit<Ent, 'id' | 'side' | 'x' | 'y' | 'hp' | 'cd' | 'shield' | 'shieldT' | 'taunt' | 'act' | 'dead' | 'dealt' | 'heal' | 'entering'>> = {
   rion: { kind: 'rion', name: 'RION', hx: 520, hy: 560, max: 2187, atk: 118, range: 900, speed: 0, interval: 2.4 },
   seren: { kind: 'seren', name: 'SEREN', hx: 540, hy: 318, max: 2034, atk: 150, range: 900, speed: 0, interval: 1.6 },
   ian: { kind: 'ian', name: 'IAN', hx: 285, hy: 345, max: 2861, atk: 72, range: 900, speed: 0, interval: 1.8 },
