@@ -262,7 +262,7 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
         {pop === 'menu' && (
           <div className="rl-more rs-menu" style={{ left: 1196, top: 90 }} onClick={(e) => e.stopPropagation()}>
             {([
-              ['미션', 'missions', b.mission], ['패스', 'pass', false], ['썸머 패스', 'passSummer', false], ['출석', 'attendance', b.attendance], ['우편함', 'mail', b.mail], ['공지', 'notices', b.notice],
+              ['미션', 'missions', b.mission], ['패스', 'pass', false], ['썸머 패스', 'passSummer', false], ['전투 테스트', 'battleTest', false], ['출석', 'attendance', b.attendance], ['우편함', 'mail', b.mail], ['공지', 'notices', b.notice],
               ['이벤트', 'events', b.event], ['가방', 'bag', false], ['프로필', 'profile', false], ['설정', 'settings', false],
             ] as [string, ScreenName, boolean][]).map(([label, sc, d]) => (
               <button key={sc} onClick={() => { audio.sfx('tap'); go(sc) }}>{label}{d && <span className="dot" />}</button>

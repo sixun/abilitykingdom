@@ -1,0 +1,58 @@
+{
+ "hound": {
+  "file": "ref/battle/hound.webp",
+  "w": 216,
+  "h": 225,
+  "cols": 8,
+  "n": 48,
+  "fps": 12,
+  "crop": [
+   64,
+   58,
+   578,
+   594
+  ],
+  "scale": 0.42
+ },
+ "rion": {
+  "file": "ref/battle/rion.webp",
+  "w": 285,
+  "h": 271,
+  "cols": 8,
+  "n": 48,
+  "fps": 12,
+  "crop": [
+   46,
+   0,
+   640,
+   564
+  ],
+  "scale": 0.48
+ },
+ "plate": "ref/battle/plate.webp",
+ "ian": {
+  "file": "ref/battle/ian.webp",
+  "w": 382,
+  "h": 380
+ },
+ "seren": {
+  "file": "ref/battle/seren.webp",
+  "w": 330,
+  "h": 330
+ },
+ "kanna": {
+  "file": "ref/battle/kanna.webp",
+  "w": 325,
+  "h": 330
+ },
+ "golem": {
+  "file": "ref/battle/golem.webp",
+  "w": 404,
+  "h": 420
+ },
+ "orb": {
+  "file": "ref/battle/orb.webp",
+  "w": 222,
+  "h": 220
+ }
+}

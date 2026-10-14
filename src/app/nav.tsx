@@ -4,7 +4,7 @@ export type ScreenName =
   | 'boot' | 'opening' | 'lobby' | 'formation' | 'characters' | 'characterDetail'
   | 'recruit' | 'recruitResult' | 'recruitHistory' | 'shop' | 'bag'
   | 'story' | 'explore' | 'wanted' | 'training' | 'arena' | 'raid'
-  | 'prep' | 'battle' | 'mail' | 'missions' | 'notices' | 'events' | 'attendance' | 'profile' | 'settings' | 'pass' | 'passSummer'
+  | 'prep' | 'battle' | 'mail' | 'missions' | 'notices' | 'events' | 'attendance' | 'profile' | 'settings' | 'pass' | 'passSummer' | 'battleTest'
 
 export interface Route { key: number; name: ScreenName; params: Record<string, unknown> }
 
@@ -34,6 +34,7 @@ export const TRANSITION: Partial<Record<ScreenName, string>> = {
   characters: 't-slide',
   pass: 't-wipe',
   passSummer: 't-fade',
+  battleTest: 't-flash',
   characterDetail: 't-zoom',
   recruit: 't-glitch',
   recruitResult: 't-flash',

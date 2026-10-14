@@ -10,6 +10,7 @@ import Lobby from './screens/Lobby'
 import Formation from './screens/Formation'
 import Pass from './screens/Pass'
 import PassSummer from './screens/PassSummer'
+import BattleTest from './screens/BattleTest'
 import Characters from './screens/Characters'
 import CharacterDetail from './screens/CharacterDetail'
 import Recruit from './screens/Recruit'
@@ -32,7 +33,7 @@ const SCREENS: Record<ScreenName, (p: { params: Record<string, unknown> }) => Re
   boot: Boot, opening: Opening, lobby: Lobby, formation: Formation, characters: Characters, characterDetail: CharacterDetail,
   recruit: Recruit, recruitResult: RecruitResult, recruitHistory: RecruitHistory, shop: Shop, bag: Bag,
   story: Story, explore: Explore, wanted: Wanted, training: Training, arena: Arena, raid: Raid, prep: Prep, battle: Battle,
-  mail: Mail, missions: Missions, notices: Notices, events: Events, attendance: Attendance, profile: Profile, settings: Settings, pass: Pass, passSummer: PassSummer,
+  mail: Mail, missions: Missions, notices: Notices, events: Events, attendance: Attendance, profile: Profile, settings: Settings, pass: Pass, passSummer: PassSummer, battleTest: BattleTest,
 }
 
 let keySeq = 1
@@ -109,7 +110,7 @@ export default function App() {
 
   // 브라우저 뒤로가기 키(Escape)
   useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('.modal-back, .pr-overlay')) { const top = stack[stack.length - 1]; if (!['boot', 'opening', 'lobby', 'battle'].includes(top.name)) nav.back() } }
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('.modal-back, .pr-overlay')) { const top = stack[stack.length - 1]; if (!['boot', 'opening', 'lobby', 'battle', 'battleTest'].includes(top.name)) nav.back() } }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
   }, [nav, stack])

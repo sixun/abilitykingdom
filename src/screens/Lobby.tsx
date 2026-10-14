@@ -159,7 +159,7 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
         {more && !viewing && (
           <div className="rl-more" style={{ left: 450, top: 72 }} onClick={(e) => e.stopPropagation()}>
             {([
-              ['가방', 'bag', false], ['패스', 'pass', false], ['썸머 패스', 'passSummer', false], ['우편함', 'mail', b.mail], ['미션', 'missions', b.mission], ['공지', 'notices', b.notice],
+              ['가방', 'bag', false], ['패스', 'pass', false], ['썸머 패스', 'passSummer', false], ['전투 테스트', 'battleTest', false], ['우편함', 'mail', b.mail], ['미션', 'missions', b.mission], ['공지', 'notices', b.notice],
               ['이벤트', 'events', b.event], ['출석', 'attendance', b.attendance], ['프로필', 'profile', false], ['설정', 'settings', false],
             ] as [string, ScreenName, boolean][]).map(([label, sc, dot]) => (
               <button key={sc} onClick={() => { audio.sfx('tap'); go(sc) }}>{label}{dot && <span className="dot" />}</button>
