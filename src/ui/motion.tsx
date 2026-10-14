@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useNav, useScreenKey } from '../app/nav'
 import { useGame } from '../game/store'
+import { IS_IOS } from '../app/platform'
 
 /** 이 화면이 스택 맨 위(사용자가 보고 있는 화면)인지 */
 export function useScreenActive() {
@@ -51,14 +52,17 @@ export function MotionVideo({ src, poster, alpha = false, style, className = '' 
     }
     sync()
     document.addEventListener('visibilitychange', sync)
-    return () => document.removeEventListener('visibilitychange', sync)
+    return () => {
+      document.removeEventListener('visibilitychange', sync)
+      v.pause()
+    }
   }, [active, still])
 
   if (still) return <img className={`mv ${className}`} src={poster} alt="" draggable={false} style={style} />
   return (
     <video
       ref={ref}
-      className={`mv ${className}`}
+      className={`mv ${IS_IOS ? 'mv-ios' : ''} ${className}`}
       poster={poster}
       muted
       loop
@@ -70,7 +74,7 @@ export function MotionVideo({ src, poster, alpha = false, style, className = '' 
       style={style}
     >
       {/* 알파 영상은 WebM만. 불투명 장면은 WebM(VP9) → MP4(H.264) 순으로 고른다 */}
-      <source src={src.replace(/\.(mp4|webm)$/, '.webm')} type="video/webm" onError={alpha ? () => setFailed(true) : undefined} />
+      {!IS_IOS && <source src={src.replace(/\.(mp4|webm)$/, '.webm')} type="video/webm" onError={alpha ? () => setFailed(true) : undefined} />}
       {!alpha && <source src={src.replace(/\.(mp4|webm)$/, '.mp4')} type="video/mp4" onError={() => setFailed(true)} />}
     </video>
   )
