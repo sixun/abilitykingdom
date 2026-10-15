@@ -282,7 +282,7 @@ export function castBuff(s: Sim, id: AllyKind): boolean {
   const dur = ab.dur * (1 + stat(u, 'buffDur'))
   ab.on = dur
   s.cutin = { kind: id, name: ab.name, t: 0, buff: true }
-  u.act = { k: 'buff', t: 0, dur: 0.9 }
+  u.act = { k: 'buff', t: 0, dur: 1.1 }
   const team = s.units.filter((a) => a.side === 'ally' && alive(a))
   const add = (to: Unit, mods: Partial<Stats>, regen?: number) => { to.buffs = to.buffs.filter((b) => b.id !== `${id}-b`); to.buffs.push({ id: `${id}-b`, t: dur, mods, regen, src: id }) }
   if (id === 'rion') { add(u, { atkSpd: 0.6, critRate: 0.1 }); for (const a of team) if (a !== u) add(a, { critRate: 0.1 }) }

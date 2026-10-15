@@ -16,7 +16,7 @@ from PIL import Image
 ROOT = 'tools/motion'
 OUT = 'public/ref/battle'
 DATA = 'src/game/data/motion-sets.json'
-TARGET_H = 200  # 아틀라스 안 몸 높이(px)
+TARGET_H = 175  # 아틀라스 안 몸 높이(px)
 ATLAS_W = 2048
 CACHE = '/tmp/claude-0/mframes'
 
@@ -93,6 +93,7 @@ def build(kind, cfg):
             i, j = best_loop(files, ch, a, min(b, len(files) - 1), mn, mx)
             n = c.get('n', j - i)
             idx = [round(i + (j - i) * q / n) for q in range(n)]
+            if 'fps' not in c: c['fps'] = round(n * 24 / (j - i), 2)  # 원래 속도로 돌도록
         elif 'idx' in c:
             idx = c['idx']
         else:
@@ -115,7 +116,7 @@ def build(kind, cfg):
             W0, H0 = im.size
             im = im.resize((round(W0 * sc), round(H0 * sc)), Image.LANCZOS)
             al = np.asarray(im)[..., 3]
-            ys, xs = np.nonzero(al > 6)
+            ys, xs = np.nonzero(al > 24)
             if len(xs) == 0: xs = np.array([0]); ys = np.array([0])
             x0, y0, x1, y1 = max(0, xs.min() - 2), max(0, ys.min() - 2), min(im.width, xs.max() + 3), min(im.height, ys.max() + 3)
             tiles.append(im.crop((x0, y0, x1, y1)))
@@ -140,7 +141,7 @@ def build(kind, cfg):
         clips[name] = d; s += len(fs)
     os.makedirs(OUT, exist_ok=True)
     out = f'{OUT}/m-{kind}.webp'
-    atlas.save(out, quality=88, method=6)
+    atlas.save(out, quality=82, method=6)
     print(' atlas', ATLAS_W, H, len(fr), 'frames', os.path.getsize(out) // 1024, 'KB')
     disp = cfg.get('disp', 190)  # 화면에서 몸 높이(원근 1배 기준, px)
     return {'file': f'ref/battle/m-{kind}.webp', 'W': ATLAS_W, 'H': H, 's': round(disp / cfg.get('height', TARGET_H), 4), 'fr': fr, 'clips': clips}
