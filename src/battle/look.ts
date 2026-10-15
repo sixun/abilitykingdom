@@ -1,6 +1,7 @@
 // 전투 그림 설정: 유닛별 그림·크기·발 위치, 배경판별 조명·물웅덩이.
 import SP from '../game/data/battle-sprites.json'
 import C1 from '../game/data/ch1-sprites.json'
+import MS from '../game/data/motion-sets.json'
 import type { Kind } from '../game/combat/sim'
 
 type Sheet = { file: string; w: number; h: number; cols: number; n: number; fps: number }
@@ -16,7 +17,13 @@ export interface Look {
   faceRight: boolean // 원본이 오른쪽을 보고 있나
   head: number // 머리 위(표시 px, 체력바 위치)
   float?: number // 공중에 뜬 높이
+  ms?: MotionSet // 동작 세트(있으면 이 그림으로 그린다)
 }
+/** 동작 세트: 한 장(아틀라스)에 동작별 프레임을 빽빽하게 담는다. fr = [x, y, w, h, 발x, 발y](아틀라스 px) */
+export type ClipName = 'idle' | 'run' | 'atk1' | 'atk2' | 'atk3' | 'buff' | 'skill' | 'hit'
+export interface ClipDef { s: number; n: number; fps: number; imp?: number; loop?: boolean }
+export interface MotionSet { file: string; W: number; H: number; s: number; fr: number[][]; clips: Partial<Record<ClipName, ClipDef>> }
+export const MOTION = MS as unknown as Partial<Record<Kind, MotionSet>>
 const pic = (p: Pic, h: number, ax = 0.45, faceRight = true, head = h): Look => ({ file: p.file, cw: p.w, ch: p.h, cols: 1, n: 1, fps: 0, s: h / p.h, ax: p.w * ax, ay: p.h, faceRight, head })
 const pic2 = (p: Pic2, faceRight = false): Look => ({ file: p.file, cw: p.w, ch: p.h, cols: 1, n: 1, fps: 0, s: p.dispH / p.h, ax: p.ax, ay: p.ay, faceRight, head: p.dispH })
 
@@ -33,6 +40,7 @@ export const LOOKS: Record<Kind, Look> = {
   pylon: pic2(N.pylon),
   caller: { ...pic2(N.pylon), s: 230 / N.pylon.h, head: 236 },
 }
+for (const k of Object.keys(MOTION) as Kind[]) if (LOOKS[k]) LOOKS[k] = { ...LOOKS[k], ms: MOTION[k] }
 export const PROPS = { relay: pic2(N.relay, true), shutter: pic2(N.shutter, true) }
 export const RION_IDLE = [...Array.from({ length: 15 }, (_, i) => 33 + i), 0, 1, 2, 3, 4, 5]
 

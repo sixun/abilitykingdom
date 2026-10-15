@@ -19,7 +19,7 @@ const ZERO: Stats = { maxHp: 0, atk: 0, def: 0, atkSpd: 0, moveSpd: 0, critRate:
 
 export type TeleKind = 'slam' | 'charge' | 'cast' | 'call' | 'noise'
 export interface Tele { k: TeleKind; name: string; t: number; dur: number; x: number; y: number; x2: number; y2: number; r: number; w: number; need: number; acc: number; target?: string }
-export interface Act { k: 'atk' | 'skill' | 'buff' | 'hit' | 'dash' | 'stagger' | 'use' | 'roar'; t: number; dur: number; tx?: number; ty?: number; fx?: number; fy?: number }
+export interface Act { k: 'atk' | 'skill' | 'buff' | 'hit' | 'dash' | 'stagger' | 'use' | 'roar'; t: number; dur: number; tx?: number; ty?: number; fx?: number; fy?: number; n?: number; imp?: number } // n: 연속 공격 몇 타째(1~3), imp: 타격 순간(초)
 export interface Buff { id: string; t: number; mods: Partial<Stats>; regen?: number; src: string }
 export interface Unit {
   id: string; side: Side; kind: Kind; name: string
@@ -38,6 +38,7 @@ export interface Unit {
   phase: number; lv: number
   vx: number; vy: number // 이동 속도(화면에서 걷기·기울기 연출에 씀)
   hop: number // 공중으로 뜬 높이(넉백·백스텝 연출)
+  frz: number // 타격 경직(히트스톱): 이 시간 동안 멈춘다
 }
 export interface Device { id: string; k: 'relay' | 'shutter'; x: number; y: number; hp: number; max: number; lane: number; closed: number; cool: number; guard: number; label: string }
 export interface Proj { id: number; k: 'ring' | 'wave' | 'slash' | 'cube' | 'bolt'; x: number; y: number; tx: string; spd: number; dmg: number; from: string; crit: boolean; brk: number; abil: boolean; seen?: string[]; vx?: number; life?: number }
@@ -115,7 +116,7 @@ function mkUnit(side: Side, kind: Kind, id: string, x: number, y: number, hx: nu
     id, side, kind, name: d.name, x, y, hx, hy, face: side === 'ally' ? 1 : -1, hp: st.maxHp, st, buffs: [],
     shield: 0, shieldT: 0, taunt: 0, stun: 0, slowT: 0, slowK: 0, cd: 0.5 + Math.random() * 0.8, interval: d.interval, range: d.range,
     act: null, tele: null, teleCd: 3 + Math.random() * 3, teleCd2: 6, dead: 0, entering: true, dealt: 0, healed: 0, basicN: 0, task: null,
-    icon: f?.icon ?? null, passive: !!f?.passive, statik: !!f?.statik, vuln: 0, phase: 1, lv, vx: 0, vy: 0, hop: 0,
+    icon: f?.icon ?? null, passive: !!f?.passive, statik: !!f?.statik, vuln: 0, phase: 1, lv, vx: 0, vy: 0, hop: 0, frz: 0,
   }
 }
 
@@ -177,7 +178,13 @@ function damage(s: Sim, from: Unit | undefined, to: Unit, mult: number, o: { cri
   if (v > 0 && !o.noNum) fx(s, { k: 'num', x: to.x + (s.rnd() - 0.5) * 34, y: to.y - headOf(to) + 10, dur: 0.9, v, crit })
   if (crit || o.abil) s.stop = Math.max(s.stop, crit ? 0.085 : 0.05)
   fx(s, { k: to.side === 'enemy' ? 'hitE' : 'hitA', x: to.x, y: to.y - headOf(to) * 0.45, dur: 0.35, crit })
-  if (!to.act || to.act.k === 'atk') to.act = { k: 'hit', t: 0, dur: 0.2 }
+  if (!to.act || (to.act.k === 'atk' && to.side === 'enemy')) to.act = { k: 'hit', t: 0, dur: to.side === 'ally' ? 0.32 : 0.2 }
+  // 히트스톱: 근접 타격·치명타·스킬은 때린 쪽과 맞은 쪽이 아주 잠깐 멈춘다(던파식 손맛)
+  if (from && !o.noNum) {
+    const melee = from.kind === 'seren' || from.kind === 'ian'
+    const fz = crit ? 0.09 : o.abil ? 0.06 : melee ? 0.05 : 0
+    if (fz) { if (to.kind !== 'boss') to.frz = Math.max(to.frz, fz); if (melee) from.frz = Math.max(from.frz, fz) }
+  }
   // 넉백: 맞은 쪽이 밀려난다(보스·고정체 제외). 큰 타격은 살짝 뜬다
   const push = (o.push ?? 0) + (crit ? 18 : 0) + (o.abil ? 14 : 0) + (from && (from.kind === 'golem' || from.kind === 'boss') ? 26 : 0)
   if (push > 0 && from && to.kind !== 'boss' && !to.statik && !to.tele) {
@@ -245,7 +252,7 @@ export function castActive(s: Sim, id: AllyKind): boolean {
   ab.left = ab.cd * (1 - stat(u, 'cdr'))
   s.cutin = { kind: id, name: ab.name, t: 0, buff: false }
   s.shake = Math.max(s.shake, 0.2)
-  u.act = { k: 'skill', t: 0, dur: 0.6 }
+  u.act = { k: 'skill', t: 0, dur: 0.9 }
   if (id === 'rion') {
     for (let i = 0; i < 3; i++) later(s, 0.25 + i * 0.16, () => { if (alive(u)) s.proj.push({ id: s.seq++, k: 'wave', x: u.x + 50, y: u.y - 110, tx: '', spd: 980, dmg: 1.1, from: u.id, crit: false, brk: 3, abil: true, seen: [], vx: 1, life: 1.6 }) })
   } else if (id === 'seren') {
@@ -275,7 +282,7 @@ export function castBuff(s: Sim, id: AllyKind): boolean {
   const dur = ab.dur * (1 + stat(u, 'buffDur'))
   ab.on = dur
   s.cutin = { kind: id, name: ab.name, t: 0, buff: true }
-  u.act = { k: 'buff', t: 0, dur: 0.5 }
+  u.act = { k: 'buff', t: 0, dur: 0.9 }
   const team = s.units.filter((a) => a.side === 'ally' && alive(a))
   const add = (to: Unit, mods: Partial<Stats>, regen?: number) => { to.buffs = to.buffs.filter((b) => b.id !== `${id}-b`); to.buffs.push({ id: `${id}-b`, t: dur, mods, regen, src: id }) }
   if (id === 'rion') { add(u, { atkSpd: 0.6, critRate: 0.1 }); for (const a of team) if (a !== u) add(a, { critRate: 0.1 }) }
@@ -376,6 +383,7 @@ export function step(s: Sim, dt: number, auto: boolean) {
 
   for (const u of s.units) {
     if (u.dead) { u.dead += dt; continue }
+    if (u.frz > 0) { u.frz -= dt; continue }
     if (u.act && (u.act.t += dt) >= u.act.dur) u.act = null
     if (u.shieldT > 0 && (u.shieldT -= dt) <= 0) u.shield = 0
     if (u.taunt > 0) u.taunt -= dt
@@ -454,24 +462,35 @@ function allyTick(s: Sim, u: Unit, dt: number) {
   if (u.cd > 0 || busy || !t) return
   const hx = u.x + 50 * u.face, hy = u.y - (u.kind === 'rion' ? 115 : 85)
   if (u.kind === 'seren' || u.kind === 'ian') { if (Math.hypot(t.x - u.x, (t.y - u.y) * 1.5) > (u.kind === 'seren' ? 130 : 150) + (t.kind === 'boss' ? 110 : 0)) return }
-  u.cd = u.interval * (0.92 + s.rnd() * 0.16)
+  // 기본 공격은 3타 연속: 1·2타는 바로 이어지고, 3타(마무리)는 더 세게 치고 길게 쉰다. 평균 공격 속도는 예전과 같게 맞춤
   u.basicN++
+  const n = ((u.basicN - 1) % 3) + 1
+  const C = COMBO[u.kind as AllyKind]
+  const dur = C.dur[n - 1], imp = C.imp[n - 1]
+  u.cd = n < 3 ? 0.02 : Math.max(0.4, u.interval * 3 * (0.92 + s.rnd() * 0.16) - C.dur.reduce((x, y) => x + y, 0))
   const crit = s.rnd() < stat(u, 'critRate')
-  if (u.kind === 'rion') { u.act = { k: 'atk', t: 0, dur: 1.1 }; later(s, 0.3, () => { if (alive(u)) s.proj.push({ id: s.seq++, k: 'ring', x: u.x + 50 * u.face, y: hy, tx: t.id, spd: 820, dmg: 1, from: u.id, crit, brk: 2, abil: false }) }) }
-  else if (u.kind === 'seren') {
-    // 근접 베기: 파고들어 베고, 치명타면 검기 한 줄이 더 날아간다
-    u.act = { k: 'atk', t: 0, dur: 0.34, tx: t.x, ty: t.y }
-    later(s, 0.1, () => { if (alive(u) && alive(t)) { damage(s, u, t, 1.05, { crit, push: 22 }); fx(s, { k: 'slashHit', x: t.x, y: t.y - headOf(t) * 0.45, dur: 0.35 }); fx(s, { k: 'swing', x: u.x + 40 * u.face, y: u.y - 70, dur: 0.25, v: u.face }) } })
-    if (crit) later(s, 0.16, () => { if (alive(u) && alive(t)) s.proj.push({ id: s.seq++, k: 'slash', x: hx, y: hy - 20, tx: t.id, spd: 1250, dmg: 0.5, from: u.id, crit: false, brk: 1, abil: false }) })
-    if (s.rnd() < 0.35) later(s, 0.32, () => { if (alive(u)) { u.vx = -u.face * 420; u.hop = 22 } })
+  const fin = n === 3
+  u.act = { k: 'atk', t: 0, dur, n, imp, tx: t.x, ty: t.y }
+  if (u.kind === 'rion') {
+    later(s, imp, () => { if (alive(u)) s.proj.push({ id: s.seq++, k: 'ring', x: u.x + 50 * u.face, y: hy, tx: t.id, spd: fin ? 980 : 820, dmg: fin ? 1.3 : 0.85, from: u.id, crit, brk: fin ? 3 : 2, abil: false }) })
+  } else if (u.kind === 'seren') {
+    // 근접 베기: 1타 가로 베기 · 2타 올려 베기 · 3타 찌르기(크게 밀어냄). 치명타면 검기 한 줄이 더 날아간다
+    later(s, imp, () => { if (alive(u) && alive(t)) { damage(s, u, t, fin ? 1.3 : 0.98, { crit, push: fin ? 46 : 14 }); fx(s, { k: fin ? 'slashBig' : 'slashHit', x: t.x, y: t.y - headOf(t) * 0.45, dur: 0.35, v: n }); fx(s, { k: 'swing', x: u.x + 40 * u.face, y: u.y - 70, dur: 0.25, v: u.face }) } })
+    if (crit) later(s, imp + 0.06, () => { if (alive(u) && alive(t)) s.proj.push({ id: s.seq++, k: 'slash', x: hx, y: hy - 20, tx: t.id, spd: 1250, dmg: 0.5, from: u.id, crit: false, brk: 1, abil: false }) })
+    if (fin && s.rnd() < 0.5) later(s, dur, () => { if (alive(u)) { u.vx = -u.face * 420; u.hop = 22 } })
   } else if (u.kind === 'kanna') {
-    u.act = { k: 'atk', t: 0, dur: 0.45 }
-    s.proj.push({ id: s.seq++, k: 'cube', x: hx, y: hy, tx: t.id, spd: 640, dmg: 0.9, from: u.id, crit, brk: 1, abil: false })
-    if (u.basicN % 4 === 0) { const low = s.units.filter((a) => a.side === 'ally' && alive(a)).sort((a, b) => a.hp / stat(a, 'maxHp') - b.hp / stat(b, 'maxHp'))[0]; heal(s, u, low, stat(low, 'maxHp') * 0.06) }
+    later(s, imp, () => { if (alive(u) && alive(t)) s.proj.push({ id: s.seq++, k: 'cube', x: u.x + 50 * u.face, y: hy, tx: t.id, spd: 640, dmg: fin ? 1.2 : 0.75, from: u.id, crit, brk: 1, abil: false }) })
+    if (fin) { const low = s.units.filter((a) => a.side === 'ally' && alive(a)).sort((a, b) => a.hp / stat(a, 'maxHp') - b.hp / stat(b, 'maxHp'))[0]; later(s, imp, () => heal(s, u, low, stat(low, 'maxHp') * 0.08)) }
   } else if (u.kind === 'ian') {
-    u.act = { k: 'atk', t: 0, dur: 0.4, tx: t.x, ty: t.y }
-    later(s, 0.12, () => { if (alive(u) && alive(t)) { damage(s, u, t, 0.85, { crit, push: 30 }); fx(s, { k: 'bash', x: t.x, y: t.y - headOf(t) * 0.45, dur: 0.35 }); u.taunt = Math.max(u.taunt, 1.2) } })
+    later(s, imp, () => { if (alive(u) && alive(t)) { damage(s, u, t, fin ? 1.1 : 0.72, { crit, push: fin ? 52 : 22 }); fx(s, { k: 'bash', x: t.x, y: t.y - headOf(t) * 0.45, dur: 0.35, v: n }); u.taunt = Math.max(u.taunt, 1.2) } })
   }
+}
+// 3타 연속 공격 시간(초): dur = 동작 길이, imp = 맞는 순간
+const COMBO: Record<AllyKind, { dur: number[]; imp: number[] }> = {
+  seren: { dur: [0.4, 0.4, 0.55], imp: [0.13, 0.13, 0.22] },
+  ian: { dur: [0.45, 0.45, 0.6], imp: [0.16, 0.16, 0.27] },
+  kanna: { dur: [0.5, 0.5, 0.6], imp: [0.2, 0.2, 0.26] },
+  rion: { dur: [0.55, 0.55, 0.75], imp: [0.22, 0.22, 0.32] },
 }
 /** 몸끼리 겹치지 않게 밀어낸다(아군·적 모두). 돌진 중·고정체는 제외 */
 const RAD: Partial<Record<Kind, number>> = { boss: 120, golem: 62, hound: 44, mite: 34, orb: 36, pylon: 50, caller: 56 }

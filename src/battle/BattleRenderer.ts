@@ -1,7 +1,7 @@
 // 전투 화면 WebGL2 렌더러: 2D 그림 + 노멀맵 조명 + 물웅덩이 반사.
 // 한 프레임 순서: ① 반사 버퍼(캐릭터·이펙트를 발 기준으로 뒤집어 그림) → ② 배경(조명 + 물 영역에 반사 합성)
 // → ③ 바닥 예고·물결·그림자 → ④ 소품·유닛(앞뒤 정렬, 조명·실루엣) → ⑤ 이펙트·입자(가산) → ⑥ 예고 윤곽(맨 위)
-import { LOOKS, PROPS, BGS, RION_IDLE, ACCENT, depthScale, type Look, type BgLook } from './look'
+import { LOOKS, PROPS, BGS, RION_IDLE, ACCENT, depthScale, type Look, type BgLook, type ClipDef, type ClipName } from './look'
 import { makeNormal } from './normals'
 import { headOf, type Sim, type Unit, type Fx } from '../game/combat/sim'
 
@@ -172,7 +172,7 @@ export class BattleRenderer {
   async load(bgKey: keyof typeof BGS, kinds: string[], onProgress?: (p: number) => void) {
     this.bg = BGS[bgKey]
     const looks: { key: string; l: Look }[] = [...new Set(kinds)].map((k) => ({ key: k, l: (LOOKS as Record<string, Look>)[k] ?? (PROPS as Record<string, Look>)[k] })).filter((x) => x.l)
-    const jobs = [{ key: 'bg', file: this.bg.file, mode: 'bg' as const, cell: 0 }, ...looks.map((x) => ({ key: x.key, file: x.l.file, mode: 'sprite' as const, cell: x.l.ch }))]
+    const jobs = [{ key: 'bg', file: this.bg.file, mode: 'bg' as const, cell: 0 }, ...looks.map((x) => ({ key: x.key, file: x.l.ms?.file ?? x.l.file, mode: 'sprite' as const, cell: x.l.ms ? 240 : x.l.ch }))]
     let done = 0
     for (const j of jobs) {
       if (this.tex.has(j.file)) { done++; continue }
@@ -272,19 +272,28 @@ export class BattleRenderer {
     }
     const face = u.face
     let dx = 0, dy = 0, sx = 1, sy = 1, rot = 0
-    const breathe = Math.sin(t * 2.4 + u.hy * 0.05) * 0.012
-    if (L.n === 1) { sy = 1 + breathe; sx = 1 - breathe * 0.6 }
-    // 이동: 속도만큼 통통 튀며 진행 방향으로 기울어진다(달리기)
     const spd = Math.hypot(u.vx, u.vy) + (u.entering || u.task ? 300 : 0)
-    if (spd > 40 && !u.dead) { const k2 = Math.min(1, spd / 380); const ph = t * (9 + k2 * 6) + u.hy; dy -= Math.abs(Math.sin(ph)) * 10 * k2; rot = face * 0.09 * k2 + Math.sin(ph) * 0.03 * k2; sy *= 1 - Math.abs(Math.cos(ph)) * 0.04 * k2 }
-    dy -= u.hop
-    if (a?.k === 'atk' && u.kind !== 'rion') { const p = Math.sin(k * Math.PI); dx = face * p * (u.kind === 'ian' ? 30 : u.kind === 'seren' ? 34 : 18); rot = face * p * (u.kind === 'seren' ? 0.16 : 0.07); sx *= 1 + p * 0.05 }
-    if (a?.k === 'skill' || a?.k === 'buff') { const p = Math.sin(k * Math.PI); sx *= 1 + p * 0.07; sy *= 1 + p * 0.07 }
-    if (a?.k === 'hit') { dx = -face * 12 * (1 - k); rot = -face * 0.08 * (1 - k) }
+    const mf = L.ms ? this.motionFrame(u, L, t, spd) : -1
+    if (L.ms) {
+      // 동작 세트가 있으면 그림 자체가 움직이므로 흔들기 연출은 최소로: 넉백·점프·히트스톱 떨림만
+      dy -= u.hop
+      if (a?.k === 'hit') dx = -face * 8 * (1 - k)
+      if (u.frz > 0) dx += Math.sin(t * 95) * 3
+    } else {
+      const breathe = Math.sin(t * 2.4 + u.hy * 0.05) * 0.012
+      if (L.n === 1) { sy = 1 + breathe; sx = 1 - breathe * 0.6 }
+      // 이동: 속도만큼 통통 튀며 진행 방향으로 기울어진다(달리기)
+      if (spd > 40 && !u.dead) { const k2 = Math.min(1, spd / 380); const ph = t * (9 + k2 * 6) + u.hy; dy -= Math.abs(Math.sin(ph)) * 10 * k2; rot = face * 0.09 * k2 + Math.sin(ph) * 0.03 * k2; sy *= 1 - Math.abs(Math.cos(ph)) * 0.04 * k2 }
+      dy -= u.hop
+      if (a?.k === 'atk' && u.kind !== 'rion') { const p = Math.sin(k * Math.PI); dx = face * p * (u.kind === 'ian' ? 30 : u.kind === 'seren' ? 34 : 18); rot = face * p * (u.kind === 'seren' ? 0.16 : 0.07); sx *= 1 + p * 0.05 }
+      if (a?.k === 'skill' || a?.k === 'buff') { const p = Math.sin(k * Math.PI); sx *= 1 + p * 0.07; sy *= 1 + p * 0.07 }
+      if (a?.k === 'hit') { dx = -face * 12 * (1 - k); rot = -face * 0.08 * (1 - k) }
+      if (u.frz > 0) dx += Math.sin(t * 95) * 3
+    }
     if (a?.k === 'stagger') { rot = Math.sin(t * 30) * 0.05 - face * 0.08; dx = Math.sin(t * 40) * 3 }
     if (a?.k === 'roar') { const p = Math.sin(k * Math.PI); sx *= 1 + p * 0.06; sy *= 1 + p * 0.08; dx = Math.sin(t * 50) * 4 * p }
     if (a?.k === 'use') { dy = Math.sin(k * Math.PI * 3) * 4 }
-    if (u.stun > 0) rot = Math.sin(t * 6) * 0.06
+    if (u.stun > 0 && !L.ms) rot = Math.sin(t * 6) * 0.06
     const tele = u.tele
     let flash: [number, number, number, number] = [1, 1, 1, 0]
     if (a?.k === 'hit') flash = [1, 1, 1, (1 - k) * (u.side === 'ally' ? 0.28 : 0.6)]
@@ -298,19 +307,50 @@ export class BattleRenderer {
     if (focus === u.id) outline = [1, 0.86, 0.2, 0.95]
     if (tele) outline = [1, 0.25, 0.3, 0.8]
     if (u.side === 'ally' && u.buffs.some((b) => b.src === u.kind)) { const ac = ACCENT[u.kind]; if (ac) outline = [ac[0], ac[1], ac[2], 0.75 + 0.2 * Math.sin(t * 6)] }
-    if (L.n > 1 && focus !== u.id && !tele) outline = [outline[0], outline[1], outline[2], 0] // 프레임 시트는 칸 경계가 번져 윤곽을 끈다
-    return { L, frame, dx, dy: dy - float + sink, sx, sy, rot, flash, alpha, sat, outline, face }
+    if (L.n > 1 && !L.ms && focus !== u.id && !tele) outline = [outline[0], outline[1], outline[2], 0] // 프레임 시트는 칸 경계가 번져 윤곽을 끈다
+    return { L, frame, mf, dx, dy: dy - float + sink, sx, sy, rot, flash, alpha, sat, outline, face }
+  }
+  /** 동작 세트에서 지금 보여줄 프레임: 상태(공격 몇 타째·스킬·버프·피격·달리기·대기)와 진행도로 고른다 */
+  private motionFrame(u: Unit, L: Look, t: number, spd: number): number {
+    const C = L.ms!.clips; const a = u.act
+    const at = (c: ClipDef | undefined, k: number, impK?: number) => {
+      if (!c) return -1
+      let f: number
+      // 타격 프레임(imp)이 시뮬레이션의 '맞는 순간'에 정확히 오도록 앞뒤를 따로 늘이고 줄인다
+      if (c.imp != null && impK != null && impK > 0 && impK < 1) f = k < impK ? (k / impK) * c.imp : c.imp + ((k - impK) / (1 - impK)) * (c.n - 1 - c.imp)
+      else f = k * (c.n - 1)
+      return c.s + Math.max(0, Math.min(c.n - 1, Math.round(f)))
+    }
+    const off = u.hy * 0.37 + u.id.length
+    const loop = (c: ClipDef | undefined, rate = 1) => (c ? c.s + (Math.floor(t * c.fps * rate + off) % c.n) : -1)
+    let f = -1
+    if (u.dead) f = C.hit ? C.hit.s + C.hit.n - 1 : -1
+    else if (a) {
+      const k = Math.min(1, a.t / a.dur)
+      if (a.k === 'atk') f = at(C[`atk${a.n ?? 1}` as ClipName] ?? C.atk1, k, a.imp != null ? a.imp / a.dur : undefined)
+      else if (a.k === 'skill' || a.k === 'dash') f = at(C.skill, k)
+      else if (a.k === 'buff' || a.k === 'use') f = at(C.buff, k)
+      else if (a.k === 'hit') f = at(C.hit, k)
+      else if (a.k === 'stagger') f = at(C.hit, 0.35)
+    }
+    if (f < 0 && u.stun > 0) f = at(C.hit, 0.35)
+    if (f < 0 && spd > 40) f = loop(C.run, Math.max(0.75, Math.min(1.6, spd / 300)))
+    if (f < 0) f = loop(C.idle)
+    return Math.max(0, f)
   }
   private drawUnitSprite(u: Unit, t: number, focus: string | null, lights: Light[], refl: boolean, shadow?: { dx: number; dy: number; a: number }) {
     const P = this.pose(u, t, focus)
-    const L = P.L; const T = this.tex.get(L.file); const N = this.nrm.get(L.file); if (!T || !N) return
-    const ds = depthScale(u.y) * L.s
-    const col = P.frame % L.cols, row = Math.floor(P.frame / L.cols)
-    const u0 = (col * L.cw) / T.w, v0 = (row * L.ch) / T.h, u1 = ((col + 1) * L.cw) / T.w, v1 = ((row + 1) * L.ch) / T.h
-    const flip = (P.face === 1) !== L.faceRight
+    const L = P.L; const file = L.ms?.file ?? L.file; const T = this.tex.get(file); const N = this.nrm.get(file); if (!T || !N) return
+    // 칸(cell): 일반 시트는 고정 칸, 동작 세트는 프레임마다 잘라 낸 사각형과 그 안의 발 위치
+    let cx0: number, cy0: number, cw: number, ch: number, ax: number, ay: number, sc: number
+    if (L.ms) { const r = L.ms.fr[P.mf]; [cx0, cy0, cw, ch, ax, ay] = r; sc = L.ms.s }
+    else { cx0 = (P.frame % L.cols) * L.cw; cy0 = Math.floor(P.frame / L.cols) * L.ch; cw = L.cw; ch = L.ch; ax = L.ax; ay = L.ay; sc = L.s }
+    const ds = depthScale(u.y) * sc
+    const u0 = cx0 / T.w, v0 = cy0 / T.h, u1 = (cx0 + cw) / T.w, v1 = (cy0 + ch) / T.h
+    const flip = (P.face === 1) !== (L.ms ? true : L.faceRight)
     // 발 기준 사각형: 칸 크기 × 배율, 발(ax, ay)이 유닛 위치
-    const w = L.cw * ds * P.sx, h = L.ch * ds * P.sy
-    const ox = (flip ? L.cw - L.ax : L.ax) / L.cw, oy = L.ay / L.ch
+    const w = cw * ds * P.sx, h = ch * ds * P.sy
+    const ox = (flip ? cw - ax : ax) / cw, oy = ay / ch
     const fx = u.x + P.dx, fy = u.y + P.dy
     let pts = this.box(fx, fy, w, h, shadow ? 0 : P.rot, ox, oy)
     const uvs = flip ? [u1, v0, u0, v0, u0, v1, u1, v1] : [u0, v0, u1, v0, u1, v1, u0, v1]
