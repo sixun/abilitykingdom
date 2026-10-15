@@ -14,7 +14,8 @@ import { IconSkip } from '../ui/icons'
 export default function RecruitResult({ params }: { params: Record<string, unknown> }) {
   const s = useGame()
   const nav = useNav()
-  const tx = s.recruitTx.find((t) => t.requestId === params.txId)
+  const savedTx = s.recruitTx.find((t) => t.requestId === params.txId)
+  const tx = savedTx ? { ...savedTx, results: savedTx.results.filter((r) => CHAR_BY_ID[r.characterId]) } : undefined
   const [i, setI] = useState(params.summary ? Infinity : 0)
   const { run, pending, failed, clearFailed } = useAction()
 

@@ -3,7 +3,7 @@ import '../styles/lobby.css'
 import { useNav, type ScreenName } from '../app/nav'
 import { audio } from '../app/audio'
 import { game, useGame, badges } from '../game/store'
-import { CHARACTERS } from '../game/data/characters'
+import { CHARACTERS, CHAR_BY_ID } from '../game/data/characters'
 import { GAME_CONFIG } from '../game/config'
 import { Modal, Btn, ConfirmDialog } from '../ui/components'
 import { RoleGlyph, IconGrid } from '../ui/icons'
@@ -72,7 +72,7 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
   const [viewing, setViewing] = useState(false)
   const [toTitle, setToTitle] = useState(false)
   // 전용 로비 장면이 있는 캐릭터면 지안 소파 영상 대신 그 장면(인물 포함 정지 그림)을 쓴다 → 두 인물이 겹치지 않는다
-  const scene = LOBBY_SCENES[s.lobby.characterId]
+  const scene = LOBBY_SCENES[s.lobby.characterId] ?? { poster: (CHAR_BY_ID[s.lobby.characterId] ?? CHAR_BY_ID.rion).assets.action, amb: 'dust' as const, place: 'CITY' }
 
   useEffect(() => { audio.bgm('lobby') }, [])
   const go = (sc: ScreenName, p?: Record<string, unknown>) => { setMore(false); nav.push(sc, p) }

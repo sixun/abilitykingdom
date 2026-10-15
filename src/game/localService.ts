@@ -30,14 +30,14 @@ function emptyTeam(id: string, name: string, slots: (string | null)[], leaderId:
 
 export function createInitialState(): GameState {
   const now = Date.now()
-  const ownedIds = ['jian', 'yujin', 'harin', 'doyun', 'sein', 'narin']
-  const levels: Record<string, number> = { jian: 40, yujin: 40, harin: 40, doyun: 40, sein: 37, narin: 32 }
+  const ownedIds = ['rion', 'doyun']
+  const levels: Record<string, number> = { rion: 40, doyun: 40 }
   const owned: Record<string, OwnedCharacter> = Object.fromEntries(ownedIds.map((id) => [id, {
     id, level: levels[id], obtainedAt: now, dupes: 0,
     equipment: { weapon: null, gear: null, accessory: null } as EquipmentSlots,
   }]))
-  owned.jian.equipment.weapon = 'eq_blade'
-  owned.yujin.equipment.gear = 'eq_jacket'
+  owned.rion.equipment.weapon = 'eq_blade'
+  owned.doyun.equipment.gear = 'eq_jacket'
   return {
     schema: SCHEMA,
     playerName: '마유',
@@ -47,12 +47,12 @@ export function createInitialState(): GameState {
     wallet: { diamond: 12800, credit: 388434, ticket: 24, scoutPoint: 120, exchangeMedal: 1443, stamina: 187 },
     owned,
     teams: [
-      emptyTeam('team1', '팀 01', ['jian', 'yujin', 'harin', 'doyun'], 'jian'),
-      emptyTeam('team2', '팀 02', ['sein', 'narin', 'yujin', null], 'sein'),
+      emptyTeam('team1', '팀 01', ['rion', 'doyun', null, null], 'rion'),
+      emptyTeam('team2', '팀 02', [null, null, null, null], null),
       emptyTeam('team3', '팀 03', [null, null, null, null], null),
     ],
     activeTeamId: 'team1',
-    lobby: { characterId: 'jian', background: 'lobby', entrancePolicy: 'first-and-change', lastEntranceFor: null },
+    lobby: { characterId: 'rion', background: 'lobby', entrancePolicy: 'first-and-change', lastEntranceFor: null },
     inventory: [
       { itemId: 'exp_s', qty: 24 }, { itemId: 'exp_m', qty: 10 }, { itemId: 'exp_l', qty: 3 }, { itemId: 'part', qty: 18 },
       { itemId: 'eq_baton', qty: 1 }, { itemId: 'eq_vest', qty: 1 }, { itemId: 'eq_phones', qty: 1 }, { itemId: 'eq_card', qty: 2 },
@@ -103,7 +103,29 @@ export class LocalGameService implements GameService {
       const raw = localStorage.getItem(SAVE_KEY)
       if (raw) {
         const s = JSON.parse(raw) as GameState
-        if (s.schema === SCHEMA) return s
+        if (s.schema === SCHEMA) {
+          // 명단에서 제외된 대원만 정리하고 재화·진행도·남은 대원의 성장은 유지한다.
+          for (const id of Object.keys(s.owned)) {
+            if (CHAR_BY_ID[id]) continue
+            for (const itemId of Object.values(s.owned[id].equipment)) {
+              if (!itemId) continue
+              const item = s.inventory.find((x) => x.itemId === itemId)
+              if (item) item.qty += 1
+              else s.inventory.push({ itemId, qty: 1 })
+            }
+            delete s.owned[id]
+          }
+          if (!Object.keys(s.owned).length) s.owned = createInitialState().owned
+          for (const team of s.teams) {
+            team.slots = team.slots.map((id) => id && s.owned[id] && CHAR_BY_ID[id] ? id : null)
+            if (!team.slots.includes(team.leaderId)) team.leaderId = team.slots.find(Boolean) ?? null
+          }
+          if (!CHAR_BY_ID[s.lobby.characterId]) {
+            s.lobby.characterId = Object.keys(s.owned)[0]
+            s.lobby.lastEntranceFor = null
+          }
+          return s
+        }
       }
     } catch {
       this.storageOk = false
@@ -243,8 +265,9 @@ export class LocalGameService implements GameService {
       const ownedNow = new Set(Object.keys(this.state.owned))
       for (let i = 0; i < count; i++) {
         // 프로토타입 샘플 확률. 운영 가챠로 사용 금지(서버에서 결정해야 함).
-        let r = Math.random(), rarity = 3, acc = 0
-        for (const x of b.rates) { acc += x.rate; if (r < acc) { rarity = x.rarity; break } }
+        const availableRates = b.rates.filter((x) => b.pool.some((id) => CHAR_BY_ID[id]?.rarity === x.rarity))
+        let r = Math.random() * availableRates.reduce((sum, x) => sum + x.rate, 0), rarity = availableRates[0].rarity, acc = 0
+        for (const x of availableRates) { acc += x.rate; if (r < acc) { rarity = x.rarity; break } }
         const pool = b.pool.filter((id) => CHAR_BY_ID[id].rarity === rarity)
         let pick = pool[Math.floor(Math.random() * pool.length)]
         let isPickup = false

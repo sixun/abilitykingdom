@@ -27,7 +27,7 @@ const SAMPLE_RATES = [
 export const BANNERS: RecruitmentBanner[] = [
   {
     id: 'b_rion', kind: 'limited', title: '주파수 너머', subtitle: 'PIRATE SCOUTING BROADCAST', featuredId: 'rion',
-    pool: ['rion', 'jian', 'yujin', 'harin', 'doyun', 'sein', 'narin', 'seoha'],
+    pool: ['rion', 'doyun'],
     start: '2026-10-08', end: '2026-10-29', costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0.5,
     skin: 'broadcast', quote: '자, 어디까지 들리니? 지금, 더 멀리 가보자.',
   },
@@ -36,19 +36,19 @@ export const BANNERS: RecruitmentBanner[] = [
   // 비용은 기존 영입 티켓 1장/회. 시안의 캡슐·추첨권·쿠지 그림은 배너별 표시용이다(재화 분리는 미정).
   {
     id: 'b_serenity', kind: 'standard', title: 'SERENITY', subtitle: 'STANDARD SCOUTING', featuredId: 'seren',
-    pool: ['jian', 'yujin', 'harin', 'doyun', 'sein', 'narin', 'seoha'],
+    pool: ['doyun'],
     start: '2026-10-13', end: null, costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0,
     skin: 'scene', quote: '',
   },
   {
     id: 'b_nightshift', kind: 'limited', title: 'NIGHT SHIFT', subtitle: 'LIMITED SCOUTING', featuredId: 'ian',
-    pool: ['rion', 'jian', 'yujin', 'harin', 'doyun', 'sein', 'narin', 'seoha'],
+    pool: ['rion', 'doyun'],
     start: '2026-10-13', end: '2026-11-03', costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0,
     skin: 'scene', quote: '',
   },
   {
     id: 'b_omp', kind: 'standard', title: 'ONE MORE PLAY?', subtitle: 'STANDARD SCOUTING', featuredId: 'chaerin',
-    pool: ['jian', 'yujin', 'harin', 'doyun', 'sein', 'narin', 'seoha'],
+    pool: ['doyun'],
     start: '2026-10-13', end: null, costPerPull: { currency: 'ticket', amount: 1 }, rates: SAMPLE_RATES, pickupShare: 0,
     skin: 'scene', quote: '',
   },
@@ -67,7 +67,7 @@ export const PRODUCTS: ShopProduct[] = [
   { id: 'c_dia_l', tab: 'currency', name: '다이아 3,280', desc: '', contents: [{ kind: 'currency', id: 'diamond', qty: 3280 }], price: { type: 'real', krw: 59000 }, limit: null, endsAt: null },
   { id: 'c_credit', tab: 'currency', name: '크레딧 20,000', desc: '다이아로 교환', contents: [{ kind: 'currency', id: 'credit', qty: 20000 }], price: { type: 'currency', currency: 'diamond', amount: 100 }, limit: 5, endsAt: null },
   { id: 'c_stamina', tab: 'currency', name: '행동력 60', desc: '다이아로 회복', contents: [{ kind: 'currency', id: 'stamina', qty: 60 }], price: { type: 'currency', currency: 'diamond', amount: 50 }, limit: 3, endsAt: null },
-  { id: 'x_pick', tab: 'exchange', name: '픽업 캐릭터 · 리온', desc: '영입 포인트 200으로 교환', contents: [{ kind: 'item', id: 'char:rion', qty: 1 }], price: { type: 'currency', currency: 'scoutPoint', amount: 200 }, limit: 1, endsAt: '2026-10-29', badge: '교환소' },
+  { id: 'x_pick', tab: 'exchange', name: '픽업 캐릭터 · 샤오랑', desc: '영입 포인트 200으로 교환', contents: [{ kind: 'item', id: 'char:rion', qty: 1 }], price: { type: 'currency', currency: 'scoutPoint', amount: 200 }, limit: 1, endsAt: '2026-10-29', badge: '교환소' },
   { id: 'x_ticket', tab: 'exchange', name: '영입 티켓', desc: '교환 메달 사용', contents: [{ kind: 'currency', id: 'ticket', qty: 1 }], price: { type: 'currency', currency: 'exchangeMedal', amount: 30 }, limit: 10, endsAt: null },
   { id: 'x_vest', tab: 'exchange', name: '전술 조끼', desc: '교환 메달 사용', contents: [{ kind: 'item', id: 'eq_vest', qty: 1 }], price: { type: 'currency', currency: 'exchangeMedal', amount: 60 }, limit: 1, endsAt: null },
 ]
@@ -140,9 +140,9 @@ export const TRAININGS = [
 ]
 
 export const ARENA_OPPONENTS = [
-  { id: 'op1', name: '새벽첫차', level: 34, power: 21800, team: ['sein', 'narin', 'yujin', 'harin'] },
-  { id: 'op2', name: '성수동고양이', level: 31, power: 19400, team: ['jian', 'doyun', 'seoha', 'narin'] },
-  { id: 'op3', name: '막차는싫어', level: 38, power: 26100, team: ['rion', 'yujin', 'sein', 'doyun'] },
+  { id: 'op1', name: '새벽첫차', level: 34, power: 21800, team: ['rion', 'doyun'] },
+  { id: 'op2', name: '성수동고양이', level: 31, power: 19400, team: ['rion', 'doyun'] },
+  { id: 'op3', name: '막차는싫어', level: 38, power: 26100, team: ['rion', 'doyun'] },
 ]
 
 export const RAIDS = [
@@ -155,14 +155,14 @@ export const RAIDS = [
 // ───────── 운영(샘플) ─────────
 export const NOTICES = [
   { id: 'n1', date: '2026-10-11', tag: '안내', title: '프로토타입 빌드 안내', body: '이 빌드는 메뉴·편성·성장 흐름 검증용입니다. 전투, 확률, 가격, 결제는 확정되지 않은 샘플이며, 모든 데이터는 이 기기 브라우저에만 저장됩니다.' },
-  { id: 'n2', date: '2026-10-08', tag: '영입', title: '한정 영입 「주파수 너머」 오픈', body: '해적 방송국 진행자 리온이 픽업됩니다. 확률과 기간은 샘플 값입니다.' },
+  { id: 'n2', date: '2026-10-08', tag: '영입', title: '한정 영입 「주파수 너머」 오픈', body: '해적 방송국 진행자 샤오랑이 픽업됩니다. 확률과 기간은 샘플 값입니다.' },
   { id: 'n3', date: '2026-10-01', tag: '점검', title: '정기 점검 안내(샘플)', body: '서버 연동 이후 점검 공지가 이 영역에 표시됩니다.' },
 ]
 
 export const EVENTS = [
-  { id: 'e_rion', title: '주파수 너머', period: '10.08 – 10.29', desc: '한정 영입 기간. 영입 포인트 200으로 리온을 교환할 수 있습니다(샘플).', link: { screen: 'recruit', params: { bannerId: 'b_rion' } }, accent: '#c8f53b', image: 'assets/chars/rion_action.webp' },
-  { id: 'e_attend', title: '출석 체크', period: '상시', desc: '7일 출석 보상을 받을 수 있습니다.', link: { screen: 'attendance', params: {} }, accent: '#2ee6d6', image: 'assets/chars/narin_action.webp' },
-  { id: 'e_raid', title: '강 위의 그림자', period: '10.11 – 10.25', desc: '레이드 보스가 출현했습니다. 참가 방식은 미정입니다.', link: { screen: 'raid', params: {} }, accent: '#a97bff', image: 'assets/chars/sein_action.webp' },
+  { id: 'e_rion', title: '주파수 너머', period: '10.08 – 10.29', desc: '한정 영입 기간. 영입 포인트 200으로 샤오랑을 교환할 수 있습니다(샘플).', link: { screen: 'recruit', params: { bannerId: 'b_rion' } }, accent: '#c8f53b', image: 'assets/chars/rion_action.webp' },
+  { id: 'e_attend', title: '출석 체크', period: '상시', desc: '7일 출석 보상을 받을 수 있습니다.', link: { screen: 'attendance', params: {} }, accent: '#2ee6d6', image: 'assets/chars/doyun_action.webp' },
+  { id: 'e_raid', title: '강 위의 그림자', period: '10.11 – 10.25', desc: '레이드 보스가 출현했습니다. 참가 방식은 미정입니다.', link: { screen: 'raid', params: {} }, accent: '#a97bff', image: 'assets/chars/rion_action.webp' },
 ]
 
 export const MISSIONS: MissionDefinition[] = [

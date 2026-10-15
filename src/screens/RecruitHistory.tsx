@@ -19,7 +19,7 @@ export default function RecruitHistory(_: { params: Record<string, unknown> }) {
             <span className="rh-when num">{new Date(tx.createdAt).toLocaleString('ko-KR')}</span>
             <span className="rh-banner">{BANNER_BY_ID[tx.bannerId]?.title} · {tx.count}회</span>
             <span className="rh-faces">
-              {tx.results.map((r, i) => <img key={i} src={CHAR_BY_ID[r.characterId].assets.portrait} alt={CHAR_BY_ID[r.characterId].name} className={`r${r.rarity}`} />)}
+              {tx.results.filter((r) => CHAR_BY_ID[r.characterId]).map((r, i) => <img key={i} src={CHAR_BY_ID[r.characterId].assets.portrait} alt={CHAR_BY_ID[r.characterId].name} className={`r${r.rarity}`} />)}
             </span>
           </button>
         ))}

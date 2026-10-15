@@ -65,7 +65,7 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
 
   const go = (sc: ScreenName, p?: Record<string, unknown>) => { setPop(null); nav.push(sc, p) }
   const W = s.wallet
-  const lobbyChar = CHAR_BY_ID[s.lobby.characterId] ?? CHAR_BY_ID.jian
+  const lobbyChar = CHAR_BY_ID[s.lobby.characterId] ?? CHAR_BY_ID.rion
   // 전용 로비 장면이 있는 캐릭터면 지안 역 영상 대신 그 장면을 쓴다(인물 중복 방지)
   const scene = LOBBY_SCENES[s.lobby.characterId]
   const pickup = BANNERS.find((x) => x.kind === 'limited')
