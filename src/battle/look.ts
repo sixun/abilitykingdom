@@ -21,13 +21,13 @@ const pic = (p: Pic, h: number, ax = 0.45, faceRight = true, head = h): Look => 
 const pic2 = (p: Pic2, faceRight = false): Look => ({ file: p.file, cw: p.w, ch: p.h, cols: 1, n: 1, fps: 0, s: p.dispH / p.h, ax: p.ax, ay: p.ay, faceRight, head: p.dispH })
 
 export const LOOKS: Record<Kind, Look> = {
-  rion: { file: B.rion.file, cw: B.rion.w, ch: B.rion.h, cols: B.rion.cols, n: B.rion.n, fps: 12, s: 0.86, ax: 92, ay: 259, faceRight: true, head: 165 },
-  hound: { file: B.hound.file, cw: B.hound.w, ch: B.hound.h, cols: B.hound.cols, n: B.hound.n, fps: 12, s: 0.6, ax: 108, ay: 214, faceRight: false, head: 110 },
-  seren: pic(B.seren, 152, 0.4, true, 118),
-  ian: pic(B.ian, 178, 0.45, true, 158),
-  kanna: pic(B.kanna, 150, 0.45, true, 130),
-  golem: pic(B.golem, 215, 0.5, false, 200),
-  orb: { ...pic(B.orb, 95, 0.5, false, 150), float: 58 },
+  rion: { file: B.rion.file, cw: B.rion.w, ch: B.rion.h, cols: B.rion.cols, n: B.rion.n, fps: 12, s: 0.84, ax: 92, ay: 266, faceRight: true, head: 178 },
+  hound: { file: B.hound.file, cw: B.hound.w, ch: B.hound.h, cols: B.hound.cols, n: B.hound.n, fps: 12, s: 0.66, ax: 108, ay: 220, faceRight: false, head: 128 },
+  seren: { file: B.seren.file, cw: B.seren.w, ch: B.seren.h, cols: 1, n: 1, fps: 0, s: 0.78, ax: 160, ay: 278, faceRight: true, head: 170 },
+  ian: { file: B.ian.file, cw: B.ian.w, ch: B.ian.h, cols: 1, n: 1, fps: 0, s: 0.56, ax: 181, ay: 365, faceRight: true, head: 196 },
+  kanna: { file: B.kanna.file, cw: B.kanna.w, ch: B.kanna.h, cols: 1, n: 1, fps: 0, s: 0.56, ax: 179, ay: 315, faceRight: true, head: 172 },
+  golem: { file: B.golem.file, cw: B.golem.w, ch: B.golem.h, cols: 1, n: 1, fps: 0, s: 0.6, ax: 215, ay: 417, faceRight: false, head: 245 },
+  orb: { file: B.orb.file, cw: B.orb.w, ch: B.orb.h, cols: 1, n: 1, fps: 0, s: 0.6, ax: 111, ay: 193, faceRight: false, head: 115, float: 62 },
   mite: pic2(N.mite),
   boss: pic2(N.boss),
   pylon: pic2(N.pylon),
@@ -50,30 +50,30 @@ export interface BgLook {
 }
 export const BGS: Record<'street' | 'alley' | 'substation', BgLook> = {
   street: {
-    file: B.plate, amb: [1, 0.98, 0.95], sprAmb: [0.82, 0.78, 0.74], key: [1.0, 0.78, 0.55], keyDir: [0.55, -0.55, 0.62],
-    lights: [{ x: 1180, y: 60, z: 260, r: 900, c: [1, 0.72, 0.45], i: 0.45 }, { x: 200, y: 120, z: 120, r: 380, c: [1, 0.75, 0.45], i: 0.35 }],
+    file: B.plate, amb: [0.74, 0.7, 0.68], sprAmb: [0.42, 0.4, 0.44], key: [1.25, 0.9, 0.6], keyDir: [0.75, -0.45, 0.45],
+    lights: [{ x: 1250, y: 120, z: 160, r: 1100, c: [1, 0.66, 0.38], i: 0.85 }, { x: 230, y: 130, z: 110, r: 420, c: [1, 0.75, 0.45], i: 0.7 }],
     puddles: [[612, 535, 150, 34, 0.7], [890, 650, 120, 26, 0.55], [330, 445, 80, 18, 0.5], [1020, 470, 90, 20, 0.45]],
     wetFrom: 999, wet: 0, ripple: 0.6, grade: 'rgba(255,170,90,.08)',
   },
   alley: {
-    file: N.alley, amb: [0.86, 0.88, 0.98], sprAmb: [0.6, 0.64, 0.78], key: [0.55, 0.65, 0.95], keyDir: [-0.35, -0.6, 0.7],
+    file: N.alley, amb: [0.6, 0.62, 0.72], sprAmb: [0.3, 0.33, 0.44], key: [0.55, 0.68, 1.05], keyDir: [-0.55, -0.55, 0.55],
     lights: [
-      { x: 440, y: 168, z: 90, r: 420, c: [0.3, 1, 0.95], i: 0.75, flicker: 0.05 },
-      { x: 360, y: 75, z: 80, r: 300, c: [1, 0.35, 0.75], i: 0.6, flicker: 0.12 },
-      { x: 925, y: 160, z: 90, r: 440, c: [1, 0.6, 0.3], i: 0.7 },
+      { x: 440, y: 168, z: 90, r: 520, c: [0.3, 1, 0.95], i: 1.2, flicker: 0.05 },
+      { x: 360, y: 75, z: 80, r: 380, c: [1, 0.35, 0.75], i: 1.0, flicker: 0.12 },
+      { x: 925, y: 160, z: 90, r: 560, c: [1, 0.6, 0.3], i: 1.2 },
       { x: 805, y: 100, z: 80, r: 300, c: [0.3, 1, 0.8], i: 0.45 },
-      { x: 1190, y: 620, z: 40, r: 260, c: [0.75, 0.35, 1], i: 0.6, flicker: 0.2 },
+      { x: 1190, y: 620, z: 40, r: 340, c: [0.75, 0.35, 1], i: 1.0, flicker: 0.2 },
     ],
     puddles: [[655, 525, 270, 72, 0.95], [770, 668, 260, 52, 0.85], [962, 405, 115, 30, 0.8], [600, 362, 125, 20, 0.7], [350, 468, 90, 22, 0.75], [140, 540, 90, 30, 0.5]],
     wetFrom: 330, wet: 0.32, ripple: 1, grade: 'rgba(40,60,140,.12)',
   },
   substation: {
-    file: N.substation, amb: [0.86, 0.92, 0.95], sprAmb: [0.58, 0.66, 0.72], key: [0.45, 0.8, 0.85], keyDir: [0.1, -0.75, 0.65],
+    file: N.substation, amb: [0.6, 0.66, 0.7], sprAmb: [0.3, 0.36, 0.42], key: [0.5, 0.9, 0.95], keyDir: [0.25, -0.75, 0.5],
     lights: [
-      { x: 140, y: 230, z: 70, r: 380, c: [0.7, 0.35, 1], i: 0.85, flicker: 0.08 },
-      { x: 600, y: 300, z: 60, r: 320, c: [0.75, 0.4, 1], i: 0.6 },
-      { x: 1170, y: 270, z: 80, r: 420, c: [1, 0.45, 0.2], i: 0.65, flicker: 0.25 },
-      { x: 420, y: 40, z: 300, r: 620, c: [0.5, 0.95, 1], i: 0.45 },
+      { x: 140, y: 230, z: 70, r: 480, c: [0.7, 0.35, 1], i: 1.3, flicker: 0.08 },
+      { x: 600, y: 300, z: 60, r: 400, c: [0.75, 0.4, 1], i: 1.0 },
+      { x: 1170, y: 270, z: 80, r: 520, c: [1, 0.45, 0.2], i: 1.1, flicker: 0.25 },
+      { x: 420, y: 40, z: 300, r: 700, c: [0.5, 0.95, 1], i: 0.8 },
     ],
     puddles: [[640, 560, 520, 150, 0.75], [300, 640, 220, 60, 0.7], [1000, 620, 220, 70, 0.7]],
     wetFrom: 390, wet: 0.5, ripple: 0.8, grade: 'rgba(30,90,110,.12)',
@@ -82,4 +82,5 @@ export const BGS: Record<'street' | 'alley' | 'substation', BgLook> = {
 export const ACCENT: Record<string, [number, number, number]> = {
   rion: [0.78, 0.96, 0.23], seren: [0.62, 0.72, 1], ian: [0.94, 0.47, 0.18], kanna: [0.94, 0.35, 0.27],
 }
-export const depthScale = (y: number) => 0.84 + Math.max(0, Math.min(1, (y - 300) / 390)) * 0.26
+/** 원근: 화면 위(먼 곳)는 작게, 아래(가까운 곳)는 크게 — 0.68배 ~ 1.22배 */
+export const depthScale = (y: number) => 0.68 + Math.max(0, Math.min(1, (y - 300) / 390)) * 0.54

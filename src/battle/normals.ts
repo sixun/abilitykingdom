@@ -40,11 +40,11 @@ export function makeNormal(img: HTMLImageElement, mode: 'sprite' | 'bg', key: st
     const pillow = boxBlur(boxBlur(alpha, w, h, r1), w, h, r2)
     const det = boxBlur(lum, w, h, 1)
     height = new Float32Array(n)
-    for (let i = 0; i < n; i++) height[i] = Math.sqrt(pillow[i]) * 0.75 + det[i] * alpha[i] * 0.25
-    k = 7 / Math.max(1, base) * 2.2
+    for (let i = 0; i < n; i++) height[i] = Math.sqrt(pillow[i]) * 0.7 + det[i] * alpha[i] * 0.3
+    k = 7 / Math.max(1, base) * 3.6
   } else {
     height = boxBlur(lum, w, h, 1)
-    k = 3.2
+    k = 4.5
   }
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const i = y * w + x

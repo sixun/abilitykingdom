@@ -12,8 +12,8 @@ type Part = { x: number; y: number; vx: number; vy: number; life: number; max: n
 type Ripple = { x: number; y: number; t: number; dur: number; r: number; a: number }
 
 const VS = `#version 300 es
-in vec2 aPos; in vec2 aUv; uniform vec2 uCam; out vec2 vUv; out vec2 vW;
-void main(){ vUv = aUv; vW = aPos; vec2 p = (aPos + uCam) / vec2(${W}.0, ${H}.0) * 2.0 - 1.0; gl_Position = vec4(p.x, -p.y, 0.0, 1.0); }`
+in vec2 aPos; in vec2 aUv; uniform vec2 uCam; uniform vec3 uView; out vec2 vUv; out vec2 vW;
+void main(){ vUv = aUv; vW = aPos; vec2 sp = (aPos - uView.xy) * uView.z + vec2(${W / 2}.0, ${H / 2}.0) + uCam; vec2 p = sp / vec2(${W}.0, ${H}.0) * 2.0 - 1.0; gl_Position = vec4(p.x, -p.y, 0.0, 1.0); }`
 const LIGHT_FN = `
 uniform vec4 uL[${MAXL}]; uniform vec4 uLC[${MAXL}]; uniform int uNL;
 vec3 pointLights(vec3 n, vec2 w, float wrap){ vec3 acc = vec3(0.0);
@@ -23,11 +23,12 @@ vec3 pointLights(vec3 n, vec2 w, float wrap){ vec3 acc = vec3(0.0);
 const FS_SPRITE = `#version 300 es
 precision highp float; in vec2 vUv; in vec2 vW; out vec4 o;
 uniform sampler2D uTex; uniform sampler2D uNrm; uniform float uFlip; uniform vec3 uAmb; uniform vec3 uKey; uniform vec3 uKeyDir;
-uniform vec3 uTint; uniform vec4 uFlash; uniform float uAlpha; uniform vec4 uOutline; uniform vec2 uTexel; uniform float uRefl; uniform vec2 uV; uniform float uSat; uniform vec4 uClip;
+uniform vec3 uTint; uniform vec4 uFlash; uniform float uAlpha; uniform vec4 uOutline; uniform vec2 uTexel; uniform float uRefl; uniform vec2 uV; uniform float uSat; uniform vec4 uClip; uniform float uShadow; uniform vec3 uBoost;
 ${LIGHT_FN}
 void main(){
   if (vUv.x < uClip.x || vUv.x > uClip.z || vUv.y < uClip.y || vUv.y > uClip.w) discard;
   vec4 c = texture(uTex, vUv); float a = c.a; float ol = 0.0;
+  if (uShadow > 0.0) { if (a < 0.05) discard; float sa = a * uShadow; o = vec4(0.0, 0.0, 0.02 * sa, sa); return; }
   if (uOutline.a > 0.0 && uRefl < 0.5) { float m = 0.0;
     for (int i = 0; i < 8; i++) { float an = float(i) * 0.785398; vec2 q = vUv + vec2(cos(an), sin(an)) * uTexel * 2.6;
       if (q.x > uClip.x && q.x < uClip.z && q.y > uClip.y && q.y < uClip.w) m = max(m, texture(uTex, q).a); }
@@ -41,9 +42,15 @@ void main(){
     col = rgb * uTint * vec3(0.86, 0.9, 1.0); alpha = a * uAlpha * pow(fy, 1.15) * 0.95;
   } else {
     vec3 n = texture(uNrm, vUv).xyz * 2.0 - 1.0; n.x *= uFlip; n = normalize(n);
-    vec3 lit = uAmb + uKey * max(dot(n, normalize(uKeyDir)), 0.0) * 0.55 + pointLights(n, vW, 0.2);
-    float rim = pow(1.0 - clamp(n.z, 0.0, 1.0), 2.0);
-    col = rgb * uTint * lit + rim * uKey * 0.25;
+    vec3 K = normalize(uKeyDir);
+    float kd = max(dot(n, K), 0.0);
+    vec3 pl = pointLights(n, vW, 0.0) * 1.9; pl = pl / (1.0 + pl * 0.45);
+    vec3 lit = uAmb + uBoost + uKey * kd * 1.05 + pl;
+    // 역광 테두리: 빛이 뒤·옆에서 올 때 가장자리가 빛난다
+    float edge = pow(1.0 - clamp(n.z, 0.0, 1.0), 1.6);
+    float back = max(dot(normalize(vec3(n.xy, 0.0001)), normalize(vec3(K.xy, 0.0001))), 0.0);
+    col = rgb * uTint * lit + edge * back * uKey * 0.55;
+    col = col * (1.0 + col / 2.6) / (1.0 + col); col *= 1.25; // 하이라이트가 하얗게 날아가지 않게(톤 매핑)
     float g = dot(col, vec3(0.299, 0.587, 0.114)); col = mix(vec3(g), col, uSat);
     col = mix(col, uFlash.rgb, uFlash.a);
     alpha = a * uAlpha;
@@ -54,19 +61,21 @@ void main(){
 }`
 const FS_BG = `#version 300 es
 precision highp float; in vec2 vUv; in vec2 vW; out vec4 o;
-uniform sampler2D uBg; uniform sampler2D uBgN; uniform sampler2D uRefl; uniform sampler2D uMask; uniform float uTime; uniform vec3 uAmb; uniform float uRip;
+uniform sampler2D uBg; uniform sampler2D uBgN; uniform sampler2D uRefl; uniform sampler2D uMask; uniform float uTime; uniform vec3 uAmb; uniform float uRip; uniform vec3 uView; uniform vec2 uCam; uniform vec3 uBoost;
 ${LIGHT_FN}
 void main(){
   vec2 uv = vW / vec2(${W}.0, ${H}.0);
   vec3 base = texture(uBg, uv).rgb; vec3 n = normalize(texture(uBgN, uv).xyz * 2.0 - 1.0);
-  vec3 col = base * uAmb + base * pointLights(n, vW, 0.35) * 1.25;
+  vec3 bl = pointLights(n, vW, 0.15) * 1.7; bl = bl / (1.0 + bl * 0.35);
+  vec3 col = base * (uAmb + uBoost) + base * bl;
   float m = texture(uMask, uv).r;
   if (m > 0.01) {
     vec2 rip = vec2(sin(vW.y * 0.11 + uTime * 2.3 + sin(vW.x * 0.023 + uTime) * 2.0), cos(vW.x * 0.045 - uTime * 1.6 + vW.y * 0.03)) * 2.4 * uRip;
-    vec2 ruv = (vW + rip) / vec2(${W}.0, ${H}.0); ruv.y = 1.0 - ruv.y;
+    vec2 sp = (vW + rip - uView.xy) * uView.z + vec2(${W / 2}.0, ${H / 2}.0) + uCam;
+    vec2 ruv = sp / vec2(${W}.0, ${H}.0); ruv.y = 1.0 - ruv.y;
     vec4 r = texture(uRefl, ruv);
     col = col * (1.0 - r.a * min(1.0, m * 1.2) * 0.8) + r.rgb * min(1.0, m * 1.2) * 0.92;
-    col += pointLights(vec3(0.0, 0.0, 1.0), vW, 1.0) * m * 0.22;
+    col += pointLights(vec3(0.0, 0.0, 1.0), vW, 1.0) * m * 0.45;
   }
   o = vec4(col, 1.0);
 }`
@@ -227,7 +236,9 @@ export class BattleRenderer {
     for (const [u, v] of [[0, 0], [1, 0], [1, 1], [0, 1]]) { const x = (u - ox) * w, y = (v - oy) * h; pts.push(cx + x * c - y * s, cy + x * s + y * c) }
     return pts
   }
-  private use(p: Prog) { const gl = this.gl; gl.useProgram(p.p); gl.uniform2f(p.u('uCam'), this.cam[0], this.cam[1]); return p }
+  view = { x: W / 2, y: H / 2, z: 1 }
+  boost: [number, number, number] = [0, 0, 0]
+  private use(p: Prog) { const gl = this.gl; gl.useProgram(p.p); gl.uniform2f(p.u('uCam'), this.cam[0], this.cam[1]); gl.uniform3f(p.u('uView'), this.view.x, this.view.y, this.view.z); return p }
   private setLights(p: Prog, lights: Light[]) {
     const gl = this.gl; const n = Math.min(MAXL, lights.length)
     const a = new Float32Array(MAXL * 4), b = new Float32Array(MAXL * 4)
@@ -263,18 +274,20 @@ export class BattleRenderer {
     let dx = 0, dy = 0, sx = 1, sy = 1, rot = 0
     const breathe = Math.sin(t * 2.4 + u.hy * 0.05) * 0.012
     if (L.n === 1) { sy = 1 + breathe; sx = 1 - breathe * 0.6 }
-    const moving = u.entering || u.task?.ph === 'go' || u.task?.ph === 'back'
-    if (moving && L.n === 1) { dy -= Math.abs(Math.sin(t * 11 + u.hy)) * 7; rot = Math.sin(t * 11 + u.hy) * 0.03 }
-    if (a?.k === 'atk' && u.kind !== 'rion') { const p = Math.sin(k * Math.PI); dx = face * p * (u.kind === 'ian' ? 26 : 16); rot = face * p * 0.05 }
+    // 이동: 속도만큼 통통 튀며 진행 방향으로 기울어진다(달리기)
+    const spd = Math.hypot(u.vx, u.vy) + (u.entering || u.task ? 300 : 0)
+    if (spd > 40 && !u.dead) { const k2 = Math.min(1, spd / 380); const ph = t * (9 + k2 * 6) + u.hy; dy -= Math.abs(Math.sin(ph)) * 10 * k2; rot = face * 0.09 * k2 + Math.sin(ph) * 0.03 * k2; sy *= 1 - Math.abs(Math.cos(ph)) * 0.04 * k2 }
+    dy -= u.hop
+    if (a?.k === 'atk' && u.kind !== 'rion') { const p = Math.sin(k * Math.PI); dx = face * p * (u.kind === 'ian' ? 30 : u.kind === 'seren' ? 34 : 18); rot = face * p * (u.kind === 'seren' ? 0.16 : 0.07); sx *= 1 + p * 0.05 }
     if (a?.k === 'skill' || a?.k === 'buff') { const p = Math.sin(k * Math.PI); sx *= 1 + p * 0.07; sy *= 1 + p * 0.07 }
-    if (a?.k === 'hit') { dx = -face * 7 * (1 - k) }
+    if (a?.k === 'hit') { dx = -face * 12 * (1 - k); rot = -face * 0.08 * (1 - k) }
     if (a?.k === 'stagger') { rot = Math.sin(t * 30) * 0.05 - face * 0.08; dx = Math.sin(t * 40) * 3 }
     if (a?.k === 'roar') { const p = Math.sin(k * Math.PI); sx *= 1 + p * 0.06; sy *= 1 + p * 0.08; dx = Math.sin(t * 50) * 4 * p }
     if (a?.k === 'use') { dy = Math.sin(k * Math.PI * 3) * 4 }
     if (u.stun > 0) rot = Math.sin(t * 6) * 0.06
     const tele = u.tele
     let flash: [number, number, number, number] = [1, 1, 1, 0]
-    if (a?.k === 'hit') flash = [1, 1, 1, (1 - k) * 0.65]
+    if (a?.k === 'hit') flash = [1, 1, 1, (1 - k) * (u.side === 'ally' ? 0.28 : 0.6)]
     if (tele) { const p = 0.25 + 0.25 * Math.sin(t * 18); flash = [1, 0.15, 0.25, p]; if (tele.k === 'charge' || tele.k === 'slam') { dx -= face * 8 * Math.min(1, tele.t / tele.dur); sy *= 1 - 0.04 * Math.min(1, tele.t / tele.dur) } }
     if (u.vuln > 0) flash = [0.9, 0.95, 1, 0.15 + 0.1 * Math.sin(t * 10)]
     const float = L.float ? L.float + Math.sin(t * 2.4 + u.hx) * 8 : 0
@@ -288,7 +301,7 @@ export class BattleRenderer {
     if (L.n > 1 && focus !== u.id && !tele) outline = [outline[0], outline[1], outline[2], 0] // 프레임 시트는 칸 경계가 번져 윤곽을 끈다
     return { L, frame, dx, dy: dy - float + sink, sx, sy, rot, flash, alpha, sat, outline, face }
   }
-  private drawUnitSprite(u: Unit, t: number, focus: string | null, lights: Light[], refl: boolean) {
+  private drawUnitSprite(u: Unit, t: number, focus: string | null, lights: Light[], refl: boolean, shadow?: { dx: number; dy: number; a: number }) {
     const P = this.pose(u, t, focus)
     const L = P.L; const T = this.tex.get(L.file); const N = this.nrm.get(L.file); if (!T || !N) return
     const ds = depthScale(u.y) * L.s
@@ -299,22 +312,28 @@ export class BattleRenderer {
     const w = L.cw * ds * P.sx, h = L.ch * ds * P.sy
     const ox = (flip ? L.cw - L.ax : L.ax) / L.cw, oy = L.ay / L.ch
     const fx = u.x + P.dx, fy = u.y + P.dy
-    let pts = this.box(fx, fy, w, h, P.rot, ox, oy)
+    let pts = this.box(fx, fy, w, h, shadow ? 0 : P.rot, ox, oy)
     const uvs = flip ? [u1, v0, u0, v0, u0, v1, u1, v1] : [u0, v0, u1, v0, u1, v1, u0, v1]
     if (refl) pts = pts.map((v, i) => (i % 2 ? 2 * u.y - v + 2 : v))
-    this.sprite(T, N, pts, uvs, { flip: flip ? -1 : 1, flash: P.flash, alpha: P.alpha, sat: P.sat, outline: P.outline, refl, v: [v0, v1], clip: [Math.min(u0, u1) + 0.0005, v0 + 0.0005, Math.max(u0, u1) - 0.0005, v1 - 0.0005], lights })
+    if (shadow) {
+      // 땅에 눕힌 그림자: 높이(발에서 위로 떨어진 만큼)를 빛 반대쪽으로 늘인다
+      const gy = u.y
+      pts = pts.map((v, i, arr) => { if (i % 2 === 0) { const hgt = gy - arr[i + 1]; return v + shadow.dx * hgt } const hgt = gy - v; return gy + shadow.dy * hgt })
+    }
+    this.sprite(T, N, pts, uvs, { flip: flip ? -1 : 1, flash: P.flash, alpha: P.alpha, sat: P.sat, outline: P.outline, refl, v: [v0, v1], clip: [Math.min(u0, u1) + 0.0005, v0 + 0.0005, Math.max(u0, u1) - 0.0005, v1 - 0.0005], lights, shadow: shadow ? shadow.a * P.alpha : 0 })
   }
-  private sprite(T: Tex, N: Tex, pts: number[], uvs: number[], o: { flip: number; flash: number[]; alpha: number; sat: number; outline: number[]; refl: boolean; v: number[]; clip: number[]; lights: Light[]; tint?: number[] }) {
+  private sprite(T: Tex, N: Tex, pts: number[], uvs: number[], o: { flip: number; flash: number[]; alpha: number; sat: number; outline: number[]; refl: boolean; v: number[]; clip: number[]; lights: Light[]; tint?: number[]; shadow?: number }) {
     const gl = this.gl; const p = this.use(this.progs.spr)
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T.t); gl.uniform1i(p.u('uTex'), 0)
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, N.t); gl.uniform1i(p.u('uNrm'), 1)
     const bg = this.bg
-    gl.uniform1f(p.u('uFlip'), o.flip); gl.uniform3fv(p.u('uAmb'), bg.sprAmb); gl.uniform3fv(p.u('uKey'), bg.key); gl.uniform3fv(p.u('uKeyDir'), bg.keyDir)
+    gl.uniform1f(p.u('uFlip'), o.flip); gl.uniform3fv(p.u('uAmb'), this.flat ? [1, 1, 1] : bg.sprAmb); gl.uniform3fv(p.u('uKey'), this.flat ? [0, 0, 0] : bg.key); gl.uniform3fv(p.u('uKeyDir'), bg.keyDir)
     gl.uniform3fv(p.u('uTint'), o.tint ?? [1, 1, 1]); gl.uniform4fv(p.u('uFlash'), o.flash); gl.uniform1f(p.u('uAlpha'), o.alpha)
     gl.uniform4fv(p.u('uOutline'), o.outline); gl.uniform2f(p.u('uTexel'), 1 / T.w, 1 / T.h); gl.uniform1f(p.u('uRefl'), o.refl ? 1 : 0)
     gl.uniform2fv(p.u('uV'), o.v); gl.uniform1f(p.u('uSat'), o.sat); gl.uniform4fv(p.u('uClip'), o.clip)
-    this.setLights(p, o.lights)
+    gl.uniform1f(p.u('uShadow'), o.shadow ?? 0); gl.uniform3fv(p.u('uBoost'), this.boost)
+    this.setLights(p, this.flat ? [] : o.lights)
     this.quad(pts, uvs)
   }
   private drawProp(kind: 'relay' | 'shutter', x: number, y: number, lights: Light[], refl: boolean, flash = 0, outline: number[] = [0.55, 0.92, 1, 0.4]) {
@@ -331,13 +350,17 @@ export class BattleRenderer {
     for (const l of this.bg.lights) out.push({ ...l, i: l.i * (l.flicker ? 1 - l.flicker * (Math.sin(t * 13 + l.x) > 0.6 ? 1 : 0) : 1) })
     const dyn: Light[] = []
     const C = (h: string): [number, number, number] => h === 'lime' ? [0.75, 1, 0.25] : h === 'ice' ? [0.6, 0.78, 1] : h === 'pink' ? [1, 0.4, 0.45] : h === 'violet' ? [0.75, 0.35, 1] : h === 'orange' ? [1, 0.55, 0.2] : h === 'green' ? [0.45, 1, 0.55] : [1, 1, 1]
-    for (const p of s.proj) dyn.push({ x: p.x, y: p.y, z: 60, r: p.k === 'wave' ? 380 : 210, c: C(p.k === 'ring' || p.k === 'wave' ? 'lime' : p.k === 'slash' ? 'ice' : p.k === 'cube' ? 'pink' : 'violet'), i: p.k === 'wave' ? 1.3 : 0.9 })
+    for (const p of s.proj) dyn.push({ x: p.x, y: p.y, z: 50, r: p.k === 'wave' ? 520 : 250, c: C(p.k === 'ring' || p.k === 'wave' ? 'lime' : p.k === 'slash' ? 'ice' : p.k === 'cube' ? 'pink' : 'violet'), i: p.k === 'wave' ? 2.0 : 1.1 })
     for (const f of s.fx) {
       const k = 1 - f.t / f.dur
-      if (f.k === 'slashBig') dyn.push({ x: f.x, y: f.y, z: 70, r: 320, c: C('ice'), i: 1.4 * k })
-      else if (f.k === 'cubeDrop') dyn.push({ x: f.x, y: f.y, z: 70, r: 240, c: C('pink'), i: 1.1 * k })
-      else if (f.k === 'slam') dyn.push({ x: f.x, y: f.y, z: 40, r: (f.r ?? 120) * 2.2, c: C('violet'), i: 1.6 * k })
-      else if (f.k === 'break') dyn.push({ x: f.x, y: f.y, z: 80, r: 360, c: [1, 1, 1], i: 1.5 * k })
+      if (f.k === 'slashBig') dyn.push({ x: f.x, y: f.y, z: 60, r: 460, c: C('ice'), i: 2.4 * k })
+      else if (f.k === 'dieE') dyn.push({ x: f.x, y: f.y + 20, z: 50, r: f.who === 'boss' ? 1200 : 480, c: [0.85, 0.4, 1], i: 3.0 * k * k })
+      else if (f.k === 'hitE' && f.crit) dyn.push({ x: f.x, y: f.y, z: 50, r: 280, c: [1, 0.9, 0.6], i: 1.6 * k })
+      else if (f.k === 'slashHit' || f.k === 'bash') dyn.push({ x: f.x, y: f.y, z: 50, r: 260, c: f.k === 'bash' ? C('orange') : C('ice'), i: 1.4 * k })
+      else if (f.k === 'ringHit') dyn.push({ x: f.x, y: f.y, z: 50, r: 280, c: C('lime'), i: 1.6 * k })
+      else if (f.k === 'cubeDrop') dyn.push({ x: f.x, y: f.y, z: 70, r: 360, c: C('pink'), i: 2.0 * k })
+      else if (f.k === 'slam') dyn.push({ x: f.x, y: f.y, z: 40, r: (f.r ?? 120) * 3, c: C('violet'), i: 3.0 * k })
+      else if (f.k === 'break') dyn.push({ x: f.x, y: f.y, z: 80, r: 520, c: [1, 1, 1], i: 2.6 * k })
       else if (f.k === 'beam') dyn.push({ x: (f.x + (f.x2 ?? f.x)) / 2, y: (f.y + (f.y2 ?? f.y)) / 2, z: 60, r: 380, c: C('violet'), i: 1.3 * k })
       else if (f.k === 'wall' || f.k === 'shieldOn') dyn.push({ x: f.x, y: f.y, z: 60, r: 260, c: C('orange'), i: 0.9 * k })
       else if (f.k === 'heal') dyn.push({ x: f.x, y: f.y, z: 50, r: 160, c: C('green'), i: 0.5 * k })
@@ -357,21 +380,28 @@ export class BattleRenderer {
     }
     for (const d of s.devices) if (d.k === 'relay' && d.hp > 0) dyn.push({ x: d.x + 6, y: d.y - 90, z: 60, r: 220, c: [0.3, 1, 0.95], i: 0.55 + 0.25 * Math.sin(t * 6) })
     dyn.sort((a, b) => b.i * b.r - a.i * a.r)
+    this.dyn = dyn.slice(0, 8)
     // 정적 빛은 4개까지만 두고 나머지 자리를 기술 빛에 준다
     return [...out.slice(0, Math.max(3, MAXL - dyn.length)), ...dyn].slice(0, MAXL)
   }
 
+  dyn: Light[] = []
+  /** 비교용: 켜면 조명·그림자 없이 원본 그림 그대로(개발 확인용) */
+  flat = false
+  private flash(c: [number, number, number], k: number) { if (this.reduce) k *= 0.4; this.boost = [Math.min(0.8, this.boost[0] + c[0] * k), Math.min(0.8, this.boost[1] + c[1] * k), Math.min(0.8, this.boost[2] + c[2] * k)] }
   // ───────── 입자·물결(화면 쪽 상태) ─────────
   private emit(f: Fx) {
     const R = Math.random; const n = this.reduce ? 0.4 : 1
     const burst = (cnt: number, o: Partial<Part> & { sp: number; c: [number, number, number] }) => { for (let i = 0; i < Math.round(cnt * n); i++) { const a = R() * Math.PI * 2, v = o.sp * (0.4 + R() * 0.8); this.parts.push({ x: f.x, y: f.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - o.sp * 0.3, life: 0, max: (o.max ?? 0.5) * (0.7 + R() * 0.6), size: (o.size ?? 14) * (0.6 + R() * 0.8), tex: o.tex ?? 'spark', c: o.c, g: o.g ?? 600, rot: R() * 6, vr: (R() - 0.5) * 10, add: o.add ?? true, ground: o.ground }) } }
     if (f.k === 'hitE') burst(f.crit ? 10 : 5, { sp: 260, c: [0.85, 0.6, 1], size: 12, max: 0.35, g: 300 })
     else if (f.k === 'hitA') burst(5, { sp: 220, c: [1, 0.55, 0.5], size: 10, max: 0.3, g: 300 })
-    else if (f.k === 'dieE') { burst(16, { sp: 360, c: [0.8, 0.5, 1], tex: 'shard', size: 22, max: 0.9, g: 900, add: false, ground: f.y + 60 }); burst(10, { sp: 160, c: [0.8, 0.4, 1], tex: 'glow', size: 40, max: 0.6, g: -60 }) }
-    else if (f.k === 'break') burst(22, { sp: 520, c: [1, 1, 1], size: 18, max: 0.5, g: 200 })
+    else if (f.k === 'dieE') { this.flash([0.5, 0.25, 0.7], f.who === 'boss' ? 0.9 : 0.35); burst(26, { sp: 520, c: [1, 0.75, 1], size: 26, max: 0.45, g: 100 }); burst(16, { sp: 360, c: [0.8, 0.5, 1], tex: 'shard', size: 22, max: 0.9, g: 900, add: false, ground: f.y + 60 }); burst(10, { sp: 160, c: [0.8, 0.4, 1], tex: 'glow', size: 40, max: 0.6, g: -60 }) }
+    else if (f.k === 'break') this.flash([0.5, 0.5, 0.55], 0.5), burst(22, { sp: 520, c: [1, 1, 1], size: 18, max: 0.5, g: 200 })
     else if (f.k === 'heal') burst(5, { sp: 60, c: [0.45, 1, 0.55], tex: 'glow', size: 18, max: 0.9, g: -140 })
-    else if (f.k === 'buffOn') { const a = ACCENT[f.who ?? ''] ?? [1, 1, 1]; burst(16, { sp: 120, c: a, tex: 'glow', size: 22, max: 1.0, g: -220 }) }
-    else if (f.k === 'slam') { burst(18, { sp: 300, c: [0.75, 0.6, 0.9], tex: 'glow', size: 34, max: 0.6, g: -40 }); this.ripple(f.x, f.y, (f.r ?? 120) * 1.4, 0.9, 0.9) }
+    else if (f.k === 'noise') this.flash([0.7, 0.3, 1], 0.9)
+    else if (f.k === 'slashBig') this.flash([0.4, 0.5, 0.7], 0.25)
+    else if (f.k === 'buffOn') { const a = ACCENT[f.who ?? ''] ?? [1, 1, 1]; this.flash(a, 0.25); burst(16, { sp: 120, c: a, tex: 'glow', size: 22, max: 1.0, g: -220 }) }
+    else if (f.k === 'slam') { this.flash([0.6, 0.3, 0.8], 0.45); burst(18, { sp: 300, c: [0.75, 0.6, 0.9], tex: 'glow', size: 34, max: 0.6, g: -40 }); this.ripple(f.x, f.y, (f.r ?? 120) * 1.4, 0.9, 0.9) }
     else if (f.k === 'cubePop') burst(6, { sp: 200, c: [1, 0.5, 0.55], size: 12, max: 0.35 })
     else if (f.k === 'chargeHit') this.ripple(f.x2 ?? f.x, f.y2 ?? f.y, 120, 0.6, 0.7)
     else if (f.k === 'dieA') burst(10, { sp: 160, c: [0.6, 0.9, 1], tex: 'glow', size: 26, max: 0.8, g: -80 })
@@ -398,6 +428,18 @@ export class BattleRenderer {
     }
     const shake = shakeOn ? s.shake : 0
     this.cam = [(Math.random() - 0.5) * 16 * shake, (Math.random() - 0.5) * 12 * shake]
+    const fade = Math.exp(-dt * 7); this.boost = [this.boost[0] * fade, this.boost[1] * fade, this.boost[2] * fade]
+    // 카메라: 전투가 벌어지는 곳을 살짝 따라가고, 스킬 순간엔 시전자 쪽으로 당겨 준다
+    if (!this.reduce) {
+      const live = s.units.filter((u) => !u.dead && u.x < 1300)
+      let cx = W / 2, cy = H / 2, z = 1.06
+      if (live.length) { cx = live.reduce((a, u) => a + u.x, 0) / live.length; cy = live.reduce((a, u) => a + u.y, 0) / live.length - 70 }
+      if (s.cutin && s.cutin.t < 0.55) { const c = s.units.find((u) => u.id === s.cutin!.kind); if (c) { cx = c.x + 120; cy = c.y - 90; z = 1.14 } }
+      const k = Math.min(1, dt * (s.cutin ? 5 : 1.6))
+      this.view.z += (z - this.view.z) * k; this.view.x += (cx - this.view.x) * k; this.view.y += (cy - this.view.y) * k
+      const hw = W / 2 / this.view.z, hh = H / 2 / this.view.z
+      this.view.x = Math.max(hw, Math.min(W - hw, this.view.x)); this.view.y = Math.max(hh, Math.min(H - hh, this.view.y))
+    } else this.view = { x: W / 2, y: H / 2, z: 1 }
     const lights = this.collectLights(s, t)
     const units = [...s.units].sort((a, b) => a.y - b.y)
     gl.enable(gl.BLEND)
@@ -419,8 +461,8 @@ export class BattleRenderer {
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, BN.t); gl.uniform1i(pb.u('uBgN'), 1)
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, R.tex); gl.uniform1i(pb.u('uRefl'), 2)
     gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, this.maskTex!.t); gl.uniform1i(pb.u('uMask'), 3)
-    gl.uniform1f(pb.u('uTime'), t); gl.uniform3fv(pb.u('uAmb'), this.bg.amb); gl.uniform1f(pb.u('uRip'), this.bg.ripple * (this.reduce ? 0.3 : 1))
-    this.setLights(pb, lights)
+    gl.uniform1f(pb.u('uTime'), t); gl.uniform3fv(pb.u('uAmb'), this.flat ? [1, 1, 1] : this.bg.amb); gl.uniform3fv(pb.u('uBoost'), this.flat ? [0, 0, 0] : this.boost); gl.uniform1f(pb.u('uRip'), this.bg.ripple * (this.reduce ? 0.3 : 1))
+    this.setLights(pb, this.flat ? [] : lights)
     const m = 24 // 흔들림 여백
     this.quad([-m, -m, W + m, -m, W + m, H + m, -m, H + m], [0, 0, 1, 0, 1, 1, 0, 1])
     gl.enable(gl.BLEND)
@@ -428,7 +470,21 @@ export class BattleRenderer {
     // ③ 바닥: 물결 · 예고 · 그림자 · 장치 보호막
     for (const r of this.ripples) { const k = r.t / r.dur; this.shape(4, this.box(r.x, r.y, r.r * 2 * (0.3 + k), r.r * 0.62 * (0.3 + k)), [0.85, 0.92, 1, r.a * (1 - k) * 0.5], 0, true) }
     for (const u of s.units) if (u.tele && !u.dead) this.drawTele(u, t, false)
-    for (const u of units) { if (u.dead > 0.8) continue; const L = (LOOKS as Record<string, Look>)[u.kind]; const ds = depthScale(u.y); const w = (u.kind === 'boss' ? 260 : u.kind === 'golem' ? 150 : u.kind === 'pylon' || u.kind === 'caller' ? 120 : u.kind === 'mite' ? 70 : 92) * ds; this.shape(0, this.box(u.x, u.y + 2, w, w * 0.3), [0, 0, 0.02, (L.float ? 0.25 : 0.45) * (1 - u.dead)]) }
+    // 바닥에 떨어지는 빛 웅덩이(기술·폭발 빛이 땅을 물들임)
+    if (!this.flat) for (const l of this.dyn) { if (l.i < 0.4) continue; const gy = Math.max(320, l.y + (l.z > 40 ? 80 : 20)); this.shape(3, this.box(l.x, gy, l.r * 1.2, l.r * 0.42), [l.c[0], l.c[1], l.c[2], Math.min(0.55, l.i * 0.16)], 0, true) }
+    // 그림자: 주광(노을·달빛) 반대쪽으로 길게 + 가까운 강한 빛(폭발·스킬)이 있으면 그 반대쪽으로 한 장 더
+    const kd = this.bg.keyDir
+    for (const u of units) {
+      if (u.dead > 0.8 || (u.side === 'enemy' && u.entering && u.x > 1250)) continue
+      const L = (LOOKS as Record<string, Look>)[u.kind]; const ds = depthScale(u.y)
+      const w = (u.kind === 'boss' ? 260 : u.kind === 'golem' ? 150 : u.kind === 'pylon' || u.kind === 'caller' ? 120 : u.kind === 'mite' ? 70 : 92) * ds
+      this.shape(0, this.box(u.x, u.y + 2, w, w * 0.3), [0, 0, 0.02, (L.float ? 0.25 : 0.5) * (1 - u.dead)])
+      if (L.float || this.flat) continue
+      this.drawUnitSprite(u, t, null, lights, false, { dx: -kd[0] * 1.15, dy: 0.28, a: 0.38 })
+      let best: Light | null = null, bi = 0
+      for (const l of this.dyn) { const d = Math.hypot(l.x - u.x, (l.y - u.y) * 0.8); if (d > l.r || d < 20) continue; const I = l.i * (1 - d / l.r) ** 2; if (I > bi) { bi = I; best = l } }
+      if (best && bi > 0.12) { const dx = u.x - best.x, dy = (u.y - best.y), L2 = Math.hypot(dx, dy) || 1; this.drawUnitSprite(u, t, null, lights, false, { dx: dx / L2 * 1.1, dy: Math.max(0.1, dy / L2 * 0.5 + 0.15), a: Math.min(0.5, bi * 0.5) }) }
+    }
     for (const d of s.devices) { const w = (d.k === 'relay' ? 110 : 80) * depthScale(d.y); this.shape(0, this.box(d.x, d.y + 2, w, w * 0.3), [0, 0, 0.02, 0.45]) }
     if (s.focus) { const f = s.units.find((u) => u.id === s.focus); if (f && !f.dead) { const w = 120 * depthScale(f.y) * (f.kind === 'boss' ? 2.2 : 1); this.shape(5, this.box(f.x, f.y, w, w * 0.34), [1, 0.85, 0.2, 0.8], 0, true) } }
 
@@ -478,7 +534,7 @@ export class BattleRenderer {
     const gy = (y: number) => y + 95 // 공중 이펙트의 반사 기준(대략 발밑)
     for (const p of s.proj) {
       const fy = gy(p.y)
-      if (p.k === 'ring') { this.fxQuad('ring', p.x, p.y, 70, 70, 0, [0.78, 1, 0.3, 1], refl, fy); this.fxQuad('glow', p.x, p.y, 110, 110, 0, [0.6, 1, 0.2, 0.5], refl, fy) }
+      if (p.k === 'ring') { this.fxQuad('ring', p.x, p.y, 54, 62, 0, [0.85, 1, 0.35, 1], refl, fy); this.fxQuad('ring', p.x - 18, p.y, 40, 48, 0, [0.85, 1, 0.35, 0.55], refl, fy); this.fxQuad('glow', p.x, p.y, 64, 64, 0, [0.6, 1, 0.2, 0.35], refl, fy) }
       else if (p.k === 'wave') { for (let i = 0; i < 3; i++) this.fxQuad('wave', p.x - i * 26, p.y + 40, 150 - i * 20, 560 - i * 60, 0, [0.78, 1, 0.3, 0.9 - i * 0.25], refl, fy + 200) }
       else if (p.k === 'slash') { this.fxQuad('slash', p.x, p.y, 120, 120, 0.2, [0.7, 0.85, 1, 1], refl, fy); this.fxQuad('glow', p.x, p.y, 90, 60, 0, [0.5, 0.7, 1, 0.5], refl, fy) }
       else if (p.k === 'cube') { const g = this.gl; void g; this.fxQuad('glow', p.x, p.y, 90, 90, 0, [1, 0.4, 0.45, 0.6], refl, fy); this.fxQuad('cube', p.x, p.y, 54, 54, t * 8 + p.id, [1, 1, 1, 0.95], refl, fy) }

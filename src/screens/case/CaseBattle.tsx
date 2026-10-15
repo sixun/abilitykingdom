@@ -144,7 +144,7 @@ export default function CaseBattle({ params }: { params: Record<string, unknown>
         {glErr && <div className="cb-glerr">이 기기에서는 전투 화면(WebGL2)을 그릴 수 없습니다.</div>}
 
         {/* 머리 위: 체력·보호막·시전·표시 + 적 누르기 */}
-        <div className="cb-marks">
+        <div className="cb-marks" style={rd.current ? { transform: `translate(640px, 360px) scale(${rd.current.view.z}) translate(${-rd.current.view.x}px, ${-rd.current.view.y}px)`, transformOrigin: '0 0' } : undefined}>
           {s.units.filter((u) => !u.dead && !(u.side === 'enemy' && u.x > 1300)).map((u) => <Mark key={u.id} u={u} focus={s.focus === u.id} onFocus={u.side === 'enemy' ? () => focus(u.id) : undefined} tipped={tipTarget?.id === u.id} />)}
           {s.devices.map((d) => d.k === 'relay'
             ? <div key={d.id} className="cb-dev relay" style={{ left: d.x, top: d.y - 175 }}><b>{d.label}</b><span className="bar"><i style={{ width: `${(d.hp / d.max) * 100}%` }} /></span>{d.guard > 0 && <em>보호 구역</em>}</div>

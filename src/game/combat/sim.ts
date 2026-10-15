@@ -36,6 +36,8 @@ export interface Unit {
   statik: boolean // 움직이지 않음
   vuln: number // 무력화(받는 피해 증가) 남은 시간
   phase: number; lv: number
+  vx: number; vy: number // 이동 속도(화면에서 걷기·기울기 연출에 씀)
+  hop: number // 공중으로 뜬 높이(넉백·백스텝 연출)
 }
 export interface Device { id: string; k: 'relay' | 'shutter'; x: number; y: number; hp: number; max: number; lane: number; closed: number; cool: number; guard: number; label: string }
 export interface Proj { id: number; k: 'ring' | 'wave' | 'slash' | 'cube' | 'bolt'; x: number; y: number; tx: string; spd: number; dmg: number; from: string; crit: boolean; brk: number; abil: boolean; seen?: string[]; vx?: number; life?: number }
@@ -88,7 +90,7 @@ const FOE: Record<FoeKind, { name: string; st: Stats; interval: number; range: n
   hound: { name: '결정 사냥개', st: S({ maxHp: 2700, atk: 250, def: 20 }), interval: 1.3, range: 75, speed: 100 },
   golem: { name: '결정 거인', st: S({ maxHp: 9400, atk: 470, def: 60, effRes: 0.3 }), interval: 2.2, range: 105, speed: 42 },
   orb: { name: '결정 구체', st: S({ maxHp: 2300, atk: 260, def: 10 }), interval: 2.1, range: 620, speed: 40 },
-  mite: { name: '잠식충', st: S({ maxHp: 950, atk: 120, def: 0 }), interval: 0.6, range: 60, speed: 128, icon: 'device' },
+  mite: { name: '잠식충', st: S({ maxHp: 950, atk: 120, def: 0 }), interval: 0.6, range: 60, speed: 150, icon: 'device' },
   caller: { name: '호출 결정체', st: S({ maxHp: 18000, atk: 0, def: 40, effRes: 0.2 }), interval: 99, range: 0, speed: 0, passive: true, statik: true, icon: 'target' },
   pylon: { name: '중계 결정 기둥', st: S({ maxHp: 5200, atk: 0, def: 30 }), interval: 99, range: 0, speed: 0, passive: true, statik: true, icon: 'target' },
   boss: { name: '스태틱', st: S({ maxHp: 31000, atk: 560, def: 80, effRes: 0.5 }), interval: 2.0, range: 165, speed: 46 },
@@ -113,7 +115,7 @@ function mkUnit(side: Side, kind: Kind, id: string, x: number, y: number, hx: nu
     id, side, kind, name: d.name, x, y, hx, hy, face: side === 'ally' ? 1 : -1, hp: st.maxHp, st, buffs: [],
     shield: 0, shieldT: 0, taunt: 0, stun: 0, slowT: 0, slowK: 0, cd: 0.5 + Math.random() * 0.8, interval: d.interval, range: d.range,
     act: null, tele: null, teleCd: 3 + Math.random() * 3, teleCd2: 6, dead: 0, entering: true, dealt: 0, healed: 0, basicN: 0, task: null,
-    icon: f?.icon ?? null, passive: !!f?.passive, statik: !!f?.statik, vuln: 0, phase: 1, lv,
+    icon: f?.icon ?? null, passive: !!f?.passive, statik: !!f?.statik, vuln: 0, phase: 1, lv, vx: 0, vy: 0, hop: 0,
   }
 }
 
@@ -153,7 +155,7 @@ function spawnWave(s: Sim) {
 }
 
 // ───────── 피해·회복 ─────────
-function damage(s: Sim, from: Unit | undefined, to: Unit, mult: number, o: { crit?: boolean; abil?: boolean; brk?: number; trueDmg?: number; noNum?: boolean } = {}) {
+function damage(s: Sim, from: Unit | undefined, to: Unit, mult: number, o: { crit?: boolean; abil?: boolean; brk?: number; trueDmg?: number; noNum?: boolean; push?: number } = {}) {
   if (!alive(to)) return 0
   let v: number
   let crit = false
@@ -176,6 +178,13 @@ function damage(s: Sim, from: Unit | undefined, to: Unit, mult: number, o: { cri
   if (crit || o.abil) s.stop = Math.max(s.stop, crit ? 0.085 : 0.05)
   fx(s, { k: to.side === 'enemy' ? 'hitE' : 'hitA', x: to.x, y: to.y - headOf(to) * 0.45, dur: 0.35, crit })
   if (!to.act || to.act.k === 'atk') to.act = { k: 'hit', t: 0, dur: 0.2 }
+  // 넉백: 맞은 쪽이 밀려난다(보스·고정체 제외). 큰 타격은 살짝 뜬다
+  const push = (o.push ?? 0) + (crit ? 18 : 0) + (o.abil ? 14 : 0) + (from && (from.kind === 'golem' || from.kind === 'boss') ? 26 : 0)
+  if (push > 0 && from && to.kind !== 'boss' && !to.statik && !to.tele) {
+    const dir = Math.sign(to.x - from.x) || (to.side === 'enemy' ? 1 : -1)
+    to.x = Math.max(60, Math.min(1240, to.x + dir * push)); to.vx = dir * push * 6
+    if (push >= 30) to.hop = Math.max(to.hop, push * 0.7)
+  }
   // 예고 끊기: 시전 중 받은 피해 누적
   if (to.tele) {
     to.tele.acc += v * (o.brk ?? 1)
@@ -380,41 +389,104 @@ export function step(s: Sim, dt: number, auto: boolean) {
     else foeTick(s, u, dt)
   }
   projTick(s, dt)
+  separate(s, dt)
   s.units = s.units.filter((u) => u.side === 'ally' || u.dead < 1.4)
   checkEnd(s)
 }
 
+// 대원 이동: 역할마다 자리를 스스로 잡는다(이동 조작은 없지만 대원은 계속 움직인다)
+// - 이안: 전선으로 나가 적을 몸으로 막는다 · 세렌: 검을 들고 파고들어 베고 빠진다
+// - 라온·칸나: 거리를 유지하며 위치를 바꾼다(가까이 오면 뒤로 빠짐) · 칸나는 다친 대원 쪽으로
+const SPEED: Record<string, number> = { ian: 250, seren: 400, rion: 270, kanna: 260 }
+function steer(u: Unit, tx: number, ty: number, dt: number, speed: number) {
+  tx = Math.max(70, Math.min(1180, tx)); ty = Math.max(305, Math.min(690, ty))
+  const dx = tx - u.x, dy = ty - u.y, L = Math.hypot(dx, dy)
+  const want = L < 8 ? 0 : Math.min(speed, L * 4)
+  const k = Math.min(1, dt * 8)
+  u.vx += ((L ? dx / L : 0) * want - u.vx) * k; u.vy += ((L ? dy / L : 0) * want - u.vy) * k
+  u.x += u.vx * dt; u.y += u.vy * dt
+  if (Math.abs(u.vx) > 30) u.face = u.vx > 0 ? 1 : -1
+}
+function nearestFoe(s: Sim, x: number, y: number, skipPassive = true) {
+  let best: Unit | undefined, bd = 1e9
+  for (const e of s.units) if (e.side === 'enemy' && alive(e) && !e.entering && !(skipPassive && e.passive)) { const d = Math.hypot(e.x - x, (e.y - y) * 1.5); if (d < bd) { bd = d; best = e } }
+  return { e: best, d: bd }
+}
 function allyTick(s: Sim, u: Unit, dt: number) {
-  // 등장: 제자리까지 걸어 들어온다
-  if (u.entering) { const dx = u.hx - u.x; if (Math.abs(dx) > 2) { u.x += Math.sign(dx) * Math.min(Math.abs(dx), 420 * dt); return } u.entering = false }
+  u.hop = Math.max(0, u.hop - dt * 260)
+  // 등장: 달려 들어온다
+  if (u.entering) { steer(u, u.hx, u.hy, dt, 460); if (Math.abs(u.hx - u.x) < 10) u.entering = false; return }
   if (u.act?.k === 'dash') {
     const a = u.act; const k = a.t / a.dur; const p = k < 0.22 ? k / 0.22 : k > 0.78 ? (1 - k) / 0.22 : 1
     u.x = (a.fx ?? u.hx) + ((a.tx ?? u.hx) - (a.fx ?? u.hx)) * p; u.y = (a.fy ?? u.hy) + ((a.ty ?? u.hy) - (a.fy ?? u.hy)) * p
+    u.vx = 0; u.vy = 0
     return
   }
   if (u.task) { taskTick(s, u, dt); return }
-  if (Math.hypot(u.x - u.hx, u.y - u.hy) > 3) { const ang = Math.atan2(u.hy - u.y, u.hx - u.x); const sp = 380 * dt; u.x += Math.cos(ang) * Math.min(sp, Math.hypot(u.hx - u.x, u.hy - u.y)); u.y += Math.sin(ang) * Math.min(sp, Math.hypot(u.hx - u.x, u.hy - u.y)); return }
-  u.cd -= dt * (1 + stat(u, 'atkSpd'))
-  if (u.cd > 0 || u.act?.k === 'skill') return
+  const busy = u.act && (u.act.k === 'atk' || u.act.k === 'skill' || u.act.k === 'buff' || u.act.k === 'use')
   const t = pickTarget(s, u)
-  if (!t) return
+  const near = nearestFoe(s, u.x, u.y)
+  const front = s.units.filter((e) => e.side === 'enemy' && alive(e) && !e.entering && !e.passive).reduce((m, e) => Math.min(m, e.x), 1300)
+  const ph = s.t * 0.6 + u.hy * 0.013
+  let tx = u.hx, ty = u.hy, sp = SPEED[u.kind] ?? 260
+  if (u.kind === 'ian') {
+    // 지킬 대상(장치 또는 팀) 앞 520 안에 들어온 적을 몸으로 막는다
+    const g = near.e && Math.abs(near.e.x - u.hx) < 520 ? near.e : undefined
+    if (g) { tx = g.x - 92; ty = g.y + 2 } else { tx = u.hx + Math.sin(ph) * 14; ty = u.hy + Math.cos(ph * 0.8) * 18 }
+  } else if (u.kind === 'seren') {
+    const mx = stat(u, 'maxHp')
+    // 이안과 겹치지 않게 대각선 위·아래에서 파고든다
+    if (t && u.hp > mx * 0.3) { tx = t.x - (t.kind === 'boss' ? 160 : 72); ty = t.y + (t.y < 495 ? 52 : -52) } else { tx = u.hx; ty = u.hy }
+  } else {
+    // 원거리: 전선에서 거리를 두고 좌우·위아래로 자리를 바꾼다
+    const keep = u.kind === 'rion' ? 330 : 360
+    tx = Math.min(u.hx + 40, front - keep) + Math.sin(ph * 1.3) * 30
+    ty = u.hy + Math.sin(ph) * 46
+    if (u.kind === 'kanna') { const low = s.units.filter((a) => a.side === 'ally' && alive(a) && a !== u).sort((a, b) => a.hp / stat(a, 'maxHp') - b.hp / stat(b, 'maxHp'))[0]; if (low && low.hp < stat(low, 'maxHp') * 0.6) { tx = Math.min(tx, low.x - 130); ty = low.y + 30 } }
+    if (near.e && near.d < 210) { const ang = Math.atan2(u.y - near.e.y, u.x - near.e.x); tx = u.x + Math.cos(ang) * 220 - 60; ty = u.y + Math.sin(ang) * 120; sp *= 1.5; if (u.hop === 0 && s.rnd() < dt * 2) u.hop = 26 }
+  }
+  // 서로 겹치지 않게
+  for (const o of s.units) if (o !== u && o.side === 'ally' && alive(o)) { const d = Math.hypot(u.x - o.x, (u.y - o.y) * 1.6); if (d < 70) { tx += (u.x - o.x) / (d + 1) * 60; ty += (u.y - o.y) / (d + 1) * 40 } }
+  if (!busy) steer(u, tx, ty, dt, sp); else { u.vx *= 0.8; u.vy *= 0.8 }
+  if (t) u.face = t.x >= u.x ? 1 : -1
+
+  u.cd -= dt * (1 + stat(u, 'atkSpd'))
+  if (u.cd > 0 || busy || !t) return
+  const hx = u.x + 50 * u.face, hy = u.y - (u.kind === 'rion' ? 115 : 85)
+  if (u.kind === 'seren' || u.kind === 'ian') { if (Math.hypot(t.x - u.x, (t.y - u.y) * 1.5) > (u.kind === 'seren' ? 130 : 150) + (t.kind === 'boss' ? 110 : 0)) return }
   u.cd = u.interval * (0.92 + s.rnd() * 0.16)
   u.basicN++
   const crit = s.rnd() < stat(u, 'critRate')
-  const hx = u.x + 50, hy = u.y - (u.kind === 'rion' ? 115 : 85)
-  if (u.kind === 'rion') { u.act = { k: 'atk', t: 0, dur: 1.1 }; later(s, 0.3, () => { if (alive(u)) s.proj.push({ id: s.seq++, k: 'ring', x: hx, y: hy, tx: t.id, spd: 820, dmg: 1, from: u.id, crit, brk: 2, abil: false }) }) }
+  if (u.kind === 'rion') { u.act = { k: 'atk', t: 0, dur: 1.1 }; later(s, 0.3, () => { if (alive(u)) s.proj.push({ id: s.seq++, k: 'ring', x: u.x + 50 * u.face, y: hy, tx: t.id, spd: 820, dmg: 1, from: u.id, crit, brk: 2, abil: false }) }) }
   else if (u.kind === 'seren') {
-    u.act = { k: 'atk', t: 0, dur: 0.4 }
-    s.proj.push({ id: s.seq++, k: 'slash', x: hx, y: hy, tx: t.id, spd: 1150, dmg: 1.05, from: u.id, crit, brk: 1, abil: false })
-    if (crit) later(s, 0.12, () => { if (alive(u) && alive(t)) s.proj.push({ id: s.seq++, k: 'slash', x: hx, y: hy - 20, tx: t.id, spd: 1250, dmg: 0.5, from: u.id, crit: false, brk: 1, abil: false }) })
+    // 근접 베기: 파고들어 베고, 치명타면 검기 한 줄이 더 날아간다
+    u.act = { k: 'atk', t: 0, dur: 0.34, tx: t.x, ty: t.y }
+    later(s, 0.1, () => { if (alive(u) && alive(t)) { damage(s, u, t, 1.05, { crit, push: 22 }); fx(s, { k: 'slashHit', x: t.x, y: t.y - headOf(t) * 0.45, dur: 0.35 }); fx(s, { k: 'swing', x: u.x + 40 * u.face, y: u.y - 70, dur: 0.25, v: u.face }) } })
+    if (crit) later(s, 0.16, () => { if (alive(u) && alive(t)) s.proj.push({ id: s.seq++, k: 'slash', x: hx, y: hy - 20, tx: t.id, spd: 1250, dmg: 0.5, from: u.id, crit: false, brk: 1, abil: false }) })
+    if (s.rnd() < 0.35) later(s, 0.32, () => { if (alive(u)) { u.vx = -u.face * 420; u.hop = 22 } })
   } else if (u.kind === 'kanna') {
     u.act = { k: 'atk', t: 0, dur: 0.45 }
     s.proj.push({ id: s.seq++, k: 'cube', x: hx, y: hy, tx: t.id, spd: 640, dmg: 0.9, from: u.id, crit, brk: 1, abil: false })
     if (u.basicN % 4 === 0) { const low = s.units.filter((a) => a.side === 'ally' && alive(a)).sort((a, b) => a.hp / stat(a, 'maxHp') - b.hp / stat(b, 'maxHp'))[0]; heal(s, u, low, stat(low, 'maxHp') * 0.06) }
   } else if (u.kind === 'ian') {
     u.act = { k: 'atk', t: 0, dur: 0.4, tx: t.x, ty: t.y }
-    later(s, 0.12, () => { if (alive(u) && alive(t)) { damage(s, u, t, 0.85, { crit }); fx(s, { k: 'bash', x: t.x, y: t.y - headOf(t) * 0.45, dur: 0.35 }); u.taunt = Math.max(u.taunt, 1.2) } })
+    later(s, 0.12, () => { if (alive(u) && alive(t)) { damage(s, u, t, 0.85, { crit, push: 30 }); fx(s, { k: 'bash', x: t.x, y: t.y - headOf(t) * 0.45, dur: 0.35 }); u.taunt = Math.max(u.taunt, 1.2) } })
   }
+}
+/** 몸끼리 겹치지 않게 밀어낸다(아군·적 모두). 돌진 중·고정체는 제외 */
+const RAD: Partial<Record<Kind, number>> = { boss: 120, golem: 62, hound: 44, mite: 34, orb: 36, pylon: 50, caller: 56 }
+function separate(s: Sim, dt: number) {
+  const us = s.units.filter((u) => alive(u) && !u.entering && u.act?.k !== 'dash')
+  for (let i = 0; i < us.length; i++) for (let j = i + 1; j < us.length; j++) {
+    const a = us[i], b = us[j]
+    const ra = RAD[a.kind] ?? 40, rb = RAD[b.kind] ?? 40
+    const dx = b.x - a.x, dy = (b.y - a.y) * 1.8, d = Math.hypot(dx, dy) || 0.01, min = ra + rb
+    if (d >= min) continue
+    const push = (min - d) * Math.min(1, dt * 10)
+    const wa = a.statik ? 0 : b.statik ? 1 : (rb / (ra + rb)), wb = 1 - wa
+    a.x -= dx / d * push * wa; a.y -= dy / d * push * wa * 0.55; b.x += dx / d * push * wb; b.y += dy / d * push * wb * 0.55
+  }
+  for (const u of us) { u.x = Math.max(50, Math.min(1250, u.x)); u.y = Math.max(300, Math.min(692, u.y)) }
 }
 function taskTick(s: Sim, u: Unit, dt: number) {
   const tk = u.task!; const d = s.devices.find((x) => x.id === tk.dev)!
@@ -432,6 +504,7 @@ function taskTick(s: Sim, u: Unit, dt: number) {
 }
 
 function foeTick(s: Sim, e: Unit, dt: number) {
+  e.hop = Math.max(0, e.hop - dt * 260); e.vx *= 0.85
   const slow = e.slowT > 0 ? 0.8 : 1
   // 등장: 오른쪽에서 걸어 들어온다(정해진 자리까지)
   if (e.entering) {
@@ -468,7 +541,7 @@ function foeTick(s: Sim, e: Unit, dt: number) {
   if (e.kind === 'orb') { s.proj.push({ id: s.seq++, k: 'bolt', x: e.x - 30, y: e.y - 100, tx: isDev(t) ? t.id : t.id, spd: 560, dmg: 1, from: e.id, crit: false, brk: 1, abil: false }); return }
   later(s, 0.2, () => {
     if (!alive(e)) return
-    if (isDev(t)) { if (t.hp > 0) devDamage(s, t, stat(e, 'atk') * (e.kind === 'mite' ? 0.45 : 0.8)) }
+    if (isDev(t)) { if (t.hp > 0) devDamage(s, t, stat(e, 'atk') * (e.kind === 'mite' ? 0.75 : 0.8)) }
     else if (alive(t)) { damage(s, e, t, 1); if (e.kind === 'golem' || e.kind === 'boss') s.shake = Math.max(s.shake, 0.14) }
   })
 }

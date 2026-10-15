@@ -25,14 +25,14 @@ export const STAGES: Record<string, StageDef> = {
   'c1-4': {
     id: 'c1-4', title: '끊긴 신호', bg: 'alley', goal: 'defend', goalText: '중계기 재가동까지 75초 지키기', limit: 75, defendT: 75, lv: 0.95,
     homes: { ian: [560, 440], seren: [500, 320], rion: [470, 600], kanna: [215, 395] },
-    devices: [{ id: 'relay', k: 'relay', x: 330, y: 480, max: 3000, lane: 1, label: '중계기' }],
+    devices: [{ id: 'relay', k: 'relay', x: 330, y: 480, max: 2400, lane: 1, label: '중계기' }],
     timeline: [
       { t: 1, spawn: [{ k: 'hound', lane: 0 }, { k: 'hound', lane: 2 }] },
-      { t: 12, spawn: [{ k: 'mite', lane: 0 }, { k: 'mite', lane: 1 }, { k: 'mite', lane: 2 }] },
-      { t: 24, spawn: [{ k: 'hound', lane: 1 }, { k: 'mite', lane: 0 }, { k: 'mite', lane: 2 }] },
-      { t: 36, spawn: [{ k: 'golem', lane: 1, x: 980 }, { k: 'mite', lane: 0 }, { k: 'mite', lane: 2 }, { k: 'mite', lane: 1 }] },
-      { t: 50, spawn: [{ k: 'orb', lane: 0, x: 1120 }, { k: 'hound', lane: 2 }, { k: 'mite', lane: 1 }, { k: 'mite', lane: 2 }] },
-      { t: 61, spawn: [{ k: 'mite', lane: 0 }, { k: 'mite', lane: 1 }, { k: 'mite', lane: 2 }, { k: 'mite', lane: 1 }] },
+      { t: 12, spawn: [{ k: 'mite', lane: 0 }, { k: 'mite', lane: 2 }, { k: 'mite', lane: 0 }, { k: 'mite', lane: 2 }] },
+      { t: 24, spawn: [{ k: 'hound', lane: 1 }, { k: 'mite', lane: 0 }, { k: 'mite', lane: 2 }, { k: 'mite', lane: 1 }] },
+      { t: 36, spawn: [{ k: 'golem', lane: 1, x: 980 }, { k: 'mite', lane: 0 }, { k: 'mite', lane: 2 }, { k: 'mite', lane: 0 }, { k: 'mite', lane: 2 }] },
+      { t: 50, spawn: [{ k: 'orb', lane: 0, x: 1120 }, { k: 'hound', lane: 2 }, { k: 'mite', lane: 1 }, { k: 'mite', lane: 2 }, { k: 'mite', lane: 0 }] },
+      { t: 61, spawn: [{ k: 'mite', lane: 0 }, { k: 'mite', lane: 1 }, { k: 'mite', lane: 2 }, { k: 'mite', lane: 0 }, { k: 'mite', lane: 2 }] },
     ],
     tips: [
       { id: 'mite', when: (s) => alive(s, 'mite'), text: '노란 표시 = 중계기를 노리는 잠식충. 그 적을 눌러 팀 전체가 집중 공격하게 하세요', at: 'enemy', ref: 'mite', slow: true },
