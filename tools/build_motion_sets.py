@@ -16,7 +16,7 @@ from PIL import Image
 ROOT = 'tools/motion'
 OUT = 'public/ref/battle'
 DATA = 'src/game/data/motion-sets.json'
-TARGET_H = 230  # 아틀라스 안 몸 높이(px)
+TARGET_H = 200  # 아틀라스 안 몸 높이(px)
 ATLAS_W = 2048
 CACHE = '/tmp/claude-0/mframes'
 

@@ -444,7 +444,7 @@ function allyTick(s: Sim, u: Unit, dt: number) {
   } else if (u.kind === 'seren') {
     const mx = stat(u, 'maxHp')
     // 이안과 겹치지 않게 대각선 위·아래에서 파고든다
-    if (t && u.hp > mx * 0.3) { tx = t.x - (t.kind === 'boss' ? 160 : 72); ty = t.y + (t.y < 495 ? 52 : -52) } else { tx = u.hx; ty = u.hy }
+    if (t && u.hp > mx * 0.3) { tx = t.x - (t.kind === 'boss' ? 160 : 60); ty = t.y + (t.y < 600 ? 72 : -72) } else { tx = u.hx; ty = u.hy } // 이안(정면)과 겹치지 않게 앞쪽 대각선에서 벤다
   } else {
     // 원거리: 전선에서 거리를 두고 좌우·위아래로 자리를 바꾼다
     const keep = u.kind === 'rion' ? 330 : 360

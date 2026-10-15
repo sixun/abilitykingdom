@@ -1,0 +1,11 @@
+{
+  "seren": {
+    "ch": "g", "disp": 178,
+    "clips": {
+      "idle": {"src": "combo.mp4", "idx": [0]},
+      "atk1": {"src": "combo.mp4", "f": [0, 27], "n": 10, "imp": 6, "fps": 24},
+      "atk2": {"src": "combo.mp4", "f": [33, 58], "n": 10, "imp": 39, "fps": 24},
+      "atk3": {"src": "combo.mp4", "f": [60, 100], "n": 13, "imp": 66, "fps": 24}
+    }
+  }
+}
