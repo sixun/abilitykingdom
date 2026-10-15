@@ -141,6 +141,8 @@ export interface ContentProgress {
   arenaDefenseTeam: string
   wantedCleared: string[]
   raidBest: Record<string, number>
+  /** 사건 파일(인게임 스토리) 진행: 노드별 최고 별 수(스토리·조사 노드는 1), 이전 저장 데이터에는 없을 수 있다 */
+  caseFile?: { stars: Record<string, number> }
 }
 
 export interface Reward { kind: 'currency' | 'item'; id: string; qty: number }
@@ -185,4 +187,6 @@ export interface GameState {
   processed: Record<string, unknown> // requestId → 결과 (중복 요청 방지)
   /** 즐겨찾기한 캐릭터 id(보유 여부와 무관). 이전 저장 데이터에는 없을 수 있다 */
   favorites?: string[]
+  /** 해금된 코어 슬롯 수(스토리 챕터 마지막 보스 첫 클리어마다 1). 이전 저장 데이터에는 없을 수 있다 */
+  coreSlots?: number
 }

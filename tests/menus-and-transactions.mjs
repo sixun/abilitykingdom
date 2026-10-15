@@ -152,12 +152,14 @@ await back()
 // 콘텐츠 → 출전 준비 → 테스트 전투 → 결과
 s = await st(); const stam = s.wallet.stamina
 await page.click('.screen-active button[aria-label="스토리"]'); await W(700)
+check(await page.locator('.screen-active button.story-case').count() === 1, '스토리 1장 = 사건 파일 입구(인게임 1장)')
+await page.click('.story-chapters button >> nth=1'); await W(500)
 await page.click('.stage-panel .btn-primary'); await W(800)
 check(await page.locator('.screen-active .prep').count() === 1, '스토리 → 출전 준비')
 await shot('prep')
 await page.click('.prep-enemy .btn-primary'); await W(900)
 check(await page.locator('.screen-active .battle').count() === 1, '출전 → 테스트 전투')
-s = await st(); check(s.wallet.stamina === stam - 6, '행동력 차감')
+s = await st(); check(s.wallet.stamina === stam - 8, '행동력 차감(2-1: 8)')
 await page.click('.bt-ctrl button[aria-label="배속"]')
 for (let i = 0; i < 4; i++) { await page.click('.bt-skill >> nth=' + i).catch(() => {}); await W(150) }
 await shot('battle')
@@ -166,7 +168,7 @@ await shot('battle-result')
 s = await st()
 const won = await page.locator('.bt-result.win').count() === 1
 check(s.content.battles.length === 1, `전투 결과 기록 (${won ? '승리' : '패배'})`)
-if (won) check(s.content.storyCleared.includes('1-1'), '스토리 1-1 클리어 기록')
+if (won) check(s.content.storyCleared.includes('2-1'), '스토리 2-1 클리어 기록')
 await page.click('.bt-result-actions button:has-text("로비 복귀")'); await W(900)
 check(await page.locator(LOBBY).count() === 1, '결과 → 로비 복귀')
 

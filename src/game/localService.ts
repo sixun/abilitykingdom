@@ -4,6 +4,7 @@ import type {
 } from './types'
 import type { GameService, Result, ServiceError, BattleSession } from './service'
 import { GAME_CONFIG } from './config'
+import { CHAPTER1, CASE_NODE, CORE_NODE } from './story/chapter1'
 import { CHARACTERS, CHAR_BY_ID } from './data/characters'
 import {
   BANNER_BY_ID, PRODUCT_BY_ID, ITEM_BY_ID, MISSIONS, ATTENDANCE_REWARDS,
@@ -422,6 +423,29 @@ export class LocalGameService implements GameService {
         if (cur.contentId === 'raid' && won) s.content.raidBest[cur.stageId] = (s.content.raidBest[cur.stageId] ?? 0) + 1
       })
       return ok(done)
+    })
+  }
+
+  // ───────── 사건 파일(인게임 스토리) ─────────
+  /** 노드 완료: 첫 완료에만 보상, 별은 최고 기록 유지. 챕터 마지막 보스 첫 클리어 → 코어 슬롯 +1 */
+  async clearCaseNode(nodeId: string, stars: number) {
+    return this.rpc<{ first: boolean; rewards: Reward[]; coreUnlocked: boolean; stars: number }>(null, () => {
+      const node = CASE_NODE[nodeId]
+      if (!node) return fail({ code: 'INVALID', message: '노드 없음' })
+      const idx = CHAPTER1.nodes.findIndex((x) => x.id === nodeId)
+      const cf = this.state.content.caseFile?.stars ?? {}
+      if (idx > 0 && !cf[CHAPTER1.nodes[idx - 1].id]) return fail({ code: 'INVALID', message: '이전 노드를 먼저 완료하세요' })
+      const first = !cf[nodeId]
+      const rewards = first ? node.rewards : []
+      const coreUnlocked = first && nodeId === CORE_NODE
+      const best = Math.max(cf[nodeId] ?? 0, Math.max(1, Math.min(3, stars)))
+      this.commit((s) => {
+        s.content.caseFile = { stars: { ...(s.content.caseFile?.stars ?? {}), [nodeId]: best } }
+        this.grant(s, rewards)
+        if (coreUnlocked) s.coreSlots = (s.coreSlots ?? 0) + 1
+        if (node.kind !== 'story' && node.kind !== 'investigate') { s.content.wins += 1; this.bump(s, 'battleWin') }
+      })
+      return ok({ first, rewards, coreUnlocked, stars: best })
     })
   }
 

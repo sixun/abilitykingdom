@@ -9,11 +9,12 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "fonts": "python3 tools/subset_font.py",
-    "test:e2e": "mkdir -p test-results && node tests/formation-flow.mjs && node tests/menus-and-transactions.mjs && node tests/station-and-detail.mjs && node tests/new-characters.mjs && node tests/pass-and-carousel.mjs && node tests/recruit-banners.mjs && node tests/pull-rituals.mjs && node tests/battle-test.mjs",
+    "test:e2e": "mkdir -p test-results && node tests/formation-flow.mjs && node tests/menus-and-transactions.mjs && node tests/station-and-detail.mjs && node tests/new-characters.mjs && node tests/pass-and-carousel.mjs && node tests/recruit-banners.mjs && node tests/pull-rituals.mjs && node tests/battle-test.mjs && node tests/case-file.mjs",
     "icons": "python3 tools/make_app_icons.py app-icons/rion-source.png app-icons && python3 tools/apply_native_assets.py app-icons",
     "cap:sync": "npx cap sync",
     "android:apk": "npx cap sync android && cd android && ./gradlew assembleDebug",
-    "test:ui-motion": "node tests/ui-motion.mjs"
+    "test:ui-motion": "node tests/ui-motion.mjs",
+    "sim:check": "esbuild tools/sim/check.ts --bundle --platform=node --outfile=test-results/simcheck.cjs --log-level=warning && node test-results/simcheck.cjs"
   },
   "dependencies": {
     "@capacitor/android": "8.5.3",

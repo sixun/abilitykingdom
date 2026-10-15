@@ -1,0 +1,44 @@
+{
+ "alley": "ref/ch1/alley.webp",
+ "substation": "ref/ch1/substation.webp",
+ "mite": {
+  "file": "ref/ch1/mite.webp",
+  "w": 225,
+  "h": 184,
+  "ax": 126,
+  "ay": 180,
+  "dispH": 92
+ },
+ "boss": {
+  "file": "ref/ch1/boss.webp",
+  "w": 655,
+  "h": 660,
+  "ax": 328,
+  "ay": 654,
+  "dispH": 330
+ },
+ "relay": {
+  "file": "ref/ch1/relay.webp",
+  "w": 129,
+  "h": 300,
+  "ax": 79,
+  "ay": 296,
+  "dispH": 150
+ },
+ "shutter": {
+  "file": "ref/ch1/shutter.webp",
+  "w": 107,
+  "h": 224,
+  "ax": 63,
+  "ay": 220,
+  "dispH": 112
+ },
+ "pylon": {
+  "file": "ref/ch1/pylon.webp",
+  "w": 184,
+  "h": 380,
+  "ax": 82,
+  "ay": 376,
+  "dispH": 190
+ }
+}

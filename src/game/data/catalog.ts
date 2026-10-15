@@ -88,7 +88,7 @@ export interface StageDef {
 
 export const STORY_CHAPTERS = [
   {
-    id: 'ch1', name: '1장 · 다음 역은', desc: '성수 구역에서 이상한 신호가 잡힌다.',
+    id: 'ch1', name: '1장 · 끊어진 신호', desc: '성수 구역의 통신망이 한꺼번에 끊겼다.',
     stages: [
       { id: '1-1', name: '2호선 지연', desc: '열차가 멈춘 플랫폼에서 괴이가 목격됐다.', enemy: { name: '그림자 승객', power: 3200, trait: '무리 지어 움직인다' }, staminaCost: 6, rewards: [{ kind: 'currency', id: 'credit', qty: 1200 }, { kind: 'item', id: 'exp_s', qty: 3 }], bg: 'story' },
       { id: '1-2', name: '역 출구 4번', desc: '출구 계단이 끝없이 이어진다.', enemy: { name: '무한 계단', power: 4100, trait: '이동을 방해한다' }, staminaCost: 6, rewards: [{ kind: 'currency', id: 'credit', qty: 1400 }, { kind: 'item', id: 'exp_s', qty: 4 }], bg: 'story' },

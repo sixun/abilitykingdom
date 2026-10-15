@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useGame } from '../../game/store'
+import { useNav } from '../../app/nav'
+import '../../styles/case.css'
 import { STORY_CHAPTERS } from '../../game/data/catalog'
 import { TopBar, ProvisionalTag } from '../../ui/components'
 import { audio } from '../../app/audio'
@@ -9,6 +11,7 @@ import { IconCheck } from '../../ui/icons'
 // 스토리: 챕터 = 노선, 스테이지 = 역. 해금 규칙은 미정이므로 '이전 스테이지 클리어 시 다음 표시'만 임시 적용
 export default function Story({ params }: { params: Record<string, unknown> }) {
   const s = useGame()
+  const nav = useNav()
   // 로비의 '메인 목표'에서 들어오면 해당 스테이지 상세를 연다(전투는 자동 시작하지 않음)
   const target = STORY_CHAPTERS.find((c) => c.stages.some((st) => st.id === params.stageId))
   const [chId, setChId] = useState(target?.id ?? STORY_CHAPTERS[0].id)
@@ -32,7 +35,15 @@ export default function Story({ params }: { params: Record<string, unknown> }) {
         ))}
         <ProvisionalTag>분량·해금 규칙 미정</ProvisionalTag>
       </aside>
-      <div className="story-line" key={chId}>
+      {chId === 'ch1' && (
+        <button type="button" className="story-case" onClick={() => { audio.sfx('select'); nav.push('caseFile', {}) }} aria-label="CASE 01 끊어진 신호 — 사건 파일 열기">
+          <img src="ref/ch1/alley.webp" alt="" />
+          <small>CASE 01 · 인게임 1장</small><b>끊어진 신호</b>
+          <span>스토리 · 조사 · 전투 5종 · 보스 「스태틱」 — 노드 8개 · 진행 {Object.keys(s.content.caseFile?.stars ?? {}).length} / 8</span>
+          <em>사건 파일 열기 ›</em>
+        </button>
+      )}
+      <div className="story-line" key={chId} hidden={chId === 'ch1'}>
         <div className="story-rail" />
         {ch.stages.map((st, i) => {
           const cleared = s.content.storyCleared.includes(st.id)
@@ -46,7 +57,7 @@ export default function Story({ params }: { params: Record<string, unknown> }) {
           )
         })}
       </div>
-      <div className="ct-panel-wrap"><StagePanel contentId="story" stage={stage} /></div>
+      {chId !== 'ch1' && <div className="ct-panel-wrap"><StagePanel contentId="story" stage={stage} /></div>}
     </div>
   )
 }

@@ -4,7 +4,7 @@ export type ScreenName =
   | 'boot' | 'opening' | 'lobby' | 'formation' | 'characters' | 'characterDetail'
   | 'recruit' | 'recruitResult' | 'recruitHistory' | 'shop' | 'bag'
   | 'story' | 'explore' | 'wanted' | 'training' | 'arena' | 'raid'
-  | 'prep' | 'battle' | 'mail' | 'missions' | 'notices' | 'events' | 'attendance' | 'profile' | 'settings' | 'pass' | 'passSummer' | 'battleTest'
+  | 'prep' | 'battle' | 'mail' | 'missions' | 'notices' | 'events' | 'attendance' | 'profile' | 'settings' | 'pass' | 'passSummer' | 'battleTest' | 'caseFile' | 'caseBattle'
 
 export interface Route { key: number; name: ScreenName; params: Record<string, unknown> }
 
