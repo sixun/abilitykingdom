@@ -279,6 +279,10 @@ export class BattleRenderer {
       dy -= u.hop
       if (a?.k === 'hit') dx = -face * 8 * (1 - k)
       if (u.frz > 0) dx += Math.sin(t * 95) * 3
+      // 아직 그 동작 그림이 없으면 예전 방식(내지르기·부풀기)으로 대신한다
+      const C = L.ms.clips
+      if (a?.k === 'atk' && !C[`atk${a.n ?? 1}` as ClipName]) { const p = Math.sin(k * Math.PI); dx += face * p * 24; rot = face * p * 0.08 }
+      if ((a?.k === 'skill' && !C.skill) || (a?.k === 'buff' && !C.buff)) { const p = Math.sin(k * Math.PI); sx *= 1 + p * 0.07; sy *= 1 + p * 0.07 }
     } else {
       const breathe = Math.sin(t * 2.4 + u.hy * 0.05) * 0.012
       if (L.n === 1) { sy = 1 + breathe; sx = 1 - breathe * 0.6 }

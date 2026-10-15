@@ -1,5 +1,26 @@
 {
- "ian": {"idle":"6fd883df-e5f6-4891-89a6-8b11645d4698","run":"0713959a-3984-4417-93d4-5626cdf7a12a","combo":"0b6a422f-03dc-4bd0-863c-3bf429b655a8","buff":"2557218a-7617-4eb8-8fc7-865c934bcf13","skill":"2602d1e8-d052-4149-8536-1eb24ed1a8b5","hit":"55bce25a-9f01-4153-a58c-bb434d430a67"},
- "kanna": {"idle":"9d4fa56f-c00e-420d-bdba-c433ffb9e588","run":"c945f94d-d9cf-4c94-8913-7c35c2fe65be","combo":"c9687515-e17b-42bd-9d59-d280ad973ce7","buff":"5315cdac-869a-49a1-b4a4-d251652574d3","skill":"40f79035-6b4f-4e9a-9e3c-5a2f805be107","hit":"17135781-23a2-4ec5-b493-32db0f93c442"},
- "rion": {"idle":"b6c10064-74ac-4a12-bdd7-4b6657f54f3e","run":"0adadf02-c8ef-4b1a-9ee2-080313494184","combo":"8f8f2b4b-e79c-4c4b-a664-4c25dff61ff6","buff":"5e7f26e2-d72e-4f4d-811f-4173ee95f539","skill":"db3fde99-d96b-4c45-970b-45273a4dd4ef","hit":"f7d88929-0cc0-478c-ad99-2c033abdac4a"}
+ "ian": {
+  "idle": "6fd883df-e5f6-4891-89a6-8b11645d4698",
+  "run": "0713959a-3984-4417-93d4-5626cdf7a12a",
+  "combo": "0b6a422f-03dc-4bd0-863c-3bf429b655a8",
+  "buff": "2557218a-7617-4eb8-8fc7-865c934bcf13",
+  "skill": "21454ccf-5ab5-41ed-9888-b269a06bac73",
+  "hit": "55bce25a-9f01-4153-a58c-bb434d430a67"
+ },
+ "kanna": {
+  "idle": "f66ac3b7-57d2-47ea-9091-4050865a18f8",
+  "run": "d6dcc1a0-f14a-4b7c-81ee-79cdbceaac86",
+  "combo": "e57605af-98dc-45a8-9dad-c715414dc50a",
+  "buff": "18307deb-83ee-46a2-b640-e3b6c9c985ad",
+  "skill": "66a7c03e-af96-472f-8dcb-1d41b1b9e72c",
+  "hit": "e58b0511-e348-431a-a7db-253c84b5c856"
+ },
+ "rion": {
+  "idle": "b6c10064-74ac-4a12-bdd7-4b6657f54f3e",
+  "run": "0adadf02-c8ef-4b1a-9ee2-080313494184",
+  "combo": "dc167fdb-a2b9-4bfd-92b1-1f01781fbb9e",
+  "buff": "5e7f26e2-d72e-4f4d-811f-4173ee95f539",
+  "skill": "33b1984b-c5bc-4db2-89e2-1eb967f2980f",
+  "hit": "f7d88929-0cc0-478c-ad99-2c033abdac4a"
+ }
 }
