@@ -1,3 +1,4 @@
+import { ALL_CHARACTER_COUNT } from '../game/localService'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNav, useScreenKey } from '../app/nav'
 import { audio } from '../app/audio'
@@ -276,7 +277,7 @@ export default function Formation({ params }: { params: Record<string, unknown> 
         {ownedOrdered.length !== 6 && (
           <Patch r={rectOf(L, 'roster-count')} bg={IVORY} z={27} className="rf-count">
             <small style={{ position: 'relative', marginTop: 4 }}>보유<br />캐릭터</small>
-            <b className="num-tab" style={{ position: 'relative' }}>{ownedOrdered.length} <span style={{ fontSize: 18 }}>/ 24</span></b>
+            <b className="num-tab" style={{ position: 'relative' }}>{ownedOrdered.length} <span style={{ fontSize: 18 }}>/ {ALL_CHARACTER_COUNT}</span></b>
           </Patch>
         )}
         {dirty && <span className="rf-dirty" style={{ left: 1300, top: 630 }}>저장하지 않은 변경</span>}

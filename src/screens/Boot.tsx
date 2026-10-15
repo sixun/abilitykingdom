@@ -9,7 +9,7 @@ import { getOpeningVideo, waitForVideo, getOpeningSong, startOpeningSong, OPENIN
 // 초기 로딩: 핵심 에셋을 미리 받는다. 이 화면부터 오프닝까지는 한글을 쓰지 않는다.
 export const OPENING_ASSETS = [
   OPENING.poster, 'assets/bg/platform.webp', 'assets/bg/lobby.webp',
-  ...CHARACTERS.filter((c) => !c.pending).flatMap((c) => [c.assets.stand, c.assets.action, c.assets.portrait]), // 신규(설정 미정) 캐릭터는 보는 화면에서 불러온다
+  ...CHARACTERS.filter((c) => !c.pending).flatMap((c) => [c.assets.stand, c.assets.action, c.assets.portrait]), 
 ]
 
 export function preload(urls: string[], onProgress: (k: number) => void) {

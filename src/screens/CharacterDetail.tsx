@@ -15,7 +15,6 @@ import layoutJson from '../game/data/ref-detail.json'
 import textless from '../game/data/ref-textless.json'
 import artJson from '../game/data/ref-detail-art.json'
 import fillJson from '../game/data/detail-fill.json'
-import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 import fitJson from '../game/data/motion-fit.json'
 import { MotionVideo } from '../ui/motion'
 import '../styles/motion.css'
@@ -35,7 +34,8 @@ const ROLE_DESC: Record<string, string> = {
   ability: '범위 효과와 상태 변화로 전황을 바꾸는 역할입니다.', support: '회복과 강화로 아군을 돕는 역할입니다.',
 }
 const SLOT_LABEL: Record<keyof EquipmentSlots, string> = { weapon: 'WEAPON', gear: 'GEAR', accessory: 'ACCESSORY' }
-const LOBBY_ART = new Set(['jian', ...Object.keys(LOBBY_SCENES)]) // 로비 장면 그림이 있는 캐릭터
+// 로비: 전용 장면이 없는 대원도 거리 배경 + 전신 그림으로 로비에 세울 수 있다(Lobby.tsx lb-fallback)
+const LOBBY_ART = { has: (_id: string) => true }
 const VISIBLE = 6
 // 상단 목록 칸(원본 초상 위치). 0번은 원본에서 선택 표시가 그려진 칸
 const SLOT_CX = [949, 1073, 1197, 1321, 1445, 1569]
@@ -161,7 +161,7 @@ export default function CharacterDetail({ params }: { params: Record<string, unk
           <>
             <div className="cd2-pill" style={{ left: 44, top: 20, width: 122, height: 64 }}><svg viewBox="0 0 24 24" width="30" height="30" aria-hidden><path d="M15 4 7 12l8 8" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" /></svg></div>
             <div className={`cd2-pill cd2-lobby ${isLobby ? 'on' : ''} ${!o || !LOBBY_ART.has(id) ? 'off' : ''}`} style={{ left: 40, top: 827, width: 268, height: 64 }}>
-              <span className="star">★</span><span>{isLobby ? 'LOBBY ACTIVE' : pend ? 'NOT OWNED' : LOBBY_ART.has(id) ? 'SET AS LOBBY' : 'NO LOBBY ART'}</span>
+              <span className="star">★</span><span>{isLobby ? 'LOBBY ACTIVE' : !o ? 'NOT OWNED' : 'SET AS LOBBY'}</span>
             </div>
           </>
         )}

@@ -1,7 +1,7 @@
 // 데이터 책임 분리 기준(기획서 14항). DB 스키마 확정이 아니라 클라이언트/서비스 경계용 타입이다.
 
 export type RoleId = 'attack' | 'defense' | 'ability' | 'support'
-export type AttributeId = 'blade' | 'barrier' | 'sound' | 'gravity' | 'vital' | 'pulse'
+export type AttributeId = 'blade' | 'barrier' | 'sound' | 'gravity' | 'vital' | 'pulse' | 'space' | 'star' | 'mist' | 'spirit' | 'tide'
 export type CurrencyId = 'diamond' | 'credit' | 'ticket' | 'scoutPoint' | 'exchangeMedal' | 'stamina'
 export type EntranceStyle = 'slash' | 'barrier' | 'burst' | 'heal' | 'warp' | 'spin' | 'wave' | 'slam'
 

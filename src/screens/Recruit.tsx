@@ -20,9 +20,10 @@ import NewFaces from './NewFaces'
 import RecruitScene, { preloadRecruitScenes, LIST_ART, listSlots, type SceneName } from './RecruitScene'
 import PullRitual, { type RitualKind } from './PullRitual'
 import { CHARACTERS } from '../game/data/characters'
+import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 
-// 신규 대원 미리보기: 설정 미확정 대원 중 배너 픽업이 아닌 대원(배너 픽업 대원은 배너에서 소개)
-const NEW_FACES = CHARACTERS.filter((c) => c.pending && !BANNERS.some((b) => b.featuredId === c.id))
+// 신규 대원 미리보기: 전용 로비 장면이 있는 신규 대원
+const NEW_FACES = CHARACTERS.filter((c) => LOBBY_SCENES[c.id])
 // 새 배너 3종은 시안 화면(1672×941)으로 그린다
 const SCENE: Record<string, SceneName> = { b_serenity: 'serenity', b_nightshift: 'nightshift', b_omp: 'omp' }
 // 배너별 직접 조작 영입 연출(스토리보드): 카드팩·캡슐가차·회전추첨기·이치방쿠지
@@ -187,7 +188,7 @@ export default function Recruit({ params }: { params: Record<string, unknown> })
               <span className="faces">{NEW_FACES.map((c) => <img key={c.id} src={c.assets.portrait} alt="" />)}</span>
               <b>NEW FACES</b><span>미리보기</span>
             </div>
-            <Hit r={{ x: 682, y: 34, w: 330, h: 50 }} z={34} label={`신규 대원 ${NEW_FACES.length}명 미리보기 (영입 대상 아님)`} onClick={() => setFaces(true)} />
+            <Hit r={{ x: 682, y: 34, w: 330, h: 50 }} z={34} label={`신규 대원 ${NEW_FACES.length}명 미리보기 (전용 로비 장면)`} onClick={() => setFaces(true)} />
           </>
         )}
         {/* 배너 선택 */}

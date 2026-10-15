@@ -45,6 +45,11 @@ export const ATTRIBUTE_LABEL: Record<string, string> = {
   gravity: '중력',
   vital: '생명',
   pulse: '맥동',
+  space: '공간',
+  star: '성광',
+  mist: '연무',
+  spirit: '혼불',
+  tide: '물결',
 }
 
 export const CURRENCY_LABEL: Record<string, string> = {

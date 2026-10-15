@@ -72,7 +72,10 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
   const [viewing, setViewing] = useState(false)
   const [toTitle, setToTitle] = useState(false)
   // 전용 로비 장면이 있는 캐릭터면 지안 소파 영상 대신 그 장면(인물 포함 정지 그림)을 쓴다 → 두 인물이 겹치지 않는다
-  const scene = LOBBY_SCENES[s.lobby.characterId] ?? { poster: (CHAR_BY_ID[s.lobby.characterId] ?? CHAR_BY_ID.rion).assets.action, amb: 'dust' as const, place: 'CITY' }
+  // 전용 장면이 없는 대원: 성수 거리 배경판 + 그 대원의 전신 그림(잘리지 않게 높이에 맞춤)
+  const lobbyChar = CHAR_BY_ID[s.lobby.characterId] ?? CHAR_BY_ID.rion
+  const own = LOBBY_SCENES[s.lobby.characterId]
+  const scene = own ?? { poster: lobbyChar.assets.stand, amb: 'city' as const, place: 'CITY' }
 
   useEffect(() => { audio.bgm('lobby') }, [])
   const go = (sc: ScreenName, p?: Record<string, unknown>) => { setMore(false); nav.push(sc, p) }
@@ -90,8 +93,14 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
     <div className="scr">
       <RefStage canvas={L.canvas} className="ui-sofa">
         {/* 장면: UI 없는 지안 소파 영상(배경+인물 한 장면). 감상 모드에서도 같은 영상을 그대로 쓴다 */}
-        {scene
+        {own
           ? <img className="mv scene" src={scene.poster} alt="" draggable={false} style={{ left: 0, top: 0, width: 1456, height: 818 }} />
+          : scene
+          ? <div className="mv scene lb-fallback" style={{ left: 0, top: 0, width: 1456, height: 818 }}>
+              <img className="lb-fb-bg" src="ref/battle/plate.webp" alt="" draggable={false} />
+              <i className="lb-fb-glow" style={{ '--c': lobbyChar.accent } as React.CSSProperties} />
+              <img className="lb-fb-char" key={lobbyChar.id} src={lobbyChar.assets.stand} alt="" draggable={false} />
+            </div>
           : <MotionVideo src="motion/sofa.mp4" poster="motion/sofa-poster.webp" style={fitBox(FIT.sofa, L.canvas)} />}
         {/* 장면 공기(창가 햇살·먼지 / 캐릭터 장면별 입자). 장면 위, UI 아래 */}
         <AmbientFx key={scene ? scene.poster : 'sofa'} kind={scene ? scene.amb : 'dust'} box={{ x: 0, y: 0, w: 1456, h: 818 }} count={30} />
@@ -173,14 +182,14 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
       {picker && (
         <Modal className="lb-picker" onClose={() => setPicker(false)} labelledBy="pick-title">
           <h2 id="pick-title">로비 캐릭터</h2>
-          <p className="lb-picker-note">로비에 전시할 캐릭터입니다. 팀 리더와는 따로 저장됩니다. 현재 로비 장면(소파) 그림은 지안만 있습니다.</p>
+          <p className="lb-picker-note">로비에 전시할 캐릭터입니다. 팀 리더와는 따로 저장됩니다. 전용 로비 장면이 없는 대원은 거리 배경 위 전신 그림으로 보여 줍니다.</p>
           <div className="lb-picker-grid">
             {CHARACTERS.filter((x) => s.owned[x.id]).map((x) => {
-              const ready = x.id === 'jian' || !!LOBBY_SCENES[x.id]
+              const ready = true
               return (
                 <button key={x.id} className={x.id === s.lobby.characterId ? 'on' : ''} disabled={!ready} onClick={async () => { audio.sfx('select'); await game.setLobbyCharacter(x.id); setPicker(false) }}>
                   <img src={x.assets.portrait} alt="" style={ready ? undefined : { filter: 'grayscale(1) brightness(.5)' }} />
-                  <span><RoleGlyph role={x.role} size="1.4rem" /> {x.name}{ready ? '' : ' · 로비 그림 없음'}</span>
+                  <span><RoleGlyph role={x.role} size="1.4rem" /> {x.name}{LOBBY_SCENES[x.id] ? ' · 전용 장면' : ''}</span>
                 </button>
               )
             })}

@@ -7,9 +7,9 @@ import { useReduceMotion, useScreenActive } from '../ui/motion'
 import SP from '../game/data/battle-sprites.json'
 import { newSim, step, castSkill, killAll, SKILLS, type Sim, type Ent, type Kind } from '../game/battleSim'
 
-// 전투 테스트(시안: 성수 거리 전투 1280×720). 아군 4명(리온·세렌·이안·칸나) vs 결정 몬스터 2웨이브.
+// 전투 테스트(시안: 성수 거리 전투 1280×720). 아군 4명(라온·세렌·이안·칸나) vs 결정 몬스터 2웨이브.
 // 기본 공격은 자동, 스킬은 아래 카드를 눌러 쓴다(AUTO면 자동). 2배속·일시정지·재시작.
-// 리온·사냥개는 크로마키 영상에서 뽑은 프레임 시트, 나머지는 이미지 모델로 만든 한 장 그림을 움직인다.
+// 라온·사냥개는 크로마키 영상에서 뽑은 프레임 시트, 나머지는 이미지 모델로 만든 한 장 그림을 움직인다.
 type Sheet = { file: string; w: number; h: number; cols: number; n: number; fps: number }
 type Pic = { file: string; w: number; h: number }
 const S = SP as unknown as { plate: string; rion: Sheet; hound: Sheet; ian: Pic; seren: Pic; kanna: Pic; golem: Pic; orb: Pic }

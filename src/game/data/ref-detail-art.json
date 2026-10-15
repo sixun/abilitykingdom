@@ -128,5 +128,23 @@
   "bodyH": 770,
   "headX": 322.0,
   "heroH": 1000
+ },
+ "senka": {
+  "src": "ref/detail-art/senka.webp",
+  "kind": "cutout",
+  "w": 1024,
+  "h": 1536,
+  "top": 9,
+  "bodyH": 1515,
+  "headX": 528.0
+ },
+ "mayu": {
+  "src": "ref/detail-art/mayu.webp",
+  "kind": "cutout",
+  "w": 1024,
+  "h": 1536,
+  "top": 0,
+  "bodyH": 1528,
+  "headX": 512.0
  }
 }

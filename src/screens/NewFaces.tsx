@@ -4,6 +4,7 @@ import { useNav } from '../app/nav'
 import { audio } from '../app/audio'
 import { CHARACTERS } from '../game/data/characters'
 import { BANNERS } from '../game/data/catalog'
+import { ATTRIBUTE_LABEL, ROLE_LABEL } from '../game/config'
 import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 import { AmbientFx, MotionTitle } from '../ui/ui-motion'
 
@@ -11,7 +12,7 @@ import { AmbientFx, MotionTitle } from '../ui/ui-motion'
 // 소개용 그림만 보여 준다: 영입 풀·확률·비용·획득 경로는 바꾸지 않았고, 이 화면에서 얻을 수 없다.
 // 좌표는 영입 원본 캔버스(1456×819) 기준. 장식은 입력을 받지 않는다.
 // 배너 픽업 대원(세렌·이안·칸나)은 배너에서 소개하므로 뺀다
-const NEW = CHARACTERS.filter((c) => c.pending && !BANNERS.some((b) => b.featuredId === c.id))
+const NEW = CHARACTERS.filter((c) => LOBBY_SCENES[c.id])
 
 export default function NewFaces({ onClose }: { onClose: () => void }) {
   const nav = useNav()
@@ -32,7 +33,7 @@ export default function NewFaces({ onClose }: { onClose: () => void }) {
       <header className="nf-head">
         <small>PIRATE SCOUTING BROADCAST / PREVIEW</small>
         <h2 id="nf-title"><MotionTitle text="NEW FACES" /></h2>
-        <span className="nf-chip warn">영입 대상 아님 · 출시·획득 경로 미정</span>
+        <span className="nf-chip warn">신규 대원 소개 · 상시 영입에서 등장</span>
       </header>
       <button type="button" className="nf-close" aria-label="미리보기 닫기" onClick={() => { audio.sfx('tap'); onClose() }}>×</button>
 
@@ -42,7 +43,7 @@ export default function NewFaces({ onClose }: { onClose: () => void }) {
             aria-label={`${x.name} 미리보기${x.id === c.id ? ' (선택됨)' : ''}`} aria-pressed={x.id === c.id}
             onClick={() => { if (x.id !== c.id) { audio.sfx('select'); setId(x.id) } }}>
             <span className="pt"><img src={x.assets.portrait} alt="" /></span>
-            <span className="tx"><b>{x.name}</b><em>{x.nameEn}</em><i>설정 미정</i></span>
+            <span className="tx"><b>{x.name}</b><em>{x.nameEn}</em><i>{ROLE_LABEL[x.role]} · {x.rarity}★</i></span>
           </button>
         ))}
       </div>
@@ -57,7 +58,7 @@ export default function NewFaces({ onClose }: { onClose: () => void }) {
           <span className="en"><MotionTitle text={c.nameEn} /></span>
           <i className="rule" aria-hidden />
           <b className="ko">{c.name}</b>
-          <span className="chips"><span className="nf-chip">이름·역할·능력 설정 미정</span>{scene && <span className="nf-chip">로비: {scene.place}</span>}</span>
+          <span className="chips"><span className="nf-chip">{ROLE_LABEL[c.role]} · {ATTRIBUTE_LABEL[c.attribute]} · {c.rarity}★</span>{scene && <span className="nf-chip">로비: {scene.place}</span>}</span>
         </div>
       </div>
 

@@ -22,7 +22,7 @@ check(await page.locator('.screen-active .bt').count() === 1, '역 로비 전체
 await W(1500)
 let s = await sim()
 check(s.ents.filter((e) => e.side === 'ally').length === 4 && s.ents.filter((e) => e.side === 'enemy').length === 5, '아군 4명(리온·세렌·이안·칸나) vs 적 5마리')
-check(await page.locator('.bt-card').count() === 4 && (await page.locator('.bt-card .name').allTextContents()).join() === 'RION,SEREN,IAN,KANNA', '아래 카드 4장')
+check(await page.locator('.bt-card').count() === 4 && (await page.locator('.bt-card .name').allTextContents()).join() === 'RAON,SEREN,IAN,KANNA', '아래 카드 4장')
 const t1 = s.t; await W(1200); s = await sim()
 check(s.t > t1 + 0.8, '시간이 흐르고 전투 진행')
 await page.waitForFunction(() => window.__BT__.sim().ents.some((e) => e.side === 'enemy' && e.hp < e.max), null, { timeout: 8000 })

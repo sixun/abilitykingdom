@@ -41,34 +41,35 @@ check(await page.evaluate(() => !window.__v || window.__v === document.querySele
 await page.mouse.click(700, 300); await W(400)
 check(await page.locator(LOBBY).count() === 1, '감상 모드 해제')
 
-// 로비 캐릭터 선택: 원본 장면 그림이 있는 지안만 선택 가능
+// 로비 캐릭터 선택: 보유 대원 모두 선택 가능(전용 장면이 없으면 거리 배경 + 전신 그림)
 await page.click('.screen-active button[aria-label="로비 캐릭터 변경"]'); await W(300)
-check(await page.locator('.lb-picker-grid button:has-text("세인")').isDisabled(), '로비 그림 없는 캐릭터는 비활성')
+check(await page.locator('.lb-picker-grid button').count() === Object.keys((await st()).owned).length && await page.locator('.lb-picker-grid button:disabled').count() === 0, '보유 대원 모두 로비 선택 가능')
+check(await page.locator('.screen-active .lb-fallback img.lb-fb-char[src*="rion_stand"]').count() === 1, '전용 장면 없는 대원(라온) = 배경판 + 전신 그림')
 await page.click('.modal .btn-dark:has-text("닫기")'); await W(300)
 let s = await st()
-check(s.lobby.characterId === 'jian' && s.teams[0].leaderId === 'jian', '로비 캐릭터와 팀 리더는 별도 저장')
+check(s.lobby.characterId === 'rion' && s.teams[0].leaderId === 'rion', '로비 캐릭터와 팀 리더는 별도 저장')
 
 // 캐릭터 상세(원본 재현): 탭 3개, 성장 확인 창, 장비
 await page.click('.screen-active button[aria-label="캐릭터"]'); await W(700)
-await page.click('.ccard:has-text("하린")'); await W(700)
-check((await page.locator('.cd2-name').first().textContent()).replace(/\s/g, '').startsWith('HARIN'), '상세: 선택 캐릭터 이름 표시')
+await page.click('.ccard:has-text("하랑")'); await W(700)
+check((await page.locator('.cd2-name').first().textContent()).replace(/\s/g, '').startsWith('HARANG'), '상세: 선택 캐릭터 이름 표시')
 for (const t of ['SKILLS', 'GEAR', 'STATS']) { await page.click(`.screen-active button[aria-label^="${t}"]`); await W(400); await shot('cd-' + t) }
 await page.click('.screen-active button[aria-label^="SKILLS"]'); await W(300)
 check(await page.locator('.cd2-row').count() === 3, 'SKILLS: 스킬 3개')
 await page.click('.screen-active button[aria-label^="STATS"]'); await W(300)
-const lv0 = (await st()).owned.harin.level
+const lv0 = (await st()).owned.doyun.level
 const cr0 = (await st()).wallet.credit
 await page.click('.screen-active button[aria-label^="UPGRADE"]'); await W(400)
 check((await st()).wallet.credit === cr0, '성장 창을 열어도 차감 없음')
 await page.click('.cd-lv-step button:has-text("+5")'); await W(200)
 await page.click('.modal .btn-primary'); await W(700)
 s = await st()
-check(s.owned.harin.level === lv0 + 5 && s.wallet.credit < cr0, `CONFIRM 후 성장 +5 (${lv0}→${s.owned.harin.level}), 크레딧 차감`)
+check(s.owned.doyun.level === lv0 + 5 && s.wallet.credit < cr0, `CONFIRM 후 성장 +5 (${lv0}→${s.owned.doyun.level}), 크레딧 차감`)
 await page.click('.screen-active button[aria-label^="GEAR"]'); await W(400)
 await page.click('.cd2-row >> nth=2'); await W(300)
 await page.click('.eq-row:has-text("노이즈캔슬")'); await W(500)
 s = await st()
-check(s.owned.harin.equipment.accessory === 'eq_phones', '장비 장착')
+check(s.owned.doyun.equipment.accessory === 'eq_phones', '장비 장착')
 await back(); await back()
 
 // 영입 10회 → 결과 → 스킵 → 요약 → 기록 재열람 동일

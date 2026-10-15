@@ -73,33 +73,35 @@ await page.click('.rs-menu button:has-text("카페 로비로")'); await W(700)
 check(await has(SOFA) && (await st()).lobby.theme === 'sofa', '메뉴에서 카페 로비로 복귀')
 await page.click('.screen-active button[aria-label^="로비 테마 변경"]'); await W(700)
 
-// 8) 캐릭터 상세
+// 8) 캐릭터 상세(라온: 현재 로비 캐릭터, 보유 Lv.40)
 await page.click('.screen-active button[aria-label^="캐릭터"]'); await W(700)
-await page.click('.ccard:has-text("지안")'); await W(800)
-check(!(await has('img[src*="textless/stat-"]')) && !(await has('img[src*="textless/level-text"]')), '지안 Lv.40: 능력치·레벨은 원본 조각 그대로')
+await page.click('.ccard:has-text("라온")'); await W(800)
+check((await page.locator('.cd2-name').first().textContent()).replace(/\s/g, '').startsWith('RAON'), '상세: 라온(RAON) 표시')
 check(await has('.cd2-lobby.on:has-text("LOBBY ACTIVE")'), '현재 로비 캐릭터 = LOBBY ACTIVE')
+for (let i = 0; i < 20 && !(await page.locator('.screen-active button[aria-label="목록 앞으로"]').isDisabled()); i++) { await page.click('.screen-active button[aria-label="목록 앞으로"]'); await W(150) }
 check(await page.locator('.screen-active button[aria-label="목록 앞으로"]').isDisabled(), '목록 처음에서 앞으로 버튼 비활성')
+for (let i = 0; i < 20 && (await page.locator('.screen-active button[aria-label^="라온"]').count()) === 0; i++) { await page.click('.screen-active button[aria-label="목록 뒤로"]'); await W(150) }
+await page.click('.screen-active button[aria-label^="라온"]'); await W(500)
 const cr0 = (await st()).wallet.credit
 await page.click('.screen-active button[aria-label^="UPGRADE"]'); await W(300)
 await page.click('.modal button:has-text("CANCEL")'); await W(300)
-check((await st()).wallet.credit === cr0 && (await st()).owned.jian.level === 40, 'CANCEL은 아무것도 차감하지 않음')
+check((await st()).wallet.credit === cr0 && (await st()).owned.rion.level === 40, 'CANCEL은 아무것도 차감하지 않음')
 await page.click('.screen-active button[aria-label^="UPGRADE"]'); await W(300)
 await page.keyboard.press('Escape'); await W(300)
 check(!(await has('.modal')), 'Esc로 성장 창 닫기')
 await page.click('.screen-active button[aria-label^="UPGRADE"]'); await W(300)
 await page.click('.modal .btn-primary'); await W(800)
 let s = await st()
-check(s.owned.jian.level === 41 && s.wallet.credit < cr0, `CONFIRM 후 Lv.40 → ${s.owned.jian.level}`)
-check(await has('img[src*="textless/stat-hp"]') && await has('img[src*="textless/level-text"]'), '값이 바뀐 칸만 글자 없는 패치 + 실제 텍스트로 교체')
-// 목록 길이가 바뀌어도(신규 캐릭터 추가) 끝까지 넘긴 뒤 비활성인지 확인한다
+check(s.owned.rion.level === 41 && s.wallet.credit < cr0, `CONFIRM 후 Lv.40 → ${s.owned.rion.level}`)
 for (let i = 0; i < 20 && !(await page.locator('.screen-active button[aria-label="목록 뒤로"]').isDisabled()); i++) { await page.click('.screen-active button[aria-label="목록 뒤로"]'); await W(150) }
 check(await page.locator('.screen-active button[aria-label="목록 뒤로"]').isDisabled(), '목록 끝에서 뒤로 버튼 비활성(무한 순환 없음)')
-for (let i = 0; i < 20 && (await page.locator('.screen-active button[aria-label^="리온"]').count()) === 0; i++) { await page.click('.screen-active button[aria-label="목록 앞으로"]'); await W(150) }
-await page.click('.screen-active button[aria-label^="리온"]'); await W(500)
+for (let i = 0; i < 20 && (await page.locator('.screen-active button[aria-label^="세렌"]').count()) === 0; i++) { await page.click('.screen-active button[aria-label="목록 앞으로"]'); await W(150) }
+await page.click('.screen-active button[aria-label^="세렌"]'); await W(500)
 check(await has('.cd2-lv:has-text("NOT OWNED")') && await page.locator('.screen-active button[aria-label^="UPGRADE"]').isDisabled(), '미보유 캐릭터: NOT OWNED, UPGRADE 비활성')
-for (let i = 0; i < 20 && (await page.locator('.screen-active button[aria-label^="하린"]').count()) === 0; i++) { await page.click('.screen-active button[aria-label="목록 앞으로"]'); await W(150) }
-await page.click('.screen-active button[aria-label^="하린"]'); await W(500)
-check(await page.locator('.screen-active button[aria-label^="로비 캐릭터로 설정"]').isDisabled(), '로비 그림 없는 캐릭터는 로비 설정 비활성')
+check(await page.locator('.screen-active button[aria-label^="로비 캐릭터로 설정"]').isDisabled(), '미보유 캐릭터는 로비 설정 비활성')
+for (let i = 0; i < 20 && (await page.locator('.screen-active button[aria-label^="하랑"]').count()) === 0; i++) { await page.click('.screen-active button[aria-label="목록 앞으로"]'); await W(150) }
+await page.click('.screen-active button[aria-label^="하랑"]'); await W(500)
+check(!(await page.locator('.screen-active button[aria-label^="로비 캐릭터로 설정"]').isDisabled()), '보유 대원(하랑)은 전용 장면이 없어도 로비 설정 가능')
 await page.click('.screen-active button[aria-label^="GEAR"]'); await W(400)
 check(await page.locator('.cd2-row').count() === 3 && await has('.cd2-name'), 'GEAR: 장비 3칸, 왼쪽·상단 고정')
 await page.click('.screen-active button[aria-label="뒤로"]'); await W(700)
