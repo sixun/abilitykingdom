@@ -105,6 +105,7 @@ def build(kind, cfg):
         fs = []
         for x in idx:
             k = key(load(files[x]), ch, bgc)
+            if 'xmax' in c: k[:, int(k.shape[1] * c['xmax']):, 3] = 0  # 손을 떠난 투사체 등 오른쪽 잔상 지우기(게임이 따로 그림)
             fs.append(k)
         picked.append((name, fs, imp, c.get('fps', 12), 'loop' in c))
         print(' ', name, 'frames', idx[0], '..', idx[-1], 'n', len(idx), 'imp', imp)
