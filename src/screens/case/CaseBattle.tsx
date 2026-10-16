@@ -9,7 +9,7 @@ import { CASE_NODE, CHAPTER1 } from '../../game/story/chapter1'
 import { STAGES } from '../../game/combat/chapter1Stages'
 import { newSim, step, castActive, castBuff, setFocus, useDevice, starsOf, killAll, stat, ALLY_ORDER, ABILITY_INFO, LANE_Y, type Sim, type AllyKind, type Unit } from '../../game/combat/sim'
 import { BattleRenderer, headY } from '../../battle/BattleRenderer'
-import { BGS } from '../../battle/look'
+import { BGS, type BgKey } from '../../battle/look'
 import StoryScene from './StoryScene'
 import type { Reward } from '../../game/types'
 import { ITEM_BY_ID } from '../../game/data/catalog'
@@ -63,7 +63,7 @@ export default function CaseBattle({ params }: { params: Record<string, unknown>
     for (const w of def.timeline ?? []) for (const sp of w.spawn) kinds.add(sp.k)
     if (def.goal === 'boss') { kinds.add('boss'); kinds.add('pylon') }
     for (const d of def.devices ?? []) kinds.add(d.k)
-    r.load(def.bg, [...kinds], setLoad).then(() => setLoad(1)).catch(() => setGlErr(true))
+    r.load((new URLSearchParams(location.search).get('bg') as BgKey | null) ?? def.bg, [...kinds], setLoad) // ?bg= 는 비교용 개발 옵션.then(() => setLoad(1)).catch(() => setGlErr(true))
     return () => r.dispose()
   }, [])
   useEffect(() => { audio.bgm('battle'); return () => audio.bgm('menu') }, [])

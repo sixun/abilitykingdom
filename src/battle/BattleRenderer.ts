@@ -1,7 +1,7 @@
 // 전투 화면 WebGL2 렌더러: 2D 그림 + 노멀맵 조명 + 물웅덩이 반사.
 // 한 프레임 순서: ① 반사 버퍼(캐릭터·이펙트를 발 기준으로 뒤집어 그림) → ② 배경(조명 + 물 영역에 반사 합성)
 // → ③ 바닥 예고·물결·그림자 → ④ 소품·유닛(앞뒤 정렬, 조명·실루엣) → ⑤ 이펙트·입자(가산) → ⑥ 예고 윤곽(맨 위)
-import { LOOKS, PROPS, BGS, RION_IDLE, ACCENT, depthScale, type Look, type BgLook, type ClipDef, type ClipName } from './look'
+import { LOOKS, PROPS, BGS, RION_IDLE, ACCENT, depthScale, setPersp, type Look, type BgLook, type ClipDef, type ClipName } from './look'
 import { makeNormal } from './normals'
 import { headOf, type Sim, type Unit, type Fx } from '../game/combat/sim'
 
@@ -62,19 +62,41 @@ void main(){
 const FS_BG = `#version 300 es
 precision highp float; in vec2 vUv; in vec2 vW; out vec4 o;
 uniform sampler2D uBg; uniform sampler2D uBgN; uniform sampler2D uRefl; uniform sampler2D uMask; uniform float uTime; uniform vec3 uAmb; uniform float uRip; uniform vec3 uView; uniform vec2 uCam; uniform vec3 uBoost;
+uniform sampler2D uDepth; uniform sampler2D uEm; uniform vec4 uPar; uniform vec4 uEmK; uniform vec2 uPan;
 ${LIGHT_FN}
+// 깊이 시차: 먼 곳일수록 카메라를 덜 따라간다(par = far..1). 깊이를 한 번 더 읽어 경계가 덜 늘어나게
+vec2 parUv(vec2 w){ vec2 sz = vec2(${W}.0, ${H}.0); if (uPar.x < 0.5) return w / sz;
+  float d = texture(uDepth, w / sz).r; vec2 q = w + uPan * (1.0 - mix(uPar.y, 1.0, d));
+  d = texture(uDepth, q / sz).r; q = w + uPan * (1.0 - mix(uPar.y, 1.0, d)); return q / sz; }
+float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 void main(){
-  vec2 uv = vW / vec2(${W}.0, ${H}.0);
+  vec2 uv = parUv(vW);
   vec3 base = texture(uBg, uv).rgb; vec3 n = normalize(texture(uBgN, uv).xyz * 2.0 - 1.0);
   vec3 bl = pointLights(n, vW, 0.15) * 1.7; bl = bl / (1.0 + bl * 0.35);
   vec3 col = base * (uAmb + uBoost) + base * bl;
-  float m = texture(uMask, uv).r;
+  // 간판·전등 발광: 어둡게 깎인 밝은 곳을 되살리고 번지게(밉맵 = 흐림). 칸마다 따로 깜빡인다
+  if (uEmK.x > 0.0) {
+    vec2 cell = floor(uv * vec2(14.0, 9.0)); float h = hash(cell);
+    float fl = 1.0 - uEmK.y * step(0.965, hash(cell + floor(uTime * (6.0 + h * 9.0)))) - 0.08 * sin(uTime * (2.0 + h * 3.0) + h * 6.28) * step(0.6, h);
+    vec3 em = texture(uEm, uv).rgb; vec3 bloom = textureLod(uEm, uv, 3.0).rgb * 0.45 + textureLod(uEm, uv, 4.5).rgb * 0.45;
+    vec3 add = (em * 0.4 + bloom) * uEmK.x * fl; col += add / (1.0 + col * 0.8); // 이미 밝은 곳(글자)은 덜 더해 날아가지 않게
+  }
+  float m = texture(uMask, vW / vec2(${W}.0, ${H}.0)).r;
   if (m > 0.01) {
     vec2 rip = vec2(sin(vW.y * 0.11 + uTime * 2.3 + sin(vW.x * 0.023 + uTime) * 2.0), cos(vW.x * 0.045 - uTime * 1.6 + vW.y * 0.03)) * 2.4 * uRip;
     vec2 sp = (vW + rip - uView.xy) * uView.z + vec2(${W / 2}.0, ${H / 2}.0) + uCam;
     vec2 ruv = sp / vec2(${W}.0, ${H}.0); ruv.y = 1.0 - ruv.y;
     vec4 r = texture(uRefl, ruv);
-    col = col * (1.0 - r.a * min(1.0, m * 1.2) * 0.8) + r.rgb * min(1.0, m * 1.2) * 0.92;
+    float mk = min(1.0, m * 1.2);
+    // 젖은 바닥에 비친 건물·간판(바닥선 기준으로 뒤집어 읽음) + 불빛이 세로로 길게 번지는 반사
+    if (uEmK.z > 0.0 && vW.y > uEmK.w) {
+      float fy = uEmK.w - (vW.y - uEmK.w) * 0.9; vec2 mw = vec2(vW.x, fy) + rip * 2.0;
+      vec2 muv = parUv(mw); float fres = 0.35 + 0.65 * clamp((vW.y - uEmK.w) / 220.0, 0.0, 1.0);
+      vec3 mir = texture(uBg, muv).rgb * (uAmb + uBoost) * 0.5;
+      vec3 st = vec3(0.0); for (int i = 0; i < 6; i++) { float k = float(i) / 5.0; st += textureLod(uEm, parUv(mw + vec2(0.0, -k * 70.0 + rip.y * 6.0)), 2.5 + k * 1.5).rgb * (1.0 - k * 0.6); }
+      col = mix(col, col * 0.7 + mir, 0.35 * mk * fres) + st * uEmK.z * mk * 0.5 * (1.2 - fres * 0.4);
+    }
+    col = col * (1.0 - r.a * mk * 0.8) + r.rgb * mk * 0.92;
     col += pointLights(vec3(0.0, 0.0, 1.0), vW, 1.0) * m * 0.45;
   }
   o = vec4(col, 1.0);
@@ -127,8 +149,23 @@ function fxCanvas(kind: string): HTMLCanvasElement {
   }
   else if (kind === 'shard') { g.fillStyle = 'rgba(200,140,255,1)'; g.beginPath(); g.moveTo(0, -S * 0.42); g.lineTo(S * 0.14, 0); g.lineTo(0, S * 0.42); g.lineTo(-S * 0.14, 0); g.fill(); g.fillStyle = 'rgba(255,255,255,.8)'; g.beginPath(); g.moveTo(0, -S * 0.42); g.lineTo(S * 0.05, 0); g.lineTo(0, S * 0.2); g.fill() }
   else if (kind === 'beam') { g.setTransform(1, 0, 0, 1, 0, 0); const gr = g.createLinearGradient(0, 0, 0, S); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.5, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, S, S) }
+  else if (kind === 'drop') { g.setTransform(1, 0, 0, 1, 0, 0); const gr = g.createLinearGradient(0, 0, 0, S); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(0.8, 'rgba(255,255,255,.9)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(S / 2 - 2, 0, 4, S) }
   else if (kind === 'wave') { g.rotate(0); for (let i = 0; i < 3; i++) { g.strokeStyle = `rgba(255,255,255,${[0.25, 0.6, 1][i]})`; g.lineWidth = [18, 8, 3][i]; g.beginPath(); g.ellipse(-S * 0.2, 0, S * 0.3, S * 0.46, 0, -1.25, 1.25); g.stroke() } }
   return c
+}
+
+/** 간판·전등처럼 스스로 빛나는 곳만 남긴 그림(밝고 채도 높은 곳 + 아주 밝은 곳) */
+function emissiveOf(img: HTMLImageElement): HTMLCanvasElement {
+  const w = Math.round(img.naturalWidth / 2), h = Math.round(img.naturalHeight / 2)
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d', { willReadFrequently: true })!
+  g.drawImage(img, 0, 0, w, h); const px = g.getImageData(0, 0, w, h); const d = px.data
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], gg = d[i + 1], b = d[i + 2], mx = Math.max(r, gg, b), mn = Math.min(r, gg, b)
+    const V = mx / 255, S = mx ? (mx - mn) / mx : 0
+    const e = Math.min(1, Math.max(0, (V - 0.6) / 0.3)) * Math.min(1, S * 1.7 + (V > 0.92 ? 1 : 0))
+    d[i] = r * e; d[i + 1] = gg * e; d[i + 2] = b * e; d[i + 3] = 255
+  }
+  g.putImageData(px, 0, 0); return c
 }
 
 export class BattleRenderer {
@@ -138,6 +175,8 @@ export class BattleRenderer {
   tex = new Map<string, Tex>(); nrm = new Map<string, Tex>()
   fxTex = new Map<string, Tex>()
   maskTex: Tex | null = null; maskData: Uint8ClampedArray | null = null
+  depthTex: Tex | null = null; emTex: Tex | null = null; fgTex: Tex[] = []
+  air: Part[] = []
   refl: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null
   bg!: BgLook
   parts: Part[] = []; ripples: Ripple[] = []
@@ -153,7 +192,7 @@ export class BattleRenderer {
     this.vbo = gl.createBuffer()!; gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo); gl.bufferData(gl.ARRAY_BUFFER, 16 * 4, gl.DYNAMIC_DRAW)
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0)
     gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 2, gl.FLOAT, false, 16, 8)
-    for (const k of ['glow', 'ring', 'slash', 'spark', 'cube', 'shard', 'beam', 'wave']) this.fxTex.set(k, this.upload(fxCanvas(k)))
+    for (const k of ['glow', 'ring', 'slash', 'spark', 'cube', 'shard', 'beam', 'wave', 'drop']) this.fxTex.set(k, this.upload(fxCanvas(k)))
   }
 
   private upload(src: TexImageSource & { width: number; height: number }, mip = true): Tex {
@@ -182,6 +221,14 @@ export class BattleRenderer {
       this.nrm.set(j.file, this.upload(makeNormal(img, j.mode, j.file, j.mode === 'bg' ? 0.5 : 0.5, j.cell)))
       onProgress?.(++done / jobs.length)
     }
+    // 던파식 배경: 깊이 그림·발광 그림·앞쪽 소품
+    setPersp(this.bg.persp)
+    const bgImg = await this.loadImg(this.bg.file)
+    this.depthTex = this.bg.depth ? this.upload(await this.loadImg(this.bg.depth), false) : null
+    this.emTex = this.bg.emissive || this.bg.streaks ? this.upload(emissiveOf(bgImg)) : null
+    this.fgTex = []
+    for (const f of this.bg.fg ?? []) this.fgTex.push(this.upload(await this.loadImg(f.file)))
+    this.air = []
     this.buildMask()
     this.ready = true
   }
@@ -342,7 +389,7 @@ export class BattleRenderer {
     if (f < 0) f = loop(C.idle)
     return Math.max(0, f)
   }
-  private drawUnitSprite(u: Unit, t: number, focus: string | null, lights: Light[], refl: boolean, shadow?: { dx: number; dy: number; a: number }) {
+  private drawUnitSprite(u: Unit, t: number, focus: string | null, lights: Light[], refl: boolean, shadow?: { dx: number; dy: number; a: number }, glass?: { y: number; a: number }) {
     const P = this.pose(u, t, focus)
     const L = P.L; const file = L.ms?.file ?? L.file; const T = this.tex.get(file); const N = this.nrm.get(file); if (!T || !N) return
     // 칸(cell): 일반 시트는 고정 칸, 동작 세트는 프레임마다 잘라 낸 사각형과 그 안의 발 위치
@@ -363,6 +410,15 @@ export class BattleRenderer {
       // 땅에 눕힌 그림자: 높이(발에서 위로 떨어진 만큼)를 빛 반대쪽으로 늘인다
       const gy = u.y
       pts = pts.map((v, i, arr) => { if (i % 2 === 0) { const hgt = gy - arr[i + 1]; return v + shadow.dx * hgt } const hgt = gy - v; return gy + shadow.dy * hgt })
+    }
+    if (glass) {
+      // 진열창 유리에 비친 모습: 유리에서 멀수록(바닥 앞쪽일수록) 더 위·더 작게, 흐리고 푸르게
+      const ft = this.bg.floorTop ?? 330, k = 0.8, gy = glass.y - (u.y - ft) * 0.32
+      pts = pts.map((v, i) => (i % 2 === 0 ? u.x + (v - u.x) * k : gy + (v - fy) * k))
+      const a = glass.a * P.alpha * Math.max(0, 1 - (u.y - ft) / 420)
+      if (a < 0.02) return
+      this.sprite(T, N, pts, uvs, { flip: flip ? -1 : 1, flash: [1, 1, 1, 0], alpha: a, sat: 0.7, outline: [0, 0, 0, 0], refl: false, v: [v0, v1], clip: [Math.min(u0, u1) + 0.0005, v0 + 0.0005, Math.max(u0, u1) - 0.0005, v1 - 0.0005], lights, tint: [0.6, 0.72, 0.95] })
+      return
     }
     this.sprite(T, N, pts, uvs, { flip: flip ? -1 : 1, flash: P.flash, alpha: P.alpha, sat: P.sat, outline: P.outline, refl, v: [v0, v1], clip: [Math.min(u0, u1) + 0.0005, v0 + 0.0005, Math.max(u0, u1) - 0.0005, v1 - 0.0005], lights, shadow: shadow ? shadow.a * P.alpha : 0 })
   }
@@ -462,6 +518,7 @@ export class BattleRenderer {
     this.parts = this.parts.filter((p) => p.life < p.max)
     for (const r of this.ripples) r.t += dt
     this.ripples = this.ripples.filter((r) => r.t < r.dur)
+    this.airTick(dt)
     // 물웅덩이를 밟는 발걸음 물결
     for (const u of s.units) {
       if (u.dead) continue
@@ -476,8 +533,11 @@ export class BattleRenderer {
     // 카메라: 전투가 벌어지는 곳을 살짝 따라가고, 스킬 순간엔 시전자 쪽으로 당겨 준다
     if (!this.reduce) {
       const live = s.units.filter((u) => !u.dead && u.x < 1300)
-      let cx = W / 2, cy = H / 2, z = 1.06
+      const deep = !!this.bg.depth
+      let cx = W / 2, cy = H / 2, z = deep ? 1.13 : 1.06
       if (live.length) { cx = live.reduce((a, u) => a + u.x, 0) / live.length; cy = live.reduce((a, u) => a + u.y, 0) / live.length - 70 }
+      // 던파식 배경이면 카메라가 천천히 흘러 층이 갈라져 보이게
+      if (deep) { cx += Math.sin(t * 0.13) * 70; cy += Math.sin(t * 0.09 + 1) * 18 }
       if (s.cutin && s.cutin.t < 0.55) { const c = s.units.find((u) => u.id === s.cutin!.kind); if (c) { cx = c.x + 120; cy = c.y - 90; z = 1.14 } }
       const k = Math.min(1, dt * (s.cutin ? 5 : 1.6))
       this.view.z += (z - this.view.z) * k; this.view.x += (cx - this.view.x) * k; this.view.y += (cy - this.view.y) * k
@@ -507,10 +567,27 @@ export class BattleRenderer {
     gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, this.maskTex!.t); gl.uniform1i(pb.u('uMask'), 3)
     gl.uniform1f(pb.u('uTime'), t); gl.uniform3fv(pb.u('uAmb'), this.flat ? [1, 1, 1] : this.bg.amb); gl.uniform3fv(pb.u('uBoost'), this.flat ? [0, 0, 0] : this.boost); gl.uniform1f(pb.u('uRip'), this.bg.ripple * (this.reduce ? 0.3 : 1))
     this.setLights(pb, this.flat ? [] : lights)
+    gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, (this.depthTex ?? this.maskTex!).t); gl.uniform1i(pb.u('uDepth'), 4)
+    gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, (this.emTex ?? this.maskTex!).t); gl.uniform1i(pb.u('uEm'), 5)
+    gl.uniform4f(pb.u('uPar'), this.depthTex && !this.flat ? 1 : 0, this.bg.far ?? 0.35, 0, 0)
+    gl.uniform4f(pb.u('uEmK'), this.emTex && !this.flat ? (this.bg.emissive ?? 0) : 0, this.reduce ? 0 : 0.35, this.emTex && !this.flat ? (this.bg.streaks ?? 0) : 0, this.bg.floorTop ?? 9999)
+    gl.uniform2f(pb.u('uPan'), this.view.x - W / 2, this.view.y - H / 2)
     const m = 24 // 흔들림 여백
     this.quad([-m, -m, W + m, -m, W + m, H + m, -m, H + m], [0, 0, 1, 0, 1, 1, 0, 1])
     gl.enable(gl.BLEND)
 
+    // 진열창 유리 반사: 유리 영역만 잘라(scissor) 대원·적을 흐리게 비춘다. 유리도 건물 깊이만큼 시차로 움직인다
+    if (this.bg.mirrors && !this.flat && !this.reduce) {
+      const kpx = this.canvas.width / W, par = (this.bg.far ?? 0.35) + (1 - (this.bg.far ?? 0.35)) * 0.4
+      gl.enable(gl.SCISSOR_TEST)
+      for (const [mx, my, mw, mh, ma] of this.bg.mirrors) {
+        const wx = mx - (this.view.x - W / 2) * (1 - par), wy = my - (this.view.y - H / 2) * (1 - par)
+        const sx = ((wx - this.view.x) * this.view.z + W / 2 + this.cam[0]) * kpx, sy = ((wy - this.view.y) * this.view.z + H / 2 + this.cam[1]) * kpx
+        gl.scissor(Math.round(sx), Math.round(this.canvas.height - sy - mh * this.view.z * kpx), Math.round(mw * this.view.z * kpx), Math.round(mh * this.view.z * kpx))
+        for (const u of units) if (!u.dead && Math.abs(u.x - (wx + mw / 2)) < mw) this.drawUnitSprite(u, t, null, lights, false, undefined, { y: wy + mh, a: ma })
+      }
+      gl.disable(gl.SCISSOR_TEST)
+    }
     // ③ 바닥: 물결 · 예고 · 그림자 · 장치 보호막
     for (const r of this.ripples) { const k = r.t / r.dur; this.shape(4, this.box(r.x, r.y, r.r * 2 * (0.3 + k), r.r * 0.62 * (0.3 + k)), [0.85, 0.92, 1, r.a * (1 - k) * 0.5], 0, true) }
     for (const u of s.units) if (u.tele && !u.dead) this.drawTele(u, t, false)
@@ -552,10 +629,45 @@ export class BattleRenderer {
     for (const u of s.units) if (!u.dead && u.buffs.some((b) => b.id === 'ian-b' && b.mods.dmgRed)) this.shape(5, this.box(u.x, u.y - 70, 150, 170), [1, 0.65, 0.3, 0.7], 0, true)
     for (const u of s.units) if (!u.dead && u.shield > 0) this.shape(3, this.box(u.x, u.y - 60, 140, 170), [1, 0.6, 0.25, 0.16], 0, true)
     for (const p of this.parts) { const k = p.life / p.max; if (p.add) this.fxQuad(p.tex, p.x, p.y, p.size * (1 - k * 0.4), p.size * (1 - k * 0.4), p.rot, [p.c[0], p.c[1], p.c[2], (1 - k)]); else this.fxQuad(p.tex, p.x, p.y, p.size, p.size, p.rot, [p.c[0], p.c[1], p.c[2], (1 - k) * 0.9]) }
+    // 공기(비·먼지·불티)
+    for (const p of this.air) {
+      const k = p.life / p.max; const fade = Math.min(1, k * 6) * Math.min(1, (1 - k) * 4)
+      if (p.tex === 'drop') this.fxQuad('drop', p.x, p.y, 4, p.size, Math.atan2(-p.vx, p.vy), [p.c[0], p.c[1], p.c[2], 0.55 * fade])
+      else this.fxQuad('glow', p.x, p.y, p.size, p.size, 0, [p.c[0], p.c[1], p.c[2], (0.35 + 0.25 * Math.sin(p.rot + p.life * 3)) * fade])
+    }
+    // 앞쪽 소품 층: 바닥보다 빨리 흐르고 어둡게(카메라 가까이)
+    this.drawFg()
     // ⑥ 예고 윤곽(이펙트에 가려지지 않게 맨 위에 한 번 더)
     for (const u of s.units) if (u.tele && !u.dead) this.drawTele(u, t, true)
   }
 
+  /** 공기 효과: 비(바닥에 닿으면 작은 물결), 먼지(떠다니는 빛), 불티(올라가는 불꽃) */
+  private airTick(dt: number) {
+    const R = Math.random, kinds = this.bg.air ?? [], n = this.reduce ? 0.35 : 1
+    const ft = this.bg.floorTop ?? 330
+    for (const p of this.air) { p.life += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt }
+    this.air = this.air.filter((p) => {
+      if (p.tex === 'drop' && p.ground && p.y > p.ground) { if (R() < 0.25) this.ripple(p.x, p.ground, 10 + R() * 8, 0.45, 0.5); return false }
+      return p.life < p.max
+    })
+    const count = (t: string) => this.air.reduce((a, p) => a + (p.tex === t ? 1 : 0), 0)
+    if (kinds.includes('rain')) for (let i = count('drop'); i < 150 * n; i++) { const g = ft + R() * (H - ft); this.air.push({ x: -80 + R() * (W + 240), y: -60 - R() * 400, vx: -170, vy: 1350 + R() * 300, life: 0, max: 3, size: 46 + R() * 40, tex: 'drop', c: [0.62, 0.72, 0.95], g: 0, rot: 0, vr: 0, add: true, ground: g }) }
+    if (kinds.includes('dust')) for (let i = count('dust'); i < 34 * n; i++) this.air.push({ x: R() * W, y: 80 + R() * (H - 140), vx: (R() - 0.5) * 18, vy: -6 - R() * 10, life: 0, max: 6 + R() * 6, size: 5 + R() * 7, tex: 'dust', c: [0.75, 0.82, 1], g: 0, rot: R() * 6, vr: 1 + R(), add: true })
+    if (kinds.includes('embers')) for (let i = count('ember'); i < 22 * n; i++) this.air.push({ x: R() * W, y: H - R() * 260, vx: (R() - 0.5) * 30, vy: -40 - R() * 60, life: 0, max: 3 + R() * 3, size: 4 + R() * 5, tex: 'ember', c: [1, 0.55, 0.2], g: 0, rot: R() * 6, vr: 4 + R() * 4, add: true })
+  }
+  private drawFg() {
+    const L = this.bg.fg; if (!L || this.flat) return
+    const gl = this.gl; const p = this.use(this.progs.fx)
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); gl.uniform1f(p.u('uRefl'), 0); gl.uniform2f(p.u('uV'), 0, 1)
+    L.forEach((f, i) => {
+      const T = this.fgTex[i]; if (!T) return
+      const ox = -(this.view.x - W / 2) * (f.par - 1), oy = -(this.view.y - H / 2) * (f.par - 1) * 0.6
+      const x0 = (f.x ?? -40) + ox, w = f.w ?? W + 80, y0 = f.y + oy
+      gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T.t); gl.uniform1i(p.u('uTex'), 0)
+      const a = this.bg.amb; gl.uniform4f(p.u('uC'), a[0] * 0.8, a[1] * 0.8, a[2] * 0.85, 1)
+      this.quad([x0, y0, x0 + w, y0, x0 + w, y0 + f.h, x0, y0 + f.h], [0, 0, 1, 0, 1, 1, 0, 1])
+    })
+  }
   private drawTele(u: Unit, t: number, top: boolean) {
     const tl = u.tele!; const k = Math.min(1, tl.t / tl.dur)
     const pulse = 0.85 + 0.15 * Math.sin(t * 16)
