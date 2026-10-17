@@ -122,6 +122,83 @@ const FS_FX = `#version 300 es
 precision highp float; in vec2 vUv; in vec2 vW; out vec4 o; uniform sampler2D uTex; uniform vec4 uC; uniform float uRefl; uniform vec2 uV;
 void main(){ vec4 c = texture(uTex, vUv); float k = 1.0; if (uRefl > 0.5) k = 0.6 * pow(clamp((vUv.y - uV.x) / (uV.y - uV.x), 0.0, 1.0), 1.4); o = c * uC * k; }`
 
+// ───────── 라이엇식 이펙트 셰이더: 하얀 심 + 진한 색 몸통 + (블룸은 합성 단계에서) ─────────
+// uMode 0 구슬(섬광) · 1 초승달 베기 · 2 보호막 껍질 · 3 충격파 고리 · 4 빔 · 5 바닥 문양 · 6 불티 줄 · 7 연기
+const FS_VFX = `#version 300 es
+precision highp float; in vec2 vUv; in vec2 vW; out vec4 o;
+uniform int uMode; uniform vec4 uC; uniform vec4 uP; uniform float uTime;
+float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }
+float fbm(vec2 p){ float a = 0.0, w = 0.5; for (int i = 0; i < 4; i++) { a += vn(p) * w; p *= 2.03; w *= 0.5; } return a; }
+void main(){
+  vec2 q = vUv * 2.0 - 1.0; float d = length(q); vec3 col = uC.rgb; float a = 0.0; vec3 core = vec3(0.0);
+  float T = uTime + uP.w * 13.0;
+  if (uMode == 0) { // 구슬: 하얀 심 + 색 몸통
+    float body = exp(-d * d * 4.5); float hot = exp(-d * d * 40.0 * (1.0 + uP.x));
+    a = body; core = vec3(hot);
+  } else if (uMode == 1) { // 초승달: 각도 범위(0..1 진행) 안의 띠, 끝으로 갈수록 가늘고 흐림, 결을 따라 흐르는 줄무늬
+    float ang = atan(q.y, q.x); float t = (ang + 3.14159) / 6.28318; // 0..1
+    float head = uP.x; float len = uP.y; float tt = (head - t); if (tt < 0.0) tt += 1.0;
+    if (tt > len) discard;
+    float along = 1.0 - tt / len; // 1 = 머리
+    float r0 = 0.82, th = 0.16 * (0.25 + along * 0.75);
+    float band = 1.0 - smoothstep(0.0, th, abs(d - r0));
+    float edge = 1.0 - smoothstep(0.0, th * 0.25, abs(d - (r0 + th * 0.55)));
+    float streak = 0.6 + 0.4 * vn(vec2(tt * 40.0 - T * 6.0, d * 12.0));
+    a = band * pow(along, 0.7) * streak; core = vec3(edge * pow(along, 1.5) * 1.2);
+  } else if (uMode == 2) { // 보호막 껍질: 가장자리만 빛나는 반투명 구 + 흐르는 무늬 + 육각
+    if (d > 1.0) discard;
+    float rim = pow(d, 5.0); float z = sqrt(1.0 - d * d);
+    vec2 sp = q / (z + 0.35);
+    float flow = fbm(sp * 2.6 + vec2(0.0, -T * 0.6)); float hex = 0.0;
+    vec2 hp = sp * 5.0; hp.x *= 1.1547; hp.y += mod(floor(hp.x), 2.0) * 0.5; vec2 hf = fract(hp) - 0.5; hex = smoothstep(0.42, 0.48, max(abs(hf.x) * 1.5 + abs(hf.y) * 0.5, abs(hf.y)));
+    a = 0.1 + rim * 0.9 + flow * 0.25 * (0.3 + rim) + hex * 0.18 * uP.y;
+    a *= 0.75 + 0.25 * sin(T * 3.0 + d * 8.0);
+    core = vec3(pow(rim, 3.0) * 0.8 + step(0.985, d) * 0.6);
+    a *= smoothstep(1.0, 0.985, d) + 0.0;
+  } else if (uMode == 3) { // 충격파 고리: 반지름 uP.x, 두께 uP.y, 노이즈로 군데군데 끊김
+    float ang = atan(q.y, q.x);
+    float ring = 1.0 - smoothstep(0.0, uP.y, abs(d - uP.x));
+    float br = 0.55 + 0.45 * vn(vec2(ang * 6.0 + T * 2.0, uP.x * 6.0));
+    a = ring * br; core = vec3(pow(ring, 4.0) * br);
+    a += exp(-pow((d - uP.x * 0.6) / 0.25, 2.0)) * 0.15 * uP.z; // 안쪽 옅은 채움
+  } else if (uMode == 4) { // 빔: x 따라 길게. 끝은 가늘게, 꼬이는 줄, 가장자리 무지개 번짐
+    float x = vUv.x, y = q.y; float taper = smoothstep(0.0, 0.08, x) * (1.0 - smoothstep(0.86, 1.0, x));
+    float tw = sin(x * 30.0 - T * 25.0) * 0.18; float n = vn(vec2(x * 22.0 - T * 18.0, y * 3.0));
+    float w = (0.42 + 0.18 * n) * taper;
+    float body = 1.0 - smoothstep(0.0, w, abs(y)); float coreL = 1.0 - smoothstep(0.0, w * 0.22, abs(y + tw * 0.3));
+    float fr = 1.0 - smoothstep(w * 0.8, w * 1.25, abs(y));
+    a = body * (0.65 + 0.35 * n); core = vec3(coreL * taper * 1.2);
+    col = mix(col, vec3(col.b, col.g, col.r), fr * (1.0 - body) * uP.x); // 가장자리 색 갈라짐
+    a += fr * (1.0 - body) * 0.35 * uP.x;
+  } else if (uMode == 5) { // 바닥 문양: 동심원 + 돌아가는 눈금 + 안쪽 글자 조각, uP.x = 차오름(0..1)
+    float ang = atan(q.y, q.x) + T * uP.y;
+    float r1 = 1.0 - smoothstep(0.0, 0.03, abs(d - 0.92)); float r2 = 1.0 - smoothstep(0.0, 0.02, abs(d - 0.7));
+    float ticks = step(0.5, fract(ang * 24.0 / 6.28318)) * (1.0 - smoothstep(0.0, 0.05, abs(d - 0.81)));
+    float glyph = step(0.62, vn(vec2(floor(ang * 8.0 / 6.28318) * 3.0, floor(d * 8.0)))) * step(0.35, d) * step(d, 0.62) * step(0.15, fract(ang * 8.0 / 6.28318));
+    float fill = step(d, uP.x) * 0.12;
+    a = (r1 + r2 * 0.8 + ticks * 0.7 + glyph * 0.45) * step(d, 1.0) + fill;
+    core = vec3(r1 * 0.5);
+  } else if (uMode == 6) { // 불티 줄: 머리가 하얗고 꼬리가 색으로 사라짐(u 0=꼬리 1=머리)
+    float x = vUv.x; float y = abs(q.y);
+    float w = 1.0 - smoothstep(0.0, 0.25 + 0.75 * x, y);
+    a = w * x; core = vec3(w * pow(x, 4.0));
+  } else if (uMode == 7) { // 연기: 노이즈로 깎인 둥근 덩어리(일반 섞기)
+    float n = fbm(q * 2.2 + vec2(uP.w * 7.0, -T * 0.3));
+    a = smoothstep(1.0, 0.2, d + (n - 0.5) * 0.7) * (0.5 + n * 0.5);
+    col = uC.rgb * (0.6 + n * 0.6);
+  }
+  a = clamp(a, 0.0, 1.0) * uC.a; core *= uC.a;
+  o = vec4(col * a + core, a);
+}`
+// 합성: 이펙트만 따로 그린 판(glow)을 선명하게 한 번 + 흐리게(밉맵) 여러 번 더해 빛 번짐을 만든다
+const FS_COMP = `#version 300 es
+precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uG; uniform float uK;
+void main(){ vec2 uv = vec2(vUv.x, 1.0 - vUv.y);
+  vec3 g = texture(uG, uv).rgb + textureLod(uG, uv, 2.0).rgb * 0.55 + textureLod(uG, uv, 3.5).rgb * 0.55 + textureLod(uG, uv, 5.0).rgb * 0.45;
+  o = vec4(g * uK, 0.0); }`
+
 function compile(gl: WebGL2RenderingContext, vs: string, fs: string) {
   const mk = (t: number, src: string) => { const s = gl.createShader(t)!; gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? 'shader'); return s }
   const p = gl.createProgram()!; gl.attachShader(p, mk(gl.VERTEX_SHADER, vs)); gl.attachShader(p, mk(gl.FRAGMENT_SHADER, fs))
@@ -170,7 +247,7 @@ function emissiveOf(img: HTMLImageElement): HTMLCanvasElement {
 
 export class BattleRenderer {
   gl: WebGL2RenderingContext
-  progs: Record<'spr' | 'bg' | 'shape' | 'fx', Prog>
+  progs: Record<'spr' | 'bg' | 'shape' | 'fx' | 'vfx' | 'comp', Prog>
   vbo: WebGLBuffer; vao: WebGLVertexArrayObject
   tex = new Map<string, Tex>(); nrm = new Map<string, Tex>()
   fxTex = new Map<string, Tex>()
@@ -178,6 +255,8 @@ export class BattleRenderer {
   depthTex: Tex | null = null; emTex: Tex | null = null; fgTex: Tex[] = []
   air: Part[] = []
   refl: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null
+  glow: { fb: WebGLFramebuffer; tex: WebGLTexture; w: number; h: number } | null = null
+  time = 0
   bg!: BgLook
   parts: Part[] = []; ripples: Ripple[] = []
   seen = new Set<number>(); trail = new Map<string, { x: number; y: number }[]>(); stepT = new Map<string, number>()
@@ -187,7 +266,7 @@ export class BattleRenderer {
     const gl = canvas.getContext('webgl2', { premultipliedAlpha: true, antialias: true, alpha: false })
     if (!gl) throw new Error('webgl2')
     this.gl = gl
-    this.progs = { spr: compile(gl, VS, FS_SPRITE), bg: compile(gl, VS, FS_BG), shape: compile(gl, VS, FS_SHAPE), fx: compile(gl, VS, FS_FX) }
+    this.progs = { spr: compile(gl, VS, FS_SPRITE), bg: compile(gl, VS, FS_BG), shape: compile(gl, VS, FS_SHAPE), fx: compile(gl, VS, FS_FX), vfx: compile(gl, VS, FS_VFX), comp: compile(gl, VS, FS_COMP) }
     this.vao = gl.createVertexArray()!; gl.bindVertexArray(this.vao)
     this.vbo = gl.createBuffer()!; gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo); gl.bufferData(gl.ARRAY_BUFFER, 16 * 4, gl.DYNAMIC_DRAW)
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0)
@@ -253,7 +332,7 @@ export class BattleRenderer {
   resize(cssW: number, cssH: number, dpr: number, cap = 1.5) {
     const k = Math.min(cap, dpr * (cssW / W))
     const w = Math.round(W * k), h = Math.round(H * k)
-    if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h; this.refl = null }
+    if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h; this.refl = null; this.glow = null }
     void cssH
     this.scale = k
   }
@@ -268,6 +347,27 @@ export class BattleRenderer {
     this.refl = { fb, tex }; return this.refl
   }
 
+  private ensureGlow() {
+    if (this.glow) return this.glow
+    const gl = this.gl; const tex = gl.createTexture()!
+    const w = Math.max(2, Math.round(this.canvas.width / 2)), h = Math.max(2, Math.round(this.canvas.height / 2))
+    gl.bindTexture(gl.TEXTURE_2D, tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    gl.generateMipmap(gl.TEXTURE_2D)
+    const fb = gl.createFramebuffer()!; gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0)
+    this.glow = { fb, tex, w, h }; return this.glow
+  }
+  /** 셰이더 이펙트 한 장(가산). refl이면 발밑 기준으로 뒤집어 반사 버퍼에 그린다 */
+  private vfx(mode: number, cx: number, cy: number, w: number, h: number, rot: number, c: [number, number, number, number], p: [number, number, number, number] = [0, 0, 0, 0], refl = false, footY = 0, normal = false) {
+    if (c[3] <= 0.003) return
+    const gl = this.gl; const pr = this.use(this.progs.vfx)
+    gl.blendFunc(gl.ONE, normal ? gl.ONE_MINUS_SRC_ALPHA : gl.ONE)
+    gl.uniform1i(pr.u('uMode'), mode); gl.uniform4f(pr.u('uC'), c[0], c[1], c[2], c[3] * (refl ? 0.5 : 1)); gl.uniform4f(pr.u('uP'), p[0], p[1], p[2], p[3]); gl.uniform1f(pr.u('uTime'), this.time)
+    let pts = this.box(cx, cy, w, h, rot)
+    if (refl) pts = pts.map((v, i) => (i % 2 ? 2 * footY - v : v))
+    this.quad(pts, [0, 0, 1, 0, 1, 1, 0, 1])
+  }
   // ───────── 그리기 도구 ─────────
   private cam: [number, number] = [0, 0]
   private quad(p: number[], uv: number[]) {
