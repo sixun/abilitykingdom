@@ -35,7 +35,19 @@ export default function Shop({ params }: { params: Record<string, unknown> }) {
         <Tabs<Tab> value={tab} onChange={setTab} items={[{ id: 'recommend', label: '추천' }, { id: 'package', label: '패키지' }, { id: 'currency', label: '재화' }, { id: 'exchange', label: '교환소' }]} />
         <ProvisionalTag>상품·가격은 임시 샘플</ProvisionalTag>
       </div>
-      <div className="shop-grid scroll-y" key={tab}>
+      {tab === 'recommend' && (
+        <section className="shop-feature" aria-label="시즌 추천 상품">
+          <div className="shop-feature-copy">
+            <span className="shop-eyebrow">ABILITY KINGDOM · SEASON 01</span>
+            <strong>특별 보급이 도착했습니다.</strong>
+            <p>한정 상품부터 매일 필요한 보급품까지.</p>
+            <button className="shop-feature-cta" onClick={() => { audio.sfx('select'); setTab('package') }}>패키지 둘러보기 <span aria-hidden>↗</span></button>
+          </div>
+          <img src="ref/pass/banner-s01.webp" alt="시즌 01 패스 배너" />
+          <span className="shop-feature-side">CITY SUPPLY / 001</span>
+        </section>
+      )}
+      <div className={`shop-grid scroll-y ${tab === 'recommend' ? 'shop-grid-featured' : ''}`} key={tab}>
         {list.length === 0 && <EmptyState title="판매 중인 상품이 없습니다" />}
         {list.map((prod, i) => {
           const bought = game.purchasedCount(prod.id)
