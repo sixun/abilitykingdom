@@ -1,7 +1,7 @@
 import { useEffect, useReducer, useRef, useState, type CSSProperties, type PointerEvent as RPE } from 'react'
 import '../../styles/case.css'
 import { useNav } from '../../app/nav'
-import { audio } from '../../app/audio'
+import { audio, SFX_BATTLE, type Sfx } from '../../app/audio'
 import { RefStage } from '../../ui/ref'
 import { useReduceMotion, useScreenActive } from '../../ui/motion'
 import { game, useGame } from '../../game/store'
@@ -63,10 +63,13 @@ export default function CaseBattle({ params }: { params: Record<string, unknown>
     for (const w of def.timeline ?? []) for (const sp of w.spawn) kinds.add(sp.k)
     if (def.goal === 'boss') { kinds.add('boss'); kinds.add('pylon') }
     for (const d of def.devices ?? []) kinds.add(d.k)
-    r.load((new URLSearchParams(location.search).get('bg') as BgKey | null) ?? def.bg, [...kinds], setLoad) // ?bg= 는 비교용 개발 옵션.then(() => setLoad(1)).catch(() => setGlErr(true))
+    // ?bg= 는 배경 비교용 개발 옵션
+    const bgKey = (new URLSearchParams(location.search).get('bg') as BgKey | null) ?? def.bg
+    r.load(bgKey, [...kinds], setLoad).then(() => setLoad(1)).catch(() => setGlErr(true))
+    audio.preload(SFX_BATTLE); audio.ambience(`amb_${bgKey.replace('Old', '')}`)
     return () => r.dispose()
   }, [])
-  useEffect(() => { audio.bgm('battle'); return () => audio.bgm('menu') }, [])
+  useEffect(() => { audio.bgm('battle'); return () => { audio.bgm('menu'); audio.ambience('') } }, [])
   useEffect(() => { if (phase === 'intro' && load >= 1) { const id = setTimeout(() => setPhase('fight'), reduce ? 300 : 1900); audio.sfx('title'); return () => clearTimeout(id) } }, [phase, load])
 
   useEffect(() => {
@@ -94,26 +97,21 @@ export default function CaseBattle({ params }: { params: Record<string, unknown>
   }, [])
 
   const sounds = (s: Sim) => {
-    for (const x of s.fx) if (x.id > lastSeq.current) {
-      if (x.k === 'hitE' && (x.crit || Math.random() < 0.35)) audio.sfx('hit')
-      else if (x.k === 'slashBig') audio.sfx('slash')
-      else if (x.k === 'dieE') audio.sfx('coin')
-      else if (x.k === 'break') audio.sfx('reveal')
-      else if (x.k === 'banner') audio.sfx('title')
-      else if (x.k === 'slam' || x.k === 'noise') audio.sfx('swap')
-      else if (x.k === 'buffOn') audio.sfx('save')
-    }
+    // 소리는 시뮬레이션이 정확한 순간에 남긴 목록(s.snd)을 그대로 낸다
+    for (const k of s.snd) audio.sfx(k as Sfx)
+    s.snd.length = 0
+    for (const x of s.fx) if (x.id > lastSeq.current && x.k === 'banner') audio.sfx('banner')
     for (const x of s.fx) lastSeq.current = Math.max(lastSeq.current, x.id)
   }
   const onResult = async (s: Sim) => {
-    audio.sfx(s.result === 'win' ? 'reveal5' : 'error')
+    audio.sfx(s.result === 'win' ? 'win' : 'lose')
     if (s.result === 'win') { const st = starsOf(s).filter(Boolean).length; const res = await game.clearCaseNode(node.id, st); if (res.ok) setReward(res.value) }
     setTimeout(() => setPhase('result'), 900)
   }
   const restart = () => { sim.current = newSim(def); resultDone.current = false; lastSeq.current = 0; setReward(null); setPaused(false); setPhase('intro') }
-  const act = (id: AllyKind) => { if (cfg.current.phase !== 'fight' || cfg.current.paused) return; if (castActive(sim.current, id)) audio.sfx(id === 'ian' ? 'select' : id === 'kanna' ? 'coin' : 'whoosh'); else audio.sfx('error') }
+  const act = (id: AllyKind) => { if (cfg.current.phase !== 'fight' || cfg.current.paused) return; if (!castActive(sim.current, id)) audio.sfx('error') }
   const buff = (id: AllyKind) => { if (cfg.current.phase !== 'fight' || cfg.current.paused) return; if (!castBuff(sim.current, id)) audio.sfx('error') }
-  const focus = (id: string) => { if (cfg.current.phase !== 'fight') return; setFocus(sim.current, sim.current.focus === id ? null : id); audio.sfx('select') }
+  const focus = (id: string) => { if (cfg.current.phase !== 'fight') return; const off = sim.current.focus === id; setFocus(sim.current, off ? null : id); if (off) audio.sfx('select') }
   const dev = (id: string) => { if (cfg.current.phase !== 'fight') return; if (useDevice(sim.current, id)) audio.sfx('open'); else audio.sfx('error') }
 
   useEffect(() => {

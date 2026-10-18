@@ -68,6 +68,8 @@ export interface Sim {
   flags: Record<string, number>; cnt: { breaks: number; downs: number; shutter: number; relayMin: number; noiseBreaks: number; focus: number }
   tip: (Tip & { t: number }) | null; seenTips: string[]
   wave: number; tl: number; timers: { at: number; f: () => void }[]; rnd: () => number
+  /** 이번에 날 소리(화면이 꺼내 재생하고 비운다). 이름은 src/app/sfx-manifest.json 키 */
+  snd: string[]
 }
 
 // ───────── 대원 정의 ─────────
@@ -104,6 +106,7 @@ export const isAlive = alive
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, (a.y - b.y) * 1.5)
 export function stat(u: Unit, k: keyof Stats) { let v = u.st[k]; for (const b of u.buffs) v += b.mods[k] ?? 0; return v }
 const fx = (s: Sim, f: Omit<Fx, 'id' | 't'>) => { s.fx.push({ ...f, id: s.seq++, t: 0 }) }
+const snd = (s: Sim, k: string) => { if (s.snd.length < 48) s.snd.push(k) }
 const later = (s: Sim, dt: number, f: () => void) => { s.timers.push({ at: s.t + dt, f }) }
 function mulberry(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296 } }
 
@@ -124,7 +127,7 @@ export function newSim(def: StageDef, seed = Date.now()): Sim {
   const s: Sim = {
     t: 0, def, units: [], devices: [], proj: [], fx: [], abil: {}, focus: null, shake: 0, stop: 0, slowmo: 0,
     result: null, why: '', seq: 1, cutin: null, flags: {}, cnt: { breaks: 0, downs: 0, shutter: 0, relayMin: 1, noiseBreaks: 0, focus: 0 },
-    tip: null, seenTips: [], wave: 0, tl: 0, timers: [], rnd: mulberry(seed),
+    tip: null, seenTips: [], wave: 0, tl: 0, timers: [], rnd: mulberry(seed), snd: [],
   }
   for (const k of ALLY_ORDER) {
     const [hx, hy] = def.homes?.[k] ?? ALLY[k].home
@@ -178,6 +181,8 @@ function damage(s: Sim, from: Unit | undefined, to: Unit, mult: number, o: { cri
   if (v > 0 && !o.noNum) fx(s, { k: 'num', x: to.x + (s.rnd() - 0.5) * 34, y: to.y - headOf(to) + 10, dur: 0.9, v, crit })
   if (crit || o.abil) s.stop = Math.max(s.stop, crit ? 0.085 : 0.05)
   fx(s, { k: to.side === 'enemy' ? 'hitE' : 'hitA', x: to.x, y: to.y - headOf(to) * 0.45, dur: 0.35, crit })
+  if (to.side === 'ally' && v > 0) snd(s, 'ally_hurt')
+  else if (crit && from?.side === 'ally') snd(s, 'crit')
   if (!to.act || (to.act.k === 'atk' && to.side === 'enemy')) to.act = { k: 'hit', t: 0, dur: to.side === 'ally' ? 0.32 : 0.2 }
   // 히트스톱: 근접 타격·치명타·스킬은 때린 쪽과 맞은 쪽이 아주 잠깐 멈춘다(던파식 손맛)
   if (from && !o.noNum) {
@@ -203,6 +208,7 @@ function damage(s: Sim, from: Unit | undefined, to: Unit, mult: number, o: { cri
 function kill(s: Sim, u: Unit) {
   u.dead = 0.0001; u.act = null; u.tele = null; u.task = null
   fx(s, { k: u.side === 'enemy' ? 'dieE' : 'dieA', x: u.x, y: u.y - headOf(u) * 0.4, dur: 0.9, who: u.kind })
+  snd(s, u.side === 'ally' ? 'ally_down' : u.kind === 'pylon' ? 'pylon_down' : 'foe_die')
   if (u.side === 'ally') s.cnt.downs++
   if (s.focus === u.id) s.focus = null
   if (u.kind === 'pylon') { fx(s, { k: 'banner', x: 640, y: 240, dur: 1.2, text: '기둥 파괴' }); s.shake = Math.max(s.shake, 0.3) }
@@ -213,12 +219,12 @@ function heal(s: Sim, from: Unit, to: Unit, amt: number) {
   if (v <= 0) return
   to.hp += v; from.healed += v
   if (v >= 8) fx(s, { k: 'num', x: to.x, y: to.y - headOf(to) - 34, dur: 1, v, heal: true })
-  fx(s, { k: 'heal', x: to.x, y: to.y - 50, dur: 0.8 })
+  fx(s, { k: 'heal', x: to.x, y: to.y - 50, dur: 0.8 }); snd(s, 'heal')
 }
 function shieldUp(s: Sim, from: Unit, to: Unit, amt: number, dur: number) {
   if (!alive(to)) return
   to.shield = Math.max(to.shield, Math.round(amt * (1 + stat(from, 'shieldPow')))); to.shieldT = dur
-  fx(s, { k: 'shieldOn', x: to.x, y: to.y - 60, dur: 0.8 })
+  fx(s, { k: 'shieldOn', x: to.x, y: to.y - 60, dur: 0.8 }); snd(s, 'shield')
 }
 function stunUnit(s: Sim, from: Unit, to: Unit, sec: number) {
   if (!alive(to)) return
@@ -227,7 +233,7 @@ function stunUnit(s: Sim, from: Unit, to: Unit, sec: number) {
   if (to.tele) { breakTele(s, to); return }
   if (to.kind === 'boss' || to.statik) return
   to.stun = Math.max(to.stun, sec * (1 - stat(to, 'ccRed')))
-  fx(s, { k: 'stun', x: to.x, y: to.y - headOf(to), dur: sec })
+  fx(s, { k: 'stun', x: to.x, y: to.y - headOf(to), dur: sec }); snd(s, 'stun')
 }
 function breakTele(s: Sim, u: Unit) {
   const tk = u.tele!.k
@@ -235,7 +241,7 @@ function breakTele(s: Sim, u: Unit) {
   s.cnt.breaks++
   s.stop = Math.max(s.stop, 0.12)
   s.shake = Math.max(s.shake, 0.22)
-  fx(s, { k: 'break', x: u.x, y: u.y - headOf(u) * 0.6, dur: 0.9 })
+  fx(s, { k: 'break', x: u.x, y: u.y - headOf(u) * 0.6, dur: 0.9 }); snd(s, 'break')
   if (tk === 'noise') { s.cnt.noiseBreaks++; u.vuln = 6; u.act = { k: 'stagger', t: 0, dur: 6 }; fx(s, { k: 'banner', x: 640, y: 240, dur: 1.6, text: '무력화! 받는 피해 +50%' }) }
   else { u.act = { k: 'stagger', t: 0, dur: 1.4 }; u.teleCd = Math.max(u.teleCd, 4) }
 }
@@ -253,6 +259,7 @@ export function castActive(s: Sim, id: AllyKind): boolean {
   s.cutin = { kind: id, name: ab.name, t: 0, buff: false }
   s.shake = Math.max(s.shake, 0.2)
   u.act = { k: 'skill', t: 0, dur: 0.9 }
+  snd(s, 'cutin'); snd(s, `${id}_skill`)
   if (id === 'rion') {
     for (let i = 0; i < 3; i++) later(s, 0.25 + i * 0.16, () => { if (alive(u)) s.proj.push({ id: s.seq++, k: 'wave', x: u.x + 50, y: u.y - 110, tx: '', spd: 980, dmg: 1.1, from: u.id, crit: false, brk: 3, abil: true, seen: [], vx: 1, life: 1.6 }) })
   } else if (id === 'seren') {
@@ -261,7 +268,7 @@ export function castActive(s: Sim, id: AllyKind): boolean {
     for (let i = 0; i < 3; i++) later(s, 0.32 + i * 0.2, () => {
       if (!alive(t)) return
       damage(s, u, t, 1.35, { abil: true, crit: i === 2 ? true : undefined, brk: 1.5 })
-      fx(s, { k: 'slashBig', x: t.x, y: t.y - headOf(t) * 0.5, dur: 0.45, v: i })
+      fx(s, { k: 'slashBig', x: t.x, y: t.y - headOf(t) * 0.5, dur: 0.45, v: i }); snd(s, i === 2 ? 'seren_hit3' : 'seren_hit')
       if (i === 2) stunUnit(s, u, t, 1.5)
     })
   } else if (id === 'ian') {
@@ -270,7 +277,7 @@ export function castActive(s: Sim, id: AllyKind): boolean {
     fx(s, { k: 'wall', x: u.x + 70, y: u.y - 70, dur: 1.1 })
   } else if (id === 'kanna') {
     const list = [...foes].sort((a, b) => (b.id === s.focus ? 1 : 0) - (a.id === s.focus ? 1 : 0)).slice(0, 5)
-    list.forEach((t, i) => later(s, 0.15 + i * 0.11, () => { fx(s, { k: 'cubeDrop', x: t.x, y: t.y - headOf(t) * 0.5, dur: 0.7 }); later(s, 0.4, () => damage(s, u, t, 1.5, { abil: true })) }))
+    list.forEach((t, i) => later(s, 0.15 + i * 0.11, () => { fx(s, { k: 'cubeDrop', x: t.x, y: t.y - headOf(t) * 0.5, dur: 0.7 }); snd(s, 'kanna_drop'); later(s, 0.4, () => damage(s, u, t, 1.5, { abil: true })) }))
     for (const a of s.units) if (a.side === 'ally' && alive(a)) heal(s, u, a, stat(a, 'maxHp') * 0.08)
   }
   return true
@@ -283,6 +290,7 @@ export function castBuff(s: Sim, id: AllyKind): boolean {
   ab.on = dur
   s.cutin = { kind: id, name: ab.name, t: 0, buff: true }
   u.act = { k: 'buff', t: 0, dur: 1.1 }
+  snd(s, 'cutin'); snd(s, `${id}_buff`)
   const team = s.units.filter((a) => a.side === 'ally' && alive(a))
   const add = (to: Unit, mods: Partial<Stats>, regen?: number) => { to.buffs = to.buffs.filter((b) => b.id !== `${id}-b`); to.buffs.push({ id: `${id}-b`, t: dur, mods, regen, src: id }) }
   if (id === 'rion') { add(u, { atkSpd: 0.6, critRate: 0.1 }); for (const a of team) if (a !== u) add(a, { critRate: 0.1 }) }
@@ -297,7 +305,7 @@ export function castBuff(s: Sim, id: AllyKind): boolean {
 }
 /** 적·기둥을 누르면 집중 공격(다시 누르면 해제) */
 export function setFocus(s: Sim, id: string | null) {
-  if (id && s.focus !== id) { const u = s.units.find((e) => e.id === id && alive(e) && e.side === 'enemy'); if (!u) return false; s.focus = id; s.cnt.focus++; fx(s, { k: 'focus', x: u.x, y: u.y, dur: 0.6 }); return true }
+  if (id && s.focus !== id) { const u = s.units.find((e) => e.id === id && alive(e) && e.side === 'enemy'); if (!u) return false; s.focus = id; s.cnt.focus++; fx(s, { k: 'focus', x: u.x, y: u.y, dur: 0.6 }); snd(s, 'focus'); return true }
   s.focus = null; return true
 }
 /** 장치를 누르면 가장 가까운 대원이 달려가 작동한다 */
@@ -342,7 +350,7 @@ function devDamage(s: Sim, d: Device, amt: number) {
   d.hp = Math.max(0, d.hp - v)
   s.cnt.relayMin = Math.min(s.cnt.relayMin, d.hp / d.max)
   fx(s, { k: 'num', x: d.x, y: d.y - 150, dur: 0.8, v, text: 'dev' })
-  fx(s, { k: 'hitD', x: d.x, y: d.y - 70, dur: 0.3 })
+  fx(s, { k: 'hitD', x: d.x, y: d.y - 70, dur: 0.3 }); snd(s, 'dev_hit')
 }
 
 // ───────── 자동(AUTO): 액티브·버프만 쓴다. 집중 지정·장치는 하지 않는다 ─────────
@@ -471,18 +479,19 @@ function allyTick(s: Sim, u: Unit, dt: number) {
   const crit = s.rnd() < stat(u, 'critRate')
   const fin = n === 3
   u.act = { k: 'atk', t: 0, dur, n, imp, tx: t.x, ty: t.y }
+  if (u.kind === 'seren') snd(s, fin ? 'seren_sw3' : 'seren_sw')
   if (u.kind === 'rion') {
-    later(s, imp, () => { if (alive(u)) s.proj.push({ id: s.seq++, k: 'ring', x: u.x + 50 * u.face, y: hy, tx: t.id, spd: fin ? 980 : 820, dmg: fin ? 1.3 : 0.85, from: u.id, crit, brk: fin ? 3 : 2, abil: false }) })
+    later(s, imp, () => { if (alive(u)) snd(s, fin ? 'rion_shot3' : 'rion_shot'); if (alive(u)) s.proj.push({ id: s.seq++, k: 'ring', x: u.x + 50 * u.face, y: hy, tx: t.id, spd: fin ? 980 : 820, dmg: fin ? 1.3 : 0.85, from: u.id, crit, brk: fin ? 3 : 2, abil: false }) })
   } else if (u.kind === 'seren') {
     // 근접 베기: 1타 가로 베기 · 2타 올려 베기 · 3타 찌르기(크게 밀어냄). 치명타면 검기 한 줄이 더 날아간다
-    later(s, imp, () => { if (alive(u) && alive(t)) { damage(s, u, t, fin ? 1.3 : 0.98, { crit, push: fin ? 46 : 14 }); fx(s, { k: fin ? 'slashBig' : 'slashHit', x: t.x, y: t.y - headOf(t) * 0.45, dur: 0.35, v: n }); fx(s, { k: 'swing', x: u.x + 40 * u.face, y: u.y - 70, dur: 0.25, v: u.face }) } })
+    later(s, imp, () => { if (alive(u) && alive(t)) { damage(s, u, t, fin ? 1.3 : 0.98, { crit, push: fin ? 46 : 14 }); snd(s, fin ? 'seren_hit3' : 'seren_hit'); fx(s, { k: fin ? 'slashBig' : 'slashHit', x: t.x, y: t.y - headOf(t) * 0.45, dur: 0.35, v: n }); fx(s, { k: 'swing', x: u.x + 40 * u.face, y: u.y - 70, dur: 0.25, v: u.face }) } })
     if (crit) later(s, imp + 0.06, () => { if (alive(u) && alive(t)) s.proj.push({ id: s.seq++, k: 'slash', x: hx, y: hy - 20, tx: t.id, spd: 1250, dmg: 0.5, from: u.id, crit: false, brk: 1, abil: false }) })
     if (fin && s.rnd() < 0.5) later(s, dur, () => { if (alive(u)) { u.vx = -u.face * 420; u.hop = 22 } })
   } else if (u.kind === 'kanna') {
-    later(s, imp, () => { if (alive(u) && alive(t)) s.proj.push({ id: s.seq++, k: 'cube', x: u.x + 50 * u.face, y: hy, tx: t.id, spd: 640, dmg: fin ? 1.2 : 0.75, from: u.id, crit, brk: 1, abil: false }) })
+    later(s, imp, () => { if (alive(u) && alive(t)) snd(s, 'kanna_throw'); if (alive(u) && alive(t)) s.proj.push({ id: s.seq++, k: 'cube', x: u.x + 50 * u.face, y: hy, tx: t.id, spd: 640, dmg: fin ? 1.2 : 0.75, from: u.id, crit, brk: 1, abil: false }) })
     if (fin) { const low = s.units.filter((a) => a.side === 'ally' && alive(a)).sort((a, b) => a.hp / stat(a, 'maxHp') - b.hp / stat(b, 'maxHp'))[0]; later(s, imp, () => heal(s, u, low, stat(low, 'maxHp') * 0.08)) }
   } else if (u.kind === 'ian') {
-    later(s, imp, () => { if (alive(u) && alive(t)) { damage(s, u, t, fin ? 1.1 : 0.72, { crit, push: fin ? 52 : 22 }); fx(s, { k: 'bash', x: t.x, y: t.y - headOf(t) * 0.45, dur: 0.35, v: n }); u.taunt = Math.max(u.taunt, 1.2) } })
+    later(s, imp, () => { if (alive(u) && alive(t)) { damage(s, u, t, fin ? 1.1 : 0.72, { crit, push: fin ? 52 : 22 }); snd(s, fin ? 'ian_hit3' : 'ian_hit'); fx(s, { k: 'bash', x: t.x, y: t.y - headOf(t) * 0.45, dur: 0.35, v: n }); u.taunt = Math.max(u.taunt, 1.2) } })
   }
 }
 // 3타 연속 공격 시간(초): dur = 동작 길이, imp = 맞는 순간
@@ -514,7 +523,7 @@ function taskTick(s: Sim, u: Unit, dt: number) {
   else if (tk.ph === 'use') {
     if ((tk.t += dt) >= 0.8) {
       d.closed = 20; s.cnt.shutter++; s.shake = Math.max(s.shake, 0.25)
-      fx(s, { k: 'shutter', x: d.x, y: LANE_Y[d.lane], dur: 1.2 }); fx(s, { k: 'banner', x: 640, y: 240, dur: 1.4, text: `${d.label} 봉쇄 · 20초` })
+      fx(s, { k: 'shutter', x: d.x, y: LANE_Y[d.lane], dur: 1.2 }); snd(s, 'shutter'); fx(s, { k: 'banner', x: 640, y: 240, dur: 1.4, text: `${d.label} 봉쇄 · 20초` })
       // 그 길로 들어오던 적은 셔터에 밀려난다
       for (const e of s.units) if (e.side === 'enemy' && alive(e) && e.entering && Math.abs(e.y - LANE_Y[d.lane]) < 70) damage(s, u, e, 2.5, { abil: true })
       tk.ph = 'back'
@@ -542,7 +551,7 @@ function foeTick(s: Sim, e: Unit, dt: number) {
   const t = foeTarget(s, e)
   if (!t) return
   const d = dist(e, t)
-  if (startTele(s, e, t, d)) return
+  if (startTele(s, e, t, d)) { const k = e.tele!.k; snd(s, k === 'charge' ? (e.kind === 'boss' ? 'boss_tele' : 'hound_tele') : k === 'slam' ? 'golem_tele' : k === 'cast' ? 'orb_tele' : 'noise_tele'); return }
   if (e.kind === 'boss') bossTick(s, e)
   if (d > e.range) {
     const ang = Math.atan2(t.y - e.y, t.x - e.x)
@@ -557,7 +566,7 @@ function foeTick(s: Sim, e: Unit, dt: number) {
   if (e.cd > 0) return
   e.cd = e.interval * (0.9 + s.rnd() * 0.2)
   e.act = { k: 'atk', t: 0, dur: 0.5, tx: t.x, ty: t.y }
-  if (e.kind === 'orb') { s.proj.push({ id: s.seq++, k: 'bolt', x: e.x - 30, y: e.y - 100, tx: isDev(t) ? t.id : t.id, spd: 560, dmg: 1, from: e.id, crit: false, brk: 1, abil: false }); return }
+  if (e.kind === 'orb') { snd(s, 'orb_bolt'); s.proj.push({ id: s.seq++, k: 'bolt', x: e.x - 30, y: e.y - 100, tx: isDev(t) ? t.id : t.id, spd: 560, dmg: 1, from: e.id, crit: false, brk: 1, abil: false }); return }
   later(s, 0.2, () => {
     if (!alive(e)) return
     if (isDev(t)) { if (t.hp > 0) devDamage(s, t, stat(e, 'atk') * (e.kind === 'mite' ? 0.75 : 0.8)) }
@@ -602,7 +611,7 @@ function startTele(s: Sim, e: Unit, t: Unit | Device, d: number): boolean {
 function tickTele(s: Sim, e: Unit, dt: number) {
   if (e.kind === 'caller') {
     e.teleCd -= dt
-    if (!e.tele && e.teleCd <= 0) { e.tele = { k: 'call', name: '호출', t: 0, dur: 3, x: e.x, y: e.y, x2: 0, y2: 0, r: 0, w: 0, need: stat(e, 'maxHp') * 0.12, acc: 0 }; e.teleCd = 10 }
+    if (!e.tele && e.teleCd <= 0) { snd(s, 'call_tele'); e.tele = { k: 'call', name: '호출', t: 0, dur: 3, x: e.x, y: e.y, x2: 0, y2: 0, r: 0, w: 0, need: stat(e, 'maxHp') * 0.12, acc: 0 }; e.teleCd = 10 }
   }
   const tl = e.tele
   if (!tl) return
@@ -612,30 +621,31 @@ function tickTele(s: Sim, e: Unit, dt: number) {
   const allies = s.units.filter((a) => a.side === 'ally' && alive(a))
   if (tl.k === 'slam') {
     s.shake = Math.max(s.shake, 0.35)
-    fx(s, { k: 'slam', x: tl.x, y: tl.y, dur: 0.6, r: tl.r })
+    fx(s, { k: 'slam', x: tl.x, y: tl.y, dur: 0.6, r: tl.r }); snd(s, e.kind === 'boss' ? 'boss_slam' : 'slam')
     e.act = { k: 'atk', t: 0, dur: 0.5 }
     for (const a of allies) if (Math.hypot(a.x - tl.x, (a.y - tl.y) * 1.6) < tl.r) damage(s, e, a, e.kind === 'boss' ? 2.6 : 2.4)
     for (const d of s.devices) if (d.k === 'relay' && Math.hypot(d.x - tl.x, (d.y - tl.y) * 1.6) < tl.r) devDamage(s, d, atk * 1.5)
   } else if (tl.k === 'charge') {
+    snd(s, 'dash')
     e.act = { k: 'dash', t: 0, dur: 0.32, tx: tl.x2, ty: Math.max(300, Math.min(690, tl.y2)), fx: e.x, fy: e.y }
     later(s, 0.16, () => {
       if (!alive(e)) return
       for (const a of s.units.filter((x) => x.side === 'ally' && alive(x))) if (segDist(a.x, a.y, tl.x, tl.y, tl.x2, tl.y2) < tl.w * 0.6) { damage(s, e, a, e.kind === 'boss' ? 2.2 : 1.6); a.act = { k: 'hit', t: 0, dur: 0.3 } }
-      fx(s, { k: 'chargeHit', x: tl.x, y: tl.y, x2: tl.x2, y2: tl.y2, dur: 0.4 })
+      fx(s, { k: 'chargeHit', x: tl.x, y: tl.y, x2: tl.x2, y2: tl.y2, dur: 0.4 }); snd(s, 'charge_hit')
     })
   } else if (tl.k === 'cast') {
     const tg = [...allies].sort((a, b) => a.hp / stat(a, 'maxHp') - b.hp / stat(b, 'maxHp'))[0]
-    if (tg) { fx(s, { k: 'beam', x: e.x - 20, y: e.y - 110, x2: tg.x, y2: tg.y - 70, dur: 0.5 }); damage(s, e, tg, 4) }
+    if (tg) { snd(s, 'beam'); fx(s, { k: 'beam', x: e.x - 20, y: e.y - 110, x2: tg.x, y2: tg.y - 70, dur: 0.5 }); damage(s, e, tg, 4) }
     e.act = { k: 'atk', t: 0, dur: 0.5 }
   } else if (tl.k === 'call') {
     const open = s.devices.filter((d) => d.k === 'shutter' && d.closed <= 0).map((d) => d.lane)
     const lanes = s.devices.some((d) => d.k === 'shutter') ? open : [0, 2]
     if (!lanes.length) fx(s, { k: 'banner', x: 640, y: 240, dur: 1.3, text: '호출 실패 — 길이 막혔다' })
     for (const ln of lanes) spawn(s, { k: s.rnd() < 0.25 ? 'mite' : 'hound', lane: ln, x: 760 + s.rnd() * 200 })
-    fx(s, { k: 'summon', x: e.x, y: e.y - 120, dur: 1 })
+    fx(s, { k: 'summon', x: e.x, y: e.y - 120, dur: 1 }); snd(s, 'summon')
   } else if (tl.k === 'noise') {
     s.shake = Math.max(s.shake, 0.6)
-    fx(s, { k: 'noise', x: 640, y: 360, dur: 1.2 })
+    fx(s, { k: 'noise', x: 640, y: 360, dur: 1.2 }); snd(s, 'noise')
     for (const a of allies) { damage(s, e, a, 0, { trueDmg: stat(a, 'maxHp') * 0.38 }); a.stun = Math.max(a.stun, 1) }
   }
 }
@@ -647,13 +657,13 @@ function segDist(px: number, py: number, x1: number, y1: number, x2: number, y2:
 function bossTick(s: Sim, e: Unit) {
   const r = e.hp / stat(e, 'maxHp')
   if (e.phase === 1 && r <= 0.7) {
-    e.phase = 2; e.act = { k: 'roar', t: 0, dur: 1.2 }; s.shake = 0.5
+    e.phase = 2; e.act = { k: 'roar', t: 0, dur: 1.2 }; s.shake = 0.5; snd(s, 'boss_roar')
     fx(s, { k: 'banner', x: 640, y: 240, dur: 1.8, text: '스태틱이 중계 기둥을 세웠다' })
     spawn(s, { k: 'pylon', x: 1190, y: 335 }); spawn(s, { k: 'pylon', x: 1185, y: 640 })
     s.flags.pylons = s.t
   }
   if (e.phase === 2 && r <= 0.35) {
-    e.phase = 3; e.act = { k: 'roar', t: 0, dur: 1.2 }; s.shake = 0.5; e.teleCd2 = 2
+    e.phase = 3; e.act = { k: 'roar', t: 0, dur: 1.2 }; s.shake = 0.5; snd(s, 'boss_roar'); e.teleCd2 = 2
     fx(s, { k: 'banner', x: 640, y: 240, dur: 1.8, text: '스태틱의 출력이 치솟는다' })
   }
   if (e.phase >= 2 && (s.flags.miteT ?? 0) <= s.t) { s.flags.miteT = s.t + 14; spawn(s, { k: 'mite', lane: 0, x: 900 }); spawn(s, { k: 'mite', lane: 2, x: 900 }) }
@@ -676,9 +686,9 @@ function projTick(s: Sim, dt: number) {
       p.spd = 0
       if (isDev(t)) { devDamage(s, t, from ? stat(from, 'atk') : 60); continue }
       damage(s, from, t, p.dmg, { crit: p.crit, brk: p.brk })
-      if (p.k === 'cube') { fx(s, { k: 'cubePop', x: tx, y: ty, dur: 0.5 }); t.slowT = 2 }
-      if (p.k === 'slash') fx(s, { k: 'slashHit', x: tx, y: ty, dur: 0.35 })
-      if (p.k === 'ring') fx(s, { k: 'ringHit', x: tx, y: ty, dur: 0.4 })
+      if (p.k === 'cube') { fx(s, { k: 'cubePop', x: tx, y: ty, dur: 0.5 }); t.slowT = 2; snd(s, 'kanna_hit') }
+      if (p.k === 'slash') { fx(s, { k: 'slashHit', x: tx, y: ty, dur: 0.35 }); snd(s, 'seren_hit') }
+      if (p.k === 'ring') { fx(s, { k: 'ringHit', x: tx, y: ty, dur: 0.4 }); snd(s, 'rion_hit') }
     } else { p.x += dx / d * p.spd * dt; p.y += dy / d * p.spd * dt }
   }
   s.proj = s.proj.filter((p) => p.spd > 0)
