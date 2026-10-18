@@ -13,6 +13,7 @@ import { MotionVideo, fitBox } from '../ui/motion'
 import '../styles/motion.css'
 import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 import { BannerCarousel } from '../ui/BannerCarousel'
+import { QuickBtn, useLobbyQuick } from '../ui/LobbyQuick'
 import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx, Fx } from '../ui/ui-motion'
 import textless from '../game/data/ref-textless.json'
 
@@ -53,6 +54,7 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
   const b = badges(s)
   const now = useNow(1000)
   const [pop, setPop] = useState<Pop>(null)
+  const quick = useLobbyQuick()
   const [viewing, setViewing] = useState(false)
   const [toTitle, setToTitle] = useState(false)
   const [line, setLine] = useState<string | null>(null)
@@ -123,6 +125,9 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
             {b.notice && <Fx r={{ x: 1451, y: 27, w: 13, h: 13 }} className="ui-ping" z={22} />}
             {b.mission && <Fx r={{ x: 1624, y: 27, w: 13, h: 13 }} className="ui-ping" z={22} />}
             {b.mail && <Fx r={{ x: 1540, y: 27, w: 13, h: 13 }} className="ui-ping" z={22} />}
+            {/* 로비 배경음악·캐릭터 고르기(추가 버튼, 재화 띠와 테마 버튼 사이 빈 곳) */}
+            <QuickBtn kind="bgm" r={{ x: 1132, y: 16, w: 58, h: 58 }} label="로비 배경음악 고르기" onClick={() => quick.open('bgm')} />
+            <QuickBtn kind="char" r={{ x: 1198, y: 16, w: 58, h: 58 }} label={`로비 캐릭터 고르기 (지금: ${lobbyChar.name})`} onClick={() => quick.open('char')} />
             {/* 로비 테마 전환(원본에 없는 추가 버튼, 얼굴·카드와 겹치지 않는 상단 빈 영역) */}
             <div className="rs-theme" style={{ left: 1268, top: 22, width: 126, height: 50 }} aria-hidden>
               <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 11a8 8 0 0 1 16 0v5H4z" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M2 16h20M7 16v3M17 16v3" stroke="currentColor" strokeWidth="2" /></svg>
@@ -273,6 +278,7 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
           </div>
         )}
       </RefStage>
+      {quick.modal}
 
       {pop === 'coins' && (
         <Modal onClose={() => setPop(null)} labelledBy="coin-title">

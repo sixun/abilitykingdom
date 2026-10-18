@@ -57,8 +57,9 @@ export default function StoryField({ params }: { params: Record<string, unknown>
     r.load(zone, PLAYABLE.filter((k) => SPRITES[k]), zone.npcs.map((n) => n.img), r.quality === 'low', setLoad, [zone.start, zone.intro])
       .then(() => { setLoad(1); setPhase('intro') }).catch(() => setGlErr(true))
     audio.preload(['step', 'title', 'whoosh', 'select', 'swap', 'open', 'coin', 'save'])
-    audio.bgm('none'); audio.ambience(zone.amb)
-    return () => { r.dispose(); audio.ambience('') }
+    const prevBgm = audio.currentBgm
+    audio.bgm(zone.bgm); audio.ambience(zone.amb, 0.55) // 음악이 있으니 환경음은 낮춘다
+    return () => { r.dispose(); audio.ambience(''); audio.bgm(prevBgm === zone.bgm ? 'lobby' : prevBgm) }
   }, [])
 
   // 진입 연출: 정문을 비추다 → 대원 쪽으로 카메라가 내려오고 → 장소 이름이 찍힌다

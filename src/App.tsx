@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { NavContext, ScreenKey, TRANSITION, type LeaveGuard, type Nav, type Route, type ScreenName } from './app/nav'
-import { audio } from './app/audio'
+import { audio, DEFAULT_LOBBY_TRACK } from './app/audio'
 import { useGame } from './game/store'
 import { MOTION } from './game/config'
 
@@ -66,6 +66,7 @@ export default function App() {
     document.documentElement.classList.toggle('low-quality', s.settings.quality === 'low')
     if (prefersReduce && !s.settings.reduceMotion) document.documentElement.classList.add('prefers-reduce')
     audio.setVolumes(s.settings.bgm, s.settings.sfx)
+    audio.setLobbyTrack(s.settings.lobbyBgm ?? DEFAULT_LOBBY_TRACK)
   }, [s.settings])
 
   const stackRef = useRef(stack)

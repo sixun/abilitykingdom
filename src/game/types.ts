@@ -155,6 +155,8 @@ export interface MissionState { progress: Partial<Record<MissionMetric, number>>
 
 export interface Settings {
   bgm: number
+  /** 로비 배경음악(LOBBY_TRACKS의 id, 'off' = 끔). 없으면 기본 곡 */
+  lobbyBgm?: string
   sfx: number
   voice: number
   quality: 'high' | 'low'

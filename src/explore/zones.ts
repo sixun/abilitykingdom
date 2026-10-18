@@ -1,3 +1,4 @@
+import type { Bgm } from '../app/audio'
 // 탐색 구역 데이터. 좌표는 구역 그림 원본 픽셀(가로 W × 세로 H) 기준.
 // 대사는 확정 전까지 [임시용 스토리 대사 NN] 자리표시.
 export interface Line { who?: string; text: string }
@@ -15,6 +16,8 @@ export interface Zone {
   quest: { title: string; goal: string }
   regions: { name: string; x0: number; y0: number; x1: number; y1: number }[] // 먼저 맞는 것이 이름(걸어 들어가면 장소 이름이 뜬다)
   amb: string
+  /** 구역 배경음악 */
+  bgm: Bgm
 }
 
 import WORLDS from '../game/data/explore-world.json'
@@ -48,4 +51,5 @@ export const ACADEMY: Zone = {
     { name: '정문 광장', x0: 0, y0: 0, x1: 99999, y1: 99999 },
   ],
   amb: 'amb_academy',
+  bgm: 'academy',
 }

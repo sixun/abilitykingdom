@@ -3,10 +3,10 @@ import '../styles/lobby.css'
 import { useNav, type ScreenName } from '../app/nav'
 import { audio } from '../app/audio'
 import { game, useGame, badges } from '../game/store'
-import { CHARACTERS, CHAR_BY_ID } from '../game/data/characters'
+import { CHAR_BY_ID } from '../game/data/characters'
 import { GAME_CONFIG } from '../game/config'
-import { Modal, Btn, ConfirmDialog } from '../ui/components'
-import { RoleGlyph, IconGrid } from '../ui/icons'
+import { ConfirmDialog } from '../ui/components'
+import { IconGrid } from '../ui/icons'
 import { RefLayers, Hit, Patch, rectOf, type RefLayout } from '../ui/ref'
 import { MotionVideo, fitBox } from '../ui/motion'
 import fitJson from '../game/data/motion-fit.json'
@@ -15,6 +15,7 @@ import '../styles/motion.css'
 import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx, Fx } from '../ui/ui-motion'
 import layoutJson from '../game/data/ref-lobby.json'
 import LobbyStation from './LobbyStation'
+import { QuickBtn, useLobbyQuick } from '../ui/LobbyQuick'
 import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 
 // 소파 로비 원본(1456×818)을 원본 조각 23개로 재현.
@@ -67,7 +68,7 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
   const s = useGame()
   const nav = useNav()
   const b = badges(s)
-  const [picker, setPicker] = useState(false)
+  const quick = useLobbyQuick()
   const [more, setMore] = useState(false)
   const [viewing, setViewing] = useState(false)
   const [toTitle, setToTitle] = useState(false)
@@ -130,6 +131,8 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
               <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden><rect x="5" y="3" width="14" height="14" rx="3" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M5 11h14M8 21l2-4M16 21l-2-4" stroke="currentColor" strokeWidth="2" /><circle cx="9" cy="14" r="1" fill="currentColor" /><circle cx="15" cy="14" r="1" fill="currentColor" /></svg>
               <span>역 로비</span>
             </Patch>
+            {/* 로비 배경음악 고르기(추가 버튼) */}
+            <QuickBtn kind="bgm" r={{ x: 636, y: 14, w: 56, h: 56 }} label="로비 배경음악 고르기" onClick={() => quick.open('bgm')} />
             <Hit r={{ x: 822, y: 20, w: 50, h: 44 }} label="더보기 메뉴" onClick={() => setMore((v) => !v)} />
             <Hit r={{ x: 700, y: 20, w: 112, h: 44 }} label="로비 테마 변경: 역 승강장 로비로" sfx="none" onClick={() => { audio.sfx('swap'); onTheme() }} />
             <Hit r={rectOf(L, 'back')} label="타이틀 화면으로" onClick={() => setToTitle(true)} />
@@ -142,7 +145,7 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
           <div className="mg mg-left" style={g('left')}>
             <RefLayers layout={L} ids={GROUP.left} z={1} files={MATTE} />
             <Fx r={{ x: 57, y: 585, w: 84, h: 53 }} className="ui-ring" z={2} />
-            <Hit r={rectOf(L, 'character-switch')} label="로비 캐릭터 변경" onClick={() => setPicker(true)} />
+            <Hit r={rectOf(L, 'character-switch')} label="로비 캐릭터 변경" onClick={() => quick.open('char')} />
           </div>
           {/* 오른쪽: 이벤트 패널 */}
           <div className="mg mg-right" style={g('right')}>
@@ -179,24 +182,7 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
         )}
       </RefStage>
 
-      {picker && (
-        <Modal className="lb-picker" onClose={() => setPicker(false)} labelledBy="pick-title">
-          <h2 id="pick-title">로비 캐릭터</h2>
-          <p className="lb-picker-note">로비에 전시할 캐릭터입니다. 팀 리더와는 따로 저장됩니다. 전용 로비 장면이 없는 대원은 거리 배경 위 전신 그림으로 보여 줍니다.</p>
-          <div className="lb-picker-grid">
-            {CHARACTERS.filter((x) => s.owned[x.id]).map((x) => {
-              const ready = true
-              return (
-                <button key={x.id} className={x.id === s.lobby.characterId ? 'on' : ''} disabled={!ready} onClick={async () => { audio.sfx('select'); await game.setLobbyCharacter(x.id); setPicker(false) }}>
-                  <img src={x.assets.portrait} alt="" style={ready ? undefined : { filter: 'grayscale(1) brightness(.5)' }} />
-                  <span><RoleGlyph role={x.role} size="1.4rem" /> {x.name}{LOBBY_SCENES[x.id] ? ' · 전용 장면' : ''}</span>
-                </button>
-              )
-            })}
-          </div>
-          <div className="confirm-actions"><Btn variant="dark" onClick={() => setPicker(false)}>닫기</Btn></div>
-        </Modal>
-      )}
+      {quick.modal}
       {toTitle && (
         <ConfirmDialog title="타이틀 화면으로 돌아갈까요?" body="진행 상황은 이 기기에 저장되어 있습니다." actions={[
           { label: '취소', variant: 'ghost', onClick: () => setToTitle(false) },

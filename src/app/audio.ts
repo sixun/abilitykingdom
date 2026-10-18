@@ -11,11 +11,18 @@ const SYNTH = new Set<string>(['tap', 'select', 'swap', 'save', 'error', 'coin',
 /** 화면 진입 때 미리 받아 둘 묶음 */
 export const SFX_UI: Sfx[] = ['tap', 'select', 'swap', 'save', 'error', 'coin', 'open', 'whoosh', 'slash', 'reveal', 'reveal5', 'title', 'hit']
 export const SFX_BATTLE: Sfx[] = Object.keys(SFX).filter((k) => !SYNTH.has(k) && !k.startsWith('amb_')) as Sfx[]
-export type Bgm = 'none' | 'opening' | 'lobby' | 'menu' | 'battle' | 'shop'
-/** 화면별 배경음악 파일(곡이 정해지면 여기 채운다) */
+export type Bgm = 'none' | 'opening' | 'lobby' | 'menu' | 'battle' | 'shop' | 'academy'
+/** 화면별 배경음악 파일(곡이 정해지면 여기 채운다). 'lobby'는 로비에서 고른 곡(LOBBY_TRACKS)을 튼다 */
 const BGM_FILES: Partial<Record<Bgm, string>> = {
   shop: 'bgm/shop.mp3', // 사용자 제공 menu01
+  academy: 'bgm/academy.mp3', // 사용자 제공 academy01(Suno)
 }
+/** 로비에서 고를 수 있는 곡. 새 곡을 받으면 BGM_FILES와 여기에 한 줄씩 더한다 */
+export const LOBBY_TRACKS: { id: Bgm; title: string; sub: string }[] = [
+  { id: 'academy', title: '아카데미', sub: '스토리 · 아카데미 정문 광장' },
+  { id: 'shop', title: '상점', sub: '상점 테마' },
+]
+export const DEFAULT_LOBBY_TRACK = 'academy'
 
 class AudioEngine {
   ctx: AudioContext | null = null
@@ -25,6 +32,8 @@ class AudioEngine {
   private noise!: AudioBuffer
   private track: { el: HTMLAudioElement; g: GainNode } | null = null
   private current: Bgm = 'none'
+  private lobbyTrack: string = DEFAULT_LOBBY_TRACK
+  private ambK = 1
   private vol = { bgm: 0.6, sfx: 0.8 }
   private buf = new Map<string, AudioBuffer[]>()
   private loading = new Map<string, Promise<void>>()
@@ -139,7 +148,8 @@ class AudioEngine {
   }
 
   /** 장소 공간음(배경에 깔리는 소리). '' 이면 끈다 */
-  ambience(key: string) {
+  ambience(key: string, k = 1) {
+    this.ambK = k
     if (!this.ctx) { this.wantAmb = key; return }
     if (key === this.amb.key) return
     const c = this.ctx
@@ -151,7 +161,7 @@ class AudioEngine {
       const bs = this.buf.get(key)
       if (!bs?.length || this.amb.key !== key || !this.ctx) return
       const src = c.createBufferSource(); src.buffer = bs[0]; src.loop = true
-      const g = c.createGain(); g.gain.value = 0; g.gain.setTargetAtTime(SFX[key].v, c.currentTime, 0.8)
+      const g = c.createGain(); g.gain.value = 0; g.gain.setTargetAtTime(SFX[key].v * this.ambK, c.currentTime, 0.8)
       src.connect(g); g.connect(this.sfxBus); src.start()
       this.amb = { key, src, g }
     })
@@ -180,6 +190,12 @@ class AudioEngine {
    *  곡 파일이 등록되지 않은 화면은 조용하다(예전 합성 배경음악은 폐기). */
   /** 지금 배경음악 이름(화면을 떠날 때 되돌리기용) */
   get currentBgm(): Bgm { return this.current }
+  /** 로비 곡 바꾸기('off' = 로비에서는 음악 없음). 지금 로비에 있으면 바로 넘어간다 */
+  setLobbyTrack(id: string) {
+    if (id === this.lobbyTrack) return
+    this.lobbyTrack = id
+    if (this.current === 'lobby') { this.current = 'none'; this.bgm('lobby') }
+  }
   bgm(kind: Bgm) {
     if (kind === this.current) return
     this.current = kind
@@ -188,7 +204,7 @@ class AudioEngine {
     const old = this.track
     if (old) { old.g.gain.setTargetAtTime(0, c.currentTime, 0.5); setTimeout(() => { old.el.pause(); old.el.src = '' }, 2500) }
     this.track = null
-    const file = BGM_FILES[kind]
+    const file = kind === 'lobby' ? BGM_FILES[this.lobbyTrack as Bgm] : BGM_FILES[kind]
     if (!file) return
     const el = new Audio(file); el.loop = true; el.preload = 'auto'; el.crossOrigin = 'anonymous'
     const g = c.createGain(); g.gain.value = 0
