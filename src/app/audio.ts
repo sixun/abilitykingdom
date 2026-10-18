@@ -11,9 +11,11 @@ const SYNTH = new Set<string>(['tap', 'select', 'swap', 'save', 'error', 'coin',
 /** 화면 진입 때 미리 받아 둘 묶음 */
 export const SFX_UI: Sfx[] = ['tap', 'select', 'swap', 'save', 'error', 'coin', 'open', 'whoosh', 'slash', 'reveal', 'reveal5', 'title', 'hit']
 export const SFX_BATTLE: Sfx[] = Object.keys(SFX).filter((k) => !SYNTH.has(k) && !k.startsWith('amb_')) as Sfx[]
-export type Bgm = 'none' | 'opening' | 'lobby' | 'menu' | 'battle'
+export type Bgm = 'none' | 'opening' | 'lobby' | 'menu' | 'battle' | 'shop'
 /** 화면별 배경음악 파일(곡이 정해지면 여기 채운다) */
-const BGM_FILES: Partial<Record<Bgm, string>> = {}
+const BGM_FILES: Partial<Record<Bgm, string>> = {
+  shop: 'bgm/shop.mp3', // 사용자 제공 menu01
+}
 
 class AudioEngine {
   ctx: AudioContext | null = null
@@ -176,6 +178,8 @@ class AudioEngine {
 
   /** 배경음악: public/bgm/<이름>.mp3 를 반복 재생(곡이 바뀌면 천천히 엇갈려 넘어감).
    *  곡 파일이 등록되지 않은 화면은 조용하다(예전 합성 배경음악은 폐기). */
+  /** 지금 배경음악 이름(화면을 떠날 때 되돌리기용) */
+  get currentBgm(): Bgm { return this.current }
   bgm(kind: Bgm) {
     if (kind === this.current) return
     this.current = kind

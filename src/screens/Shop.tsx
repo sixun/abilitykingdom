@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import '../styles/screens.css'
 import { useNav } from '../app/nav'
 import { audio } from '../app/audio'
@@ -14,6 +14,7 @@ const TAB_CUR: Record<Tab, CurrencyId[]> = { recommend: ['diamond', 'ticket'], p
 
 // 상점: 상품을 비교하는 공간(편의점 장면). 가격·구성은 임시. 실결제 미연동.
 export default function Shop({ params }: { params: Record<string, unknown> }) {
+  useEffect(() => { const prev = audio.currentBgm; audio.bgm('shop'); return () => audio.bgm(prev === 'shop' ? 'lobby' : prev) }, [])
   const s = useGame()
   const nav = useNav()
   const [tab, setTab] = useState<Tab>((params.tab as Tab) ?? 'recommend')
