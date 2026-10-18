@@ -43,6 +43,12 @@ export default function Story({ params }: { params: Record<string, unknown> }) {
           <em>사건 파일 열기 ›</em>
         </button>
       )}
+      {chId === 'ch1' && (
+        <button type="button" className="story-field-btn" onClick={() => { audio.sfx('select'); nav.push('storyField', {}) }} aria-label="아카데미 구역 탐색 — 2.5D 스토리 탐색 시험판">
+          <img src="explore/academy/low.webp" alt="" />
+          <small>2.5D 스토리 탐색 · 시험판</small><b>아카데미 구역 · 정문 광장</b><em>탐색 시작 ›</em>
+        </button>
+      )}
       <div className="story-line" key={chId} hidden={chId === 'ch1'}>
         <div className="story-rail" />
         {ch.stages.map((st, i) => {

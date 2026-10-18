@@ -23,5 +23,22 @@
   "skill": "33b1984b-c5bc-4db2-89e2-1eb967f2980f",
   "hit": "f7d88929-0cc0-478c-ad99-2c033abdac4a"
  },
- "seren_sd_front_walk": "17628bca-3a53-4bd2-9b6f-6438f5578204"
+ "seren_sd_front_walk": "17628bca-3a53-4bd2-9b6f-6438f5578204",
+ "explore": {
+  "seren_E": "2b78e1bf-8ad1-49e0-aab1-b48b560a523a",
+  "seren_W": "c2581b12-092b-4da1-9703-86705da42773",
+  "seren_N": "ef57fc8c-91bd-4023-b0ef-760f67158bde",
+  "seren_NE": "b1f04087-857f-4b8e-bbe2-9c4119f54199",
+  "seren_NW": "bd06a3f0-861c-4591-ab1a-2de0949db32c",
+  "seren_SE": "4b3f01f2-c3c0-48b0-af05-f22f5eea74ba",
+  "seren_SW": "45f650a0-52b5-464a-8af0-f3824e176ea7",
+  "ian_S": "71707952-56be-4f41-88d5-be305e22dc99",
+  "ian_N": "f29aa03b-6b3c-4bae-8988-8d4e846409de",
+  "ian_E": "2d5a3c25-20ed-430c-bb05-8bdf5db7ad21",
+  "ian_W": "b676e006-bb33-417c-bd07-626c149face1",
+  "ian_NE": "ce8c7612-27b9-4af6-9e7f-bee4d67895fa",
+  "ian_NW": "8def22bf-4f3c-4e43-9f79-6258c5659368",
+  "ian_SE": "ba83029d-af25-461a-8ba1-12b9331bb3e7",
+  "ian_SW": "4db0876e-5aab-42eb-8821-d9f34c8a1677"
+ }
 }

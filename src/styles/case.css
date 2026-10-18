@@ -3,7 +3,7 @@
 .cf img, .cb img, .ss img { max-width: none; -webkit-user-drag: none; }
 
 /* ───────── 스토리 화면의 1장 입구 ───────── */
-.story-case { position: absolute; left: 470px; top: 150px; width: 760px; height: 400px; padding: 0; border: 0; border-radius: 10px; overflow: hidden; cursor: pointer; text-align: left; color: #fff; background: #000; box-shadow: 0 0 0 1.5px #c8f53b66, 0 20px 40px #0009; animation: ccIn .7s var(--ease-snap) both; z-index: 5; }
+.story-case { position: absolute; left: 470px; top: 130px; width: 760px; height: 380px; padding: 0; border: 0; border-radius: 10px; overflow: hidden; cursor: pointer; text-align: left; color: #fff; background: #000; box-shadow: 0 0 0 1.5px #c8f53b66, 0 20px 40px #0009; animation: ccIn .7s var(--ease-snap) both; z-index: 5; }
 .story-case img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.62) saturate(1.1); transition: scale 900ms var(--ease-snap), filter 400ms; }
 .story-case:hover img { scale: 1.04; filter: brightness(.75) saturate(1.15); }
 .story-case::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #05070cee 0%, #05070c88 45%, transparent 75%); }
@@ -307,3 +307,13 @@
 .cb-passives b { color: #fff; font-weight: 800; }
 
 .ui-reduced .cb-card, .ui-reduced .cb-cutin, .ui-reduced .cb-banner, .ui-reduced .cf-bg, .ui-reduced .ss-bg, .ui-reduced .cb-mark .icon { animation: none; }
+
+/* 스토리 탐색(2.5D) 입구 */
+.story-field-btn { position: absolute; left: 470px; top: 526px; width: 760px; height: 128px; padding: 0; border: 0; border-radius: 10px; overflow: hidden; cursor: pointer; text-align: left; color: #fff; background: #000; box-shadow: 0 0 0 1.5px #ffd6e866, 0 16px 32px #0008; animation: ccIn .8s var(--ease-snap) .08s both; z-index: 5; }
+.story-field-btn img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 45%; filter: brightness(.78) saturate(1.1); transition: scale 900ms var(--ease-snap), filter 400ms; }
+.story-field-btn:hover img { scale: 1.05; filter: brightness(.9) saturate(1.15); }
+.story-field-btn::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #120a14e8 0%, #120a1488 50%, transparent 80%); }
+.story-field-btn > * { position: relative; z-index: 1; }
+.story-field-btn small { position: absolute; left: 34px; top: 30px; font: 700 13px/1 var(--f-body); letter-spacing: .14em; color: #ffc4dc; }
+.story-field-btn b { position: absolute; left: 32px; top: 56px; font: 900 32px/1.1 var(--f-body); text-shadow: 0 3px 14px #000; }
+.story-field-btn em { position: absolute; right: 30px; top: 42px; padding: 12px 24px; border-radius: 4px; background: #ffd6e8; color: #20101a; font: 900 17px/1 var(--f-body); font-style: normal; }
