@@ -81,3 +81,9 @@
 .sf-toast { position: absolute; left: 50%; top: 120px; transform: translateX(-50%); padding: 12px 26px; border-radius: 999px; background: #0d1020e6; border: 1.5px solid #ffd36a; color: #ffd36a; font: 800 18px/1 var(--f-body); z-index: 25; animation: sfHint .3s var(--ease-snap) both; }
 .talking .sf-stick, .talking .sf-acts, .talking .sf-party { opacity: 0; pointer-events: none; transition: opacity .25s; }
 .ui-reduced .sf-title * { animation-duration: .01s; }
+
+/* 새 장소에 들어설 때 뜨는 이름(진입 연출보다 가볍게) */
+.sf-region { position: absolute; left: 0; right: 0; top: 150px; text-align: center; z-index: 19; pointer-events: none; text-shadow: 0 3px 18px #000b; animation: sfRegion 2.8s ease both; }
+.sf-region small { display: block; font: 700 13px/1 var(--f-en); letter-spacing: .5em; color: #ffd6e8; }
+.sf-region b { display: inline-block; margin-top: 10px; padding: 0 28px 10px; border-bottom: 1.5px solid #ffffffaa; font: 900 44px/1.1 var(--f-body); letter-spacing: .1em; }
+@keyframes sfRegion { 0% { opacity: 0; transform: translateY(10px); filter: blur(6px); } 15% { opacity: 1; transform: none; filter: none; } 78% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }

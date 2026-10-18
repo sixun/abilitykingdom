@@ -20,18 +20,36 @@ const VS = `#version 300 es
 in vec2 aPos; in vec2 aUv; uniform vec3 uView; uniform vec2 uCam; out vec2 vUv; out vec2 vW;
 void main(){ vUv = aUv; vW = aPos; vec2 sp = (aPos - uView.xy) * uView.z + vec2(${W / 2}.0, ${H / 2}.0) + uCam; vec2 p = sp / vec2(${W}.0, ${H}.0) * 2.0 - 1.0; gl_Position = vec4(p.x, -p.y, 0.0, 1.0); }`
 const FS_MAP = `#version 300 es
-precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uTex; uniform float uDim;
-void main(){ vec3 c = texture(uTex, vUv).rgb; o = vec4(c * uDim, 1.0); }`
+precision highp float; in vec2 vUv; in vec2 vW; out vec4 o;
+uniform sampler2D uTex; uniform sampler2D uAnim; uniform vec4 uTile; uniform vec2 uWorld; uniform float uT; uniform float uWind; uniform float uDim;
+float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+void main(){
+  vec3 m = texture(uAnim, vW / uWorld).rgb;            // r 나뭇잎 · g 물 · b 천
+  vec2 d = vec2(0.0);
+  // 나뭇잎: 큰 물결(바람) + 잔떨림. 위치마다 위상이 달라 한꺼번에 움직이지 않는다
+  float gust = 0.65 + 0.35 * sin(uT * 0.45 + vW.x * 0.0006);
+  d += m.r * uWind * gust * vec2(sin(uT * 1.6 + vW.x * 0.004 + vW.y * 0.003) * 4.5 + sin(uT * 3.1 + vW.y * 0.02) * 1.2,
+                                  sin(uT * 2.3 + vW.x * 0.006) * 1.6);
+  // 물: 아래로 흐르는 일렁임
+  d += m.g * vec2(sin(vW.y * 0.09 - uT * 7.0) * 2.2 + sin(vW.x * 0.05 + uT * 3.0) * 1.0, sin(vW.x * 0.07 + uT * 5.0) * 1.4);
+  // 천·깃발: 위에서 아래로 번지는 물결
+  d += m.b * uWind * vec2(sin(vW.y * 0.035 - uT * 3.2) * 3.5, 0.0);
+  vec2 uv = (vW + d - uTile.xy) / uTile.zw;
+  vec3 c = texture(uTex, clamp(uv, vec2(0.0005), vec2(0.9995))).rgb;
+  c *= 1.0 + m.r * 0.07 * sin(uT * 2.0 + vW.x * 0.01 + vW.y * 0.013);                     // 잎 사이로 드는 빛
+  float sp = h21(floor((vW + vec2(0.0, uT * 38.0)) / 7.0)); c += m.g * smoothstep(0.985, 1.0, sp) * vec3(0.9, 0.95, 1.0);  // 물 반짝임
+  o = vec4(c * uDim, 1.0);
+}`
 const FS_CHAR = `#version 300 es
 precision highp float; in vec2 vUv; in vec2 vW; out vec4 o;
-uniform sampler2D uTex; uniform sampler2D uNrm; uniform sampler2D uOcc; uniform vec2 uMap; uniform float uFoot; uniform float uFlip;
+uniform sampler2D uTex; uniform sampler2D uNrm; uniform sampler2D uOcc; uniform vec2 uMap; uniform float uFoot; uniform float uFlip; uniform float uOccK;
 uniform vec3 uAmb; uniform vec3 uSun; uniform vec3 uSunDir; uniform float uShadow; uniform float uAlpha; uniform float uFlash;
 uniform vec4 uL; uniform vec3 uLC; uniform vec4 uClip;
 void main(){
   if (vUv.x < uClip.x || vUv.x > uClip.z || vUv.y < uClip.y || vUv.y > uClip.w) discard;
   vec4 c = texture(uTex, vUv); if (c.a < 0.02) discard;
   vec4 oc = texture(uOcc, vW / uMap);
-  if (oc.a > 0.5) { float base = (floor(oc.r * 255.0 + 0.5) * 256.0 + floor(oc.g * 255.0 + 0.5)) * 2.0; if (base > uFoot + 6.0) discard; }
+  if (oc.b < 0.25) { float base = (floor(oc.r * 255.0 + 0.5) * 256.0 + floor(oc.g * 255.0 + 0.5)) * uOccK; if (base > uFoot + 6.0) discard; }
   if (uShadow > 0.0) { float a = c.a * uShadow; o = vec4(0.05 * a, 0.03 * a, 0.09 * a, a); return; }
   vec3 rgb = c.rgb / c.a;
   vec3 n = texture(uNrm, vUv).xyz * 2.0 - 1.0; n.x *= uFlip; n = normalize(n + vec3(0.0, 0.0, 0.001));
@@ -98,8 +116,12 @@ export class ExploreRenderer {
   fade = 1
   private progs: Record<'map' | 'chr' | 'shape' | 'post', Prog>
   private vbo: WebGLBuffer
-  private tiles: { t: Tex; x: number; y: number; w: number; h: number }[] = []
-  private occ: Tex | null = null
+  private tiles = new Map<string, { t: Tex; x: number; y: number; w: number; h: number; used: number }>()
+  private tileJobs = new Map<string, Promise<void>>()
+  private aux: Tex | null = null
+  private anim: Tex | null = null
+  private lowQ = false
+  wind = 1
   private tex = new Map<string, Tex>()
   private nrm = new Map<string, Tex>()
   private fbo: { f: WebGLFramebuffer; t: WebGLTexture; w: number; h: number } | null = null
@@ -107,7 +129,6 @@ export class ExploreRenderer {
   private motes: Mote[] = []
   zone!: Zone
   walk: { data: Uint8ClampedArray; w: number; h: number } | null = null
-  lowImg: HTMLImageElement | null = null
 
   constructor(public canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl2', { premultipliedAlpha: true, antialias: false, alpha: false })
@@ -135,33 +156,62 @@ export class ExploreRenderer {
   }
   private img(src: string) { return new Promise<HTMLImageElement>((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error(src)); i.src = src }) }
 
-  /** 구역 그림·가림 지도·걷기 영역·캐릭터 묶음을 받는다. progress 0~1 */
-  async load(zone: Zone, kinds: string[], npcImgs: string[], low: boolean, onProgress?: (p: number) => void) {
-    this.zone = zone
+  /** 가림·걷기 지도, 움직임 지도, 캐릭터 묶음, 시작 위치 근처 지도 조각을 받는다. progress 0~1 */
+  async load(zone: Zone, kinds: string[], npcImgs: string[], low: boolean, onProgress?: (p: number) => void, focus: { x: number; y: number }[] = []) {
+    this.zone = zone; this.lowQ = low
     const d = zone.dir
-    const tileFiles = low ? [`${d}/low.webp`] : [0, 1, 2, 3].map((i) => `${d}/t${i}.webp`)
-    const files = [...tileFiles, `${d}/occ.png`, `${d}/walk.png`, ...kinds.map((k) => SPRITES[k].file), ...npcImgs]
+    const first = new Set<string>()
+    for (const f of focus) for (const k of this.tilesNear(f.x, f.y, 1400, 800)) first.add(k)
+    const files = [`${d}/aux.png`, `${d}/anim.webp`, ...kinds.map((k) => SPRITES[k].file), ...npcImgs]
     let done = 0
-    const step = () => onProgress?.(++done / files.length)
+    const total = files.length + first.size
+    const step = () => onProgress?.(++done / total)
     const imgs = await Promise.all(files.map((f) => this.img(f).then((i) => { step(); return i })))
-    const hw = zone.W / 2, hh = zone.H / 2
-    this.tiles = low
-      ? [{ t: this.upload(imgs[0], { mip: true }), x: 0, y: 0, w: zone.W, h: zone.H }]
-      : [0, 1, 2, 3].map((i) => ({ t: this.upload(imgs[i], { mip: true }), x: (i % 2) * hw, y: Math.floor(i / 2) * hh, w: hw, h: hh }))
-    let k = tileFiles.length
-    this.occ = this.upload(imgs[k++], { raw: true })
-    const wi = imgs[k++]
-    const c = document.createElement('canvas'); c.width = wi.width; c.height = wi.height
-    const g = c.getContext('2d', { willReadFrequently: true })!; g.drawImage(wi, 0, 0)
+    let k = 0
+    const ai = imgs[k++]
+    this.aux = this.upload(ai, { raw: true })
+    const c = document.createElement('canvas'); c.width = ai.width; c.height = ai.height
+    const g = c.getContext('2d', { willReadFrequently: true })!; g.drawImage(ai, 0, 0)
     this.walk = { data: g.getImageData(0, 0, c.width, c.height).data, w: c.width, h: c.height }
+    this.anim = this.upload(imgs[k++])
     for (const f of [...kinds.map((x) => SPRITES[x].file), ...npcImgs]) {
       const im = imgs[k++]
       this.tex.set(f, this.upload(im, { mip: true }))
       await new Promise((r) => setTimeout(r, 0))
       this.nrm.set(f, this.upload(makeNormal(im, 'sprite', f, 0.5, 0), { mip: true }))
     }
-    this.lowImg = await this.img(`${d}/low.webp`)
+    await Promise.all([...first].map((key) => this.loadTile(key).then(step)))
     this.ready = true
+  }
+  /** 지도 조각 이름(열_행) 중 (x,y) 주변 rx×ry 안에 걸치는 것 */
+  private tilesNear(x: number, y: number, rx: number, ry: number) {
+    const z = this.zone, T = z.tile, out: string[] = []
+    const c0 = Math.max(0, Math.floor((x - rx) / T)), c1 = Math.min(z.cols - 1, Math.floor((x + rx) / T))
+    const r0 = Math.max(0, Math.floor((y - ry) / T)), r1 = Math.min(z.rows - 1, Math.floor((y + ry) / T))
+    for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) out.push(`${c}_${r}`)
+    return out
+  }
+  private loadTile(key: string): Promise<void> {
+    const have = this.tiles.get(key); if (have) { have.used = performance.now(); return Promise.resolve() }
+    let p = this.tileJobs.get(key)
+    if (p) return p
+    const [c, r] = key.split('_').map(Number), z = this.zone, T = z.tile
+    p = this.img(`${z.dir}/w_${key}.webp`).then((im) => {
+      this.tiles.set(key, { t: this.upload(im, { mip: true }), x: c * T, y: r * T, w: im.width, h: im.height, used: performance.now() })
+    }).catch(() => { /* 다음 프레임에 다시 */ }).finally(() => { this.tileJobs.delete(key) })
+    this.tileJobs.set(key, p)
+    return p
+  }
+  /** 카메라 근처 조각은 받고, 멀어진 조각은 GPU 메모리에서 내린다(끊김 없는 넓은 맵) */
+  private stream() {
+    const v = this.view, hw = W / 2 / v.z, hh = H / 2 / v.z
+    for (const k of this.tilesNear(v.x, v.y, hw + 900, hh + 700)) this.loadTile(k)
+    const keep = new Set(this.tilesNear(v.x, v.y, hw + 2200, hh + 1600))
+    const MAX = this.lowQ ? 6 : 9
+    if (this.tiles.size > MAX) {
+      const old = [...this.tiles.entries()].filter(([k]) => !keep.has(k)).sort((a, b) => a[1].used - b[1].used)
+      for (const [k, t] of old.slice(0, this.tiles.size - MAX)) { this.gl.deleteTexture(t.t.t); this.tiles.delete(k) }
+    }
   }
   /** 발 위치가 걸을 수 있는 바닥인지 */
   walkable(x: number, y: number) {
@@ -169,7 +219,7 @@ export class ExploreRenderer {
     const k = w.w / this.zone.W
     const ix = Math.round(x * k), iy = Math.round(y * k)
     if (ix < 0 || iy < 0 || ix >= w.w || iy >= w.h) return false
-    return w.data[(iy * w.w + ix) * 4] > 127
+    return w.data[(iy * w.w + ix) * 4 + 2] > 200
   }
 
   resize(cssW: number, dpr: number) {
@@ -243,7 +293,7 @@ export class ExploreRenderer {
     const p = this.use(this.progs.chr)
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T.t); gl.uniform1i(p.u('uTex'), 0)
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, N.t); gl.uniform1i(p.u('uNrm'), 1)
-    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.occ!.t); gl.uniform1i(p.u('uOcc'), 2)
+    gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, this.aux!.t); gl.uniform1i(p.u('uOcc'), 2); gl.uniform1f(p.u('uOccK'), this.zone.W / this.aux!.w)
     gl.uniform2f(p.u('uMap'), z.W, z.H); gl.uniform1f(p.u('uFoot'), f.foot); gl.uniform1f(p.u('uFlip'), f.flip)
     gl.uniform3f(p.u('uAmb'), ...z.light.amb); gl.uniform3f(p.u('uSun'), ...z.light.sun); gl.uniform3f(p.u('uSunDir'), ...z.light.dir)
     gl.uniform1f(p.u('uShadow'), shadow); gl.uniform1f(p.u('uAlpha'), a.alpha ?? 1); gl.uniform1f(p.u('uFlash'), a.flash ?? 0)
@@ -285,9 +335,21 @@ export class ExploreRenderer {
     const sv = { ...this.view }
     if (shake) { this.view.x += (Math.random() - 0.5) * shake * 30; this.view.y += (Math.random() - 0.5) * shake * 30 }
     // ① 지도
+    this.stream()
     const pm = this.use(this.progs.map); gl.uniform1f(pm.u('uDim'), 1)
+    gl.uniform2f(pm.u('uWorld'), this.zone.W, this.zone.H); gl.uniform1f(pm.u('uT'), t); gl.uniform1f(pm.u('uWind'), this.wind)
+    gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, this.anim!.t); gl.uniform1i(pm.u('uAnim'), 1)
     gl.activeTexture(gl.TEXTURE0); gl.uniform1i(pm.u('uTex'), 0)
-    for (const tl of this.tiles) { gl.bindTexture(gl.TEXTURE_2D, tl.t.t); this.quad([tl.x, tl.y, tl.x + tl.w, tl.y, tl.x, tl.y + tl.h, tl.x + tl.w, tl.y + tl.h], [0, 0, 1, 0, 0, 1, 1, 1]) }
+    const vx0 = this.view.x - W / 2 / this.view.z - 64, vx1 = this.view.x + W / 2 / this.view.z + 64, vy0 = this.view.y - H / 2 / this.view.z - 64, vy1 = this.view.y + H / 2 / this.view.z + 64
+    for (const tl of this.tiles.values()) {
+      if (tl.x > vx1 || tl.x + tl.w < vx0 || tl.y > vy1 || tl.y + tl.h < vy0) continue
+      tl.used = performance.now()
+      gl.uniform4f(pm.u('uTile'), tl.x, tl.y, tl.w, tl.h)
+      gl.bindTexture(gl.TEXTURE_2D, tl.t.t); this.quad([tl.x, tl.y, tl.x + tl.w, tl.y, tl.x, tl.y + tl.h, tl.x + tl.w, tl.y + tl.h], [0, 0, 1, 0, 0, 1, 1, 1])
+    }
+    // 가로등 불빛: 은은하게 일렁이는 빛무리
+    for (const l of this.zone.lamps) { const f = 0.85 + Math.sin(t * 7.3 + l.x) * 0.06 + Math.sin(t * 13.1) * 0.04
+      this.shape(0, l.x, l.y, 260 * f, 260 * f, 0, [1, 0.72, 0.42, 0.32 * f], true); this.shape(0, l.x, l.y, 70, 70, 0, [1, 0.9, 0.7, 0.55 * f], true) }
     // ② 그림자
     const frames = actors.map((a) => ({ a, f: this.frameOf(a) })).filter((x) => x.f) as { a: Actor; f: NonNullable<ReturnType<ExploreRenderer['frameOf']>> }[]
     for (const { a, f } of frames) this.shape(0, a.x + 6, a.y - 4, f.h * 0.42, f.h * 0.11, 0, [0.06, 0.03, 0.1, 0.42 * (a.alpha ?? 1)])
@@ -312,5 +374,5 @@ export class ExploreRenderer {
       this.quad([0, 0, W, 0, 0, H, W, H], [0, 1, 1, 1, 0, 0, 1, 0])
     }
   }
-  dispose() { const gl = this.gl; for (const x of [...this.tex.values(), ...this.nrm.values()]) gl.deleteTexture(x.t); for (const x of this.tiles) gl.deleteTexture(x.t.t); if (this.occ) gl.deleteTexture(this.occ.t) }
+  dispose() { const gl = this.gl; for (const x of [...this.tex.values(), ...this.nrm.values()]) gl.deleteTexture(x.t); for (const x of this.tiles.values()) gl.deleteTexture(x.t.t); this.tiles.clear(); if (this.aux) gl.deleteTexture(this.aux.t); if (this.anim) gl.deleteTexture(this.anim.t) }
 }

@@ -34,6 +34,9 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const [talk, setTalk] = useState<{ title: string; lines: Line[]; i: number } | null>(null)
   const [clues, setClues] = useState<string[]>([])
   const [toast, setToast] = useState<string | null>(null)
+  const [place, setPlace] = useState(zone.place)
+  const [banner, setBanner] = useState<{ name: string; n: number } | null>(null)
+  const seen = useRef(new Set<string>([zone.place]))
   const me = useRef<Actor>({ id: 'me', kind: 'seren', x: zone.start.x, y: zone.start.y, dir: 'S', moving: false, run: false, t: 0 })
   const npcs = useRef<Actor[]>(zone.npcs.map((n) => ({ id: n.id, kind: n.id.includes('girl') ? 'npc' : 'npc-s', img: n.img, x: n.x, y: n.y, dir: 'S', moving: false, run: false, t: Math.random() * 5 })))
   const keys = useRef(new Set<string>())
@@ -42,6 +45,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const cfg = useRef({ active, phase, talk, run, reduce }); cfg.current = { active, phase, talk, run, reduce }
   const stepPhase = useRef(0)
   const frames = useRef(0)
+  const placeRef = useRef(zone.place)
 
   // 렌더러 준비
   useEffect(() => {
@@ -50,7 +54,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
     try { r = new ExploreRenderer(canvas.current) } catch { setGlErr(true); return }
     rd.current = r
     r.quality = gs.settings.quality === 'low' ? 'low' : 'high'
-    r.load(zone, PLAYABLE.filter((k) => SPRITES[k]), zone.npcs.map((n) => n.img), r.quality === 'low', setLoad)
+    r.load(zone, PLAYABLE.filter((k) => SPRITES[k]), zone.npcs.map((n) => n.img), r.quality === 'low', setLoad, [zone.start, zone.intro])
       .then(() => { setLoad(1); setPhase('intro') }).catch(() => setGlErr(true))
     audio.preload(['step', 'title', 'whoosh', 'select', 'swap', 'open', 'coin', 'save'])
     audio.bgm('none'); audio.ambience(zone.amb)
@@ -151,6 +155,14 @@ export default function StoryField({ params }: { params: Record<string, unknown>
           stepPhase.current = ph
         }
         m.t += dt
+        // 구역 이름: 새 장소에 처음 들어서면 이름이 뜬다
+        if (c.phase === 'play') {
+          const rg = zone.regions.find((g) => m.x >= g.x0 && m.x < g.x1 && m.y >= g.y0 && m.y < g.y1)
+          if (rg && rg.name !== placeRef.current) {
+            placeRef.current = rg.name; setPlace(rg.name)
+            if (!seen.current.has(rg.name)) { seen.current.add(rg.name); setBanner((b) => ({ name: rg.name, n: (b?.n ?? 0) + 1 })); audio.sfx('whoosh') }
+          }
+        }
         if (m.flash) m.flash = Math.max(0, m.flash - dt * 3)
         for (const n of npcs.current) n.t += dt
         // 카메라
@@ -207,7 +219,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
         <div className="sf-hud">
           <div className="sf-top">
             <button type="button" className="sf-back" onClick={() => { audio.sfx('tap'); nav.back() }} aria-label="뒤로">‹</button>
-            <div className="sf-loc"><i aria-hidden>◆</i>{zone.area} - {zone.place}</div>
+            <div className="sf-loc"><i aria-hidden>◆</i>{zone.area} - {place}</div>
           </div>
           <div className="sf-quest"><small>{zone.quest.title}</small><b>{zone.quest.goal}</b><span>단서 {clues.length} / {zone.spots.filter((s) => s.clue).length}</span></div>
           <div className="sf-party" role="group" aria-label="탐색 대원">
@@ -217,7 +229,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
               </button>
             ))}
           </div>
-          <Minimap zone={zone} me={m} npcs={zone.npcs} img={r?.lowImg?.src ?? `${zone.dir}/low.webp`} view={r?.view} />
+          <Minimap zone={zone} me={m} npcs={zone.npcs} img={`${zone.dir}/low.webp`} view={r?.view} />
 
           <div className="sf-stick" onPointerDown={sDown} onPointerMove={sMove} onPointerUp={sUp} onPointerCancel={sUp} aria-label="이동 조이스틱(키보드: WASD·방향키)">
             <i style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }} />
@@ -237,21 +249,22 @@ export default function StoryField({ params }: { params: Record<string, unknown>
           </button>
         )}
         {toast && <div className="sf-toast" role="status">{toast}</div>}
+        {banner && <div className="sf-region" key={banner.n} role="status" onAnimationEnd={() => setBanner(null)}><small>{zone.areaEn}</small><b>{banner.name}</b></div>}
       </RefStage>
     </div>
   )
 }
 
 function Minimap({ zone, me, npcs, img, view }: { zone: Zone; me: Actor; npcs: Zone['npcs']; img: string; view?: { x: number; y: number; z: number } }) {
-  const S = 220 / zone.W
+  const K = 0.072 // 미니맵 배율(월드 1px → 0.072px)
   return (
     <div className="sf-mini" aria-label="미니맵">
-      <div className="sf-mini-in" style={{ transform: `translate(${-me.x * S * 1.6 + 120}px, ${-me.y * S * 1.6 + 80}px)` }}>
-        <img src={img} alt="" style={{ width: zone.W * S * 1.6 }} />
-        {view && <i className="cam" style={{ left: (view.x - 640 / view.z) * S * 1.6, top: (view.y - 360 / view.z) * S * 1.6, width: 1280 / view.z * S * 1.6, height: 720 / view.z * S * 1.6 }} />}
-        {npcs.map((n) => <i key={n.id} className="npc" style={{ left: n.x * S * 1.6, top: n.y * S * 1.6 }} />)}
-        {zone.spots.map((s) => <i key={s.id} className={`spot ${s.kind}`} style={{ left: s.x * S * 1.6, top: s.y * S * 1.6 }} />)}
-        <i className="me" style={{ left: me.x * S * 1.6, top: me.y * S * 1.6 }} />
+      <div className="sf-mini-in" style={{ transform: `translate(${Math.min(0, Math.max(260 - zone.W * K, -me.x * K + 130))}px, ${Math.min(0, Math.max(190 - zone.H * K, -me.y * K + 95))}px)` }}>
+        <img src={img} alt="" style={{ width: zone.W * K }} />
+        {view && <i className="cam" style={{ left: (view.x - 640 / view.z) * K, top: (view.y - 360 / view.z) * K, width: 1280 / view.z * K, height: 720 / view.z * K }} />}
+        {npcs.map((n) => <i key={n.id} className="npc" style={{ left: n.x * K, top: n.y * K }} />)}
+        {zone.spots.map((s) => <i key={s.id} className={`spot ${s.kind}`} style={{ left: s.x * K, top: s.y * K }} />)}
+        <i className="me" style={{ left: me.x * K, top: me.y * K }} />
       </div>
       <b>{zone.area} 1-1</b>
     </div>

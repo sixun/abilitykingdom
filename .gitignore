@@ -23,3 +23,9 @@ dist-ssr
 *.sln
 *.sw?
 test-results
+
+# 탐색 월드 작업 파일(크다): 조각 결과만 저장소에 둔다
+tools/explore/world/world.png
+tools/explore/world/*_in.png
+tools/explore/world/*_mask.png
+tools/explore/world/seg_in.jpg
