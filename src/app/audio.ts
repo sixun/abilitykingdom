@@ -1,6 +1,6 @@
 // 효과음: 사용자 제공 효과음 묶음(DeokDi_SFX_PROJECT)에서 골라 자른 소리를 쓴다(tools/build_sfx.py).
 // public/sfx/{ui,battle,amb}.mp3 는 mp3 조각을 이어 붙인 묶음이고, 매니페스트의 [시작, 길이]로 잘라 푼다.
-// 파일이 아직 안 받아졌을 때만 예전 합성음으로 대신 낸다. 배경음악(BGM)은 아직 합성음.
+// 파일이 아직 안 받아졌을 때만 예전 합성음으로 대신 낸다. 배경음악은 public/bgm 곡 파일(BGM_FILES)만 쓴다.
 import MAN from './sfx-manifest.json'
 
 type SynthSfx = 'tap' | 'select' | 'swap' | 'save' | 'error' | 'coin' | 'reveal' | 'reveal5' | 'whoosh' | 'slash' | 'hit' | 'title' | 'open'
@@ -11,7 +11,9 @@ const SYNTH = new Set<string>(['tap', 'select', 'swap', 'save', 'error', 'coin',
 /** 화면 진입 때 미리 받아 둘 묶음 */
 export const SFX_UI: Sfx[] = ['tap', 'select', 'swap', 'save', 'error', 'coin', 'open', 'whoosh', 'slash', 'reveal', 'reveal5', 'title', 'hit']
 export const SFX_BATTLE: Sfx[] = Object.keys(SFX).filter((k) => !SYNTH.has(k) && !k.startsWith('amb_')) as Sfx[]
-type Bgm = 'none' | 'opening' | 'lobby' | 'menu' | 'battle'
+export type Bgm = 'none' | 'opening' | 'lobby' | 'menu' | 'battle'
+/** 화면별 배경음악 파일(곡이 정해지면 여기 채운다) */
+const BGM_FILES: Partial<Record<Bgm, string>> = {}
 
 class AudioEngine {
   ctx: AudioContext | null = null
@@ -19,11 +21,9 @@ class AudioEngine {
   private bgmBus!: GainNode
   private sfxBus!: GainNode
   private noise!: AudioBuffer
-  private bgmTimer: number | null = null
+  private track: { el: HTMLAudioElement; g: GainNode } | null = null
   private current: Bgm = 'none'
   private vol = { bgm: 0.6, sfx: 0.8 }
-  private step = 0
-  private nextTime = 0
   private buf = new Map<string, AudioBuffer[]>()
   private loading = new Map<string, Promise<void>>()
   private packs = new Map<string, Promise<ArrayBuffer>>()
@@ -51,6 +51,7 @@ class AudioEngine {
       this.applyVolumes()
       this.preload(SFX_UI)
       if (this.wantAmb) { const k = this.wantAmb; this.wantAmb = ''; this.ambience(k) }
+      if (this.current !== 'none') { const k = this.current; this.current = 'none'; this.bgm(k) }
       document.addEventListener('visibilitychange', () => {
         if (!this.ctx) return
         if (document.hidden) this.ctx.suspend()
@@ -173,45 +174,25 @@ class AudioEngine {
     }
   }
 
+  /** 배경음악: public/bgm/<이름>.mp3 를 반복 재생(곡이 바뀌면 천천히 엇갈려 넘어감).
+   *  곡 파일이 등록되지 않은 화면은 조용하다(예전 합성 배경음악은 폐기). */
   bgm(kind: Bgm) {
     if (kind === this.current) return
     this.current = kind
-    if (this.bgmTimer) { clearInterval(this.bgmTimer); this.bgmTimer = null }
-    if (!this.ctx || kind === 'none') return
-    this.step = 0
-    this.nextTime = this.ctx.currentTime + 0.05
-    const bpm = kind === 'opening' ? 152 : kind === 'battle' ? 140 : kind === 'lobby' ? 86 : 96
-    const stepDur = 60 / bpm / 4
-    this.bgmTimer = window.setInterval(() => {
-      if (!this.ctx) return
-      while (this.nextTime < this.ctx.currentTime + 0.15) {
-        this.playStep(kind, this.step, this.nextTime, stepDur)
-        this.nextTime += stepDur
-        this.step++
-      }
-    }, 40)
+    if (!this.ctx) return
+    const c = this.ctx
+    const old = this.track
+    if (old) { old.g.gain.setTargetAtTime(0, c.currentTime, 0.5); setTimeout(() => { old.el.pause(); old.el.src = '' }, 2500) }
+    this.track = null
+    const file = BGM_FILES[kind]
+    if (!file) return
+    const el = new Audio(file); el.loop = true; el.preload = 'auto'; el.crossOrigin = 'anonymous'
+    const g = c.createGain(); g.gain.value = 0
+    c.createMediaElementSource(el).connect(g); g.connect(this.bgmBus)
+    el.play().then(() => g.gain.setTargetAtTime(1, c.currentTime, 0.6)).catch(() => { /* 첫 터치 전이면 unlock 때 다시 */ this.current = 'none' })
+    this.track = { el, g }
   }
 
-  private playStep(kind: Bgm, i: number, t: number, sd: number) {
-    const b = this.bgmBus
-    const s16 = i % 16, bar = Math.floor(i / 16)
-    if (kind === 'opening' || kind === 'battle') {
-      const prog = [[110, 220], [87.3, 174.6], [130.8, 261.6], [98, 196]][bar % 4]
-      if (s16 % 4 === 0) { this.tone(t, 150, 0.18, 'sine', 0.9, b, 40) }
-      if (s16 === 4 || s16 === 12) this.noiseHit(t, 0.16, 0.5, b, 1500)
-      if (s16 % 2 === 1) this.noiseHit(t, 0.04, 0.18, b, 8000)
-      if (s16 % 2 === 0) this.tone(t, prog[0], sd * 1.6, 'sawtooth', 0.22, b)
-      if (kind === 'opening' && [0, 3, 6, 10, 12].includes(s16)) this.tone(t, prog[1] * 2, sd * 1.4, 'square', 0.07, b)
-      if (kind === 'opening' && bar % 2 === 1 && s16 === 14) this.noiseHit(t, 0.3, 0.3, b, 0, 1200)
-    } else {
-      const chords = [[220, 261.6, 329.6], [174.6, 220, 261.6], [196, 246.9, 293.7], [164.8, 207.7, 246.9]][bar % 4]
-      if (s16 === 0) chords.forEach((f) => this.tone(t, f, sd * 14, 'triangle', 0.05, b))
-      if (s16 === 0 || s16 === 10) this.tone(t, 90, 0.25, 'sine', 0.45, b, 45)
-      if (s16 === 4 || s16 === 12) this.noiseHit(t, 0.08, 0.12, b, 2500)
-      if (s16 % 4 === 2) this.noiseHit(t, 0.03, 0.06, b, 9000)
-      if (kind === 'lobby' && [6, 14].includes(s16) && bar % 2 === 0) this.tone(t, chords[2] * 2, 0.3, 'sine', 0.05, b)
-    }
-  }
 }
 
 export const audio = new AudioEngine()
