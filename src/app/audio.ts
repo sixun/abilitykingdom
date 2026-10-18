@@ -1,11 +1,12 @@
-// 효과음: 사용자 제공 효과음 묶음(DeokDi_SFX_PROJECT)에서 골라 자른 파일(public/sfx, tools/build_sfx.py)을 쓴다.
+// 효과음: 사용자 제공 효과음 묶음(DeokDi_SFX_PROJECT)에서 골라 자른 소리를 쓴다(tools/build_sfx.py).
+// public/sfx/{ui,battle,amb}.mp3 는 mp3 조각을 이어 붙인 묶음이고, 매니페스트의 [시작, 길이]로 잘라 푼다.
 // 파일이 아직 안 받아졌을 때만 예전 합성음으로 대신 낸다. 배경음악(BGM)은 아직 합성음.
 import MAN from './sfx-manifest.json'
 
 type SynthSfx = 'tap' | 'select' | 'swap' | 'save' | 'error' | 'coin' | 'reveal' | 'reveal5' | 'whoosh' | 'slash' | 'hit' | 'title' | 'open'
 export type Sfx = SynthSfx | (keyof typeof MAN & string)
-type Entry = { n: number; v: number; loop?: boolean }
-const SFX = MAN as Record<string, Entry>
+type Entry = { g: string; o: [number, number][]; v: number; loop?: boolean }
+const SFX = MAN as unknown as Record<string, Entry>
 const SYNTH = new Set<string>(['tap', 'select', 'swap', 'save', 'error', 'coin', 'reveal', 'reveal5', 'whoosh', 'slash', 'hit', 'title', 'open'])
 /** 화면 진입 때 미리 받아 둘 묶음 */
 export const SFX_UI: Sfx[] = ['tap', 'select', 'swap', 'save', 'error', 'coin', 'open', 'whoosh', 'slash', 'reveal', 'reveal5', 'title', 'hit']
@@ -25,6 +26,7 @@ class AudioEngine {
   private nextTime = 0
   private buf = new Map<string, AudioBuffer[]>()
   private loading = new Map<string, Promise<void>>()
+  private packs = new Map<string, Promise<ArrayBuffer>>()
   private lastAt = new Map<string, number>()
   private amb: { key: string; src: AudioBufferSourceNode | null; g: GainNode | null } = { key: '', src: null, g: null }
   private wantAmb = ''
@@ -100,8 +102,13 @@ class AudioEngine {
     let p = this.loading.get(k)
     if (p) return p
     const c = this.ctx
-    const files = e.n > 1 ? Array.from({ length: e.n }, (_, i) => `sfx/${k}_${i}.mp3`) : [`sfx/${k}.mp3`]
-    p = Promise.all(files.map((f) => fetch(f).then((r) => { if (!r.ok) throw new Error(f); return r.arrayBuffer() }).then((a) => new Promise<AudioBuffer>((ok, no) => c.decodeAudioData(a, ok, no)))))
+    let pack = this.packs.get(e.g)
+    if (!pack) {
+      pack = fetch(`sfx/${e.g}.mp3`).then((r) => { if (!r.ok) throw new Error(e.g); return r.arrayBuffer() })
+      pack.catch(() => this.packs.delete(e.g))
+      this.packs.set(e.g, pack)
+    }
+    p = pack.then((all) => Promise.all(e.o.map(([o, n]) => new Promise<AudioBuffer>((ok, no) => c.decodeAudioData(all.slice(o, o + n), ok, no)))))
       .then((bs) => { this.buf.set(k, bs) })
       .catch(() => { this.loading.delete(k) })
     this.loading.set(k, p)

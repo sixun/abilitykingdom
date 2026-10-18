@@ -1,11 +1,15 @@
 """효과음 만들기: tools/sfx/sfx.json 매핑대로 원본 wav(사용자 제공 DeokDi_SFX_PROJECT.zip을 푼 폴더)에서
-구간을 잘라 음량을 맞추고 public/sfx/<키>[_n].mp3 로 저장, src/app/sfx-manifest.json 을 쓴다.
-사용: python3 tools/build_sfx.py <원본 폴더> [키 ...]"""
+구간을 잘라 음량을 맞추고 mp3로 만든 뒤, 묶음 세 개(public/sfx/ui.mp3 · battle.mp3 · amb.mp3)로 이어 붙인다.
+묶음은 mp3 조각을 그냥 이어 붙인 것이고, src/app/sfx-manifest.json 에 조각마다 [시작 바이트, 길이]를 적는다.
+(파일 수를 줄이려는 것: 게임은 묶음을 한 번 받아 조각별로 풀어 쓴다)
+사용: python3 tools/build_sfx.py <원본 폴더>   — 조각은 /tmp/claude-0/sfxclips 에 남는다(시청용)"""
 import json, subprocess, sys, os, glob
 import numpy as np
 
 SR = 44100
-OUT = 'public/sfx'
+OUT = '/tmp/claude-0/sfxclips'
+PACK = 'public/sfx'
+UI = ['tap', 'select', 'swap', 'save', 'error', 'coin', 'open', 'whoosh', 'slash', 'reveal', 'reveal5', 'title', 'hit']
 MAN = 'src/app/sfx-manifest.json'
 
 
@@ -50,20 +54,26 @@ def enc(x, path, loop):
 if __name__ == '__main__':
     root = sys.argv[1]
     conf = json.load(open('tools/sfx/sfx.json'))
-    man = json.load(open(MAN)) if os.path.exists(MAN) else {}
-    keys = sys.argv[2:] or [k for k in conf if not k.startswith('_')]
-    os.makedirs(OUT, exist_ok=True)
+    man = {}
+    keys = [k for k in conf if not k.startswith('_')]
+    os.makedirs(OUT, exist_ok=True); os.makedirs(PACK, exist_ok=True)
+    for old in glob.glob(PACK + '/*.mp3'): os.remove(old)
+    packs = {'ui': bytearray(), 'battle': bytearray(), 'amb': bytearray()}
     cache = {}
     for k in keys:
         c = conf[k]; loop = bool(c.get('loop'))
         for old in glob.glob(f'{OUT}/{k}.mp3') + glob.glob(f'{OUT}/{k}_[0-9]*.mp3'): os.remove(old)
+        grp = 'ui' if k in UI else 'amb' if loop else 'battle'
+        offs = []
         for i, s in enumerate(c['src']):
             f = find(root, s['f'])
             if f not in cache: cache[f] = load(f)
             x = cache[f][int(s['a'] * SR):int((s['a'] + s['d']) * SR)].copy()
             x = level(shape(x, loop), loop)
-            enc(x, f'{OUT}/{k}{"_" + str(i) if len(c["src"]) > 1 else ""}.mp3', loop)
-        man[k] = {'n': len(c['src']), 'v': c['v'], **({'loop': True} if loop else {})}
+            fn = f'{OUT}/{k}{"_" + str(i) if len(c["src"]) > 1 else ""}.mp3'
+            enc(x, fn, loop)
+            b = open(fn, 'rb').read(); offs.append([len(packs[grp]), len(b)]); packs[grp] += b
+        man[k] = {'g': grp, 'o': offs, 'v': c['v'], **({'loop': True} if loop else {})}
         print(k, len(c['src']))
     json.dump(man, open(MAN, 'w'), ensure_ascii=False, separators=(',', ':'))
-    print('total', sum(os.path.getsize(f) for f in glob.glob(OUT + '/*.mp3')) // 1024, 'KB')
+    for g, b in packs.items(): open(f'{PACK}/{g}.mp3', 'wb').write(b); print(g, len(b) // 1024, 'KB')
