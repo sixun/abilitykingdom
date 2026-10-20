@@ -48,7 +48,10 @@ def poly_mask(polys):
     for pg in polys: d.polygon([(x / 4, y / 4) for x, y in pg], fill=255)
     return np.asarray(im) > 0
 force_walk, force_block = poly_mask(ov['walk']), poly_mask(ov['block'])
-white = white | force_walk
+# 나무 그늘이 길 위로 드리운 곳: 양쪽이 길이면 짧은 수풀 구간은 걸을 수 있게(벽·물은 그대로 막힘)
+yy, xx = np.mgrid[-12:13, -12:13]; disk = (xx * xx + yy * yy) <= 144
+bridge = ndimage.binary_closing(white, structure=disk) & red
+white = white | bridge | force_walk
 walk = ndimage.binary_opening(white, iterations=1)
 walk = ndimage.binary_closing(walk, iterations=2)
 lab, n = ndimage.label(walk)
@@ -80,7 +83,39 @@ def soft(m, r):
 anim = np.dstack([soft(red, 1.5), soft(blue, 1.2), soft(yellow, 1.2)])
 Image.fromarray((anim * 255).astype(np.uint8)).save(f'{OUT}/anim.webp', quality=90)
 
-meta = {'W': W, 'H': H, 'tile': T, 'cols': cols, 'rows': rows}
+# 전경(카메라 앞 꽃·수풀·기둥): 그림 묶음 1장 + 놓을 자리(길 바로 아래쪽 수풀 = 화면에서 길 앞을 가리는 곳)
+fg_rects, fg = {}, []
+FGD = 'tools/explore/fg'
+if os.path.exists(f'{FGD}/fg_sheet.png'):
+    sh = Image.open(f'{FGD}/fg_sheet.png').convert('RGBA')
+    sa = np.asarray(sh)[..., 3]
+    lab3, _ = ndimage.label(ndimage.binary_dilation(sa > 20, iterations=6))
+    boxes = [sl for sl in ndimage.find_objects(lab3) if (sl[0].stop - sl[0].start) * (sl[1].stop - sl[1].start) > 20000]
+    boxes.sort(key=lambda sl: (round(sl[0].start / 400), sl[1].start))
+    names = ['blossom', 'azalea', 'bush', 'pillar', 'grass', 'hydrangea']
+    for n_, sl in zip(names, boxes):
+        fg_rects[n_] = [int(sl[1].start), int(sl[0].start), int(sl[1].stop - sl[1].start), int(sl[0].stop - sl[0].start)]
+    sh.save('public/explore/fg.webp', quality=86, method=6)
+    rng = np.random.default_rng(7)
+    above = np.zeros_like(walk)  # 바로 위(화면 위쪽) 40~110칸 안에 걷는 곳이 있는 수풀
+    for dy in range(40, 111, 10): above[dy:] |= walk[:-dy]
+    cand = red & ~walk & above
+    WIDTH = {'blossom': 470, 'azalea': 390, 'bush': 380, 'hydrangea': 400, 'grass': 350, 'pillar': 200}
+    G = 230  # 1/4 칸 단위 격자(월드 약 920px마다 하나)
+    rgbq = np.asarray(w.resize((W // 4, H // 4), Image.BILINEAR)).astype(np.int32)[:qh, :qw]
+    for gy in range(0, qh, G):
+        for gx in range(0, qw, G):
+            m = cand[gy:gy + G, gx:gx + G]
+            if m.sum() < 300 or rng.random() < 0.45: continue
+            ys, xs = np.nonzero(m); j = rng.integers(len(ys)); y, x = ys[j] + gy, xs[j] + gx
+            if y * 4 < 600: continue  # 하늘·맨 위 가장자리 제외
+            r_, g_, b_ = rgbq[y, x]
+            pink = r_ > g_ + 25
+            k = rng.choice(['blossom', 'azalea', 'hydrangea'] if pink else ['bush', 'grass', 'bush'])
+            fg.append({'k': str(k), 'x': int(x * 4), 'y': int(y * 4 + 60), 'w': int(WIDTH[str(k)] * (0.85 + rng.random() * 0.35)), 'flip': bool(rng.random() < 0.5)})
+    print('fg', len(fg), fg_rects)
+
+meta = {'W': W, 'H': H, 'tile': T, 'cols': cols, 'rows': rows, 'fg': fg, 'fgRects': fg_rects}
 DATA = 'src/game/data/explore-world.json'
 all_ = json.load(open(DATA)) if os.path.exists(DATA) else {}
 all_[zone] = meta

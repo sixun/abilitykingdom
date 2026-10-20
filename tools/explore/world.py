@@ -13,7 +13,7 @@ from scipy import ndimage
 
 D = 'tools/explore/world'
 WORLD = f'{D}/world.png'
-WW, WH = 6960, 4432
+WW, WH = 7760, 4800  # v2: 0.6배 축척 아카데미(0,2140) + 북쪽 캠퍼스 · 동쪽 성수 거리
 os.makedirs(D, exist_ok=True)
 cmd = sys.argv[1]
 

@@ -4,7 +4,7 @@
 설정: tools/explore/sets.json
   "seren": {"height": 230, "dirs": {"S": {"loop": [20, 123, 24, 40]}, "N": {...}}}
   - loop: a~b 사이에서 처음과 끝이 가장 닮은 mn~mx 프레임 구간을 걷기 고리로
-  - 대기(idle)는 그 방향 영상의 첫 장면 1장(게임이 숨쉬기를 더한다)
+  - 대기(idle)는 걷기 고리 중 실루엣이 가장 좁은 장면 1장(게임이 숨쉬기를 더한다)
 처리: 색 차이 키잉 + 번짐 제거 → 정면 영상 첫 장면의 몸 높이를 height로 맞춤(모든 방향 같은 배율)
       → 방향마다 첫 장면의 발 위치를 기준점으로 → 잘라서 아틀라스에 채움
 출력: public/explore/c-<kind>.webp, src/game/data/explore-sprites.json
@@ -55,7 +55,9 @@ def build(kind, cfg):
             x0, y0, x1, y1 = max(0, xs.min() - 2), max(0, ys.min() - 2), min(im.width, xs.max() + 3), min(im.height, ys.max() + 3)
             tiles.append(im.crop((x0, y0, x1, y1)))
             anchors.append((bx * sc - x0, by * sc - y0))
-        clips[d] = {'idle': start, 'walk': [start + 1, n], 'fps': fps}
+        # 대기: 걷기 고리 중 실루엣이 가장 좁은 장면(팔·다리가 모인 자세). 첫 장면은 시트의 팔 벌린 자세라 어색하다
+        ws = [tiles[start + 1 + q].width for q in range(n)]
+        clips[d] = {'idle': start + 1 + int(np.argmin(ws)), 'walk': [start + 1, n], 'fps': fps}
         print(' ', d, 'loop', i, j, 'n', n, 'fps', fps)
     order = sorted(range(len(tiles)), key=lambda q: -tiles[q].height)
     pos = [None] * len(tiles); x = y = rowh = 0
@@ -71,7 +73,7 @@ def build(kind, cfg):
         fr.append([pos[q][0], pos[q][1], t.width, t.height, round(anchors[q][0], 1), round(anchors[q][1], 1)])
     os.makedirs(OUT, exist_ok=True)
     out = f'{OUT}/c-{kind}.webp'
-    atlas.save(out, quality=80, method=6)
+    atlas.save(out, quality=88, method=6)
     print(' atlas', ATLAS_W, H, len(fr), 'frames', os.path.getsize(out) // 1024, 'KB')
     return {'file': f'explore/c-{kind}.webp', 'W': ATLAS_W, 'H': H, 'h': cfg['height'], 'fr': fr, 'dirs': clips}
 

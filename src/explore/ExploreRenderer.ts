@@ -44,7 +44,8 @@ const FS_CHAR = `#version 300 es
 precision highp float; in vec2 vUv; in vec2 vW; out vec4 o;
 uniform sampler2D uTex; uniform sampler2D uNrm; uniform sampler2D uOcc; uniform vec2 uMap; uniform float uFoot; uniform float uFlip; uniform float uOccK;
 uniform vec3 uAmb; uniform vec3 uSun; uniform vec3 uSunDir; uniform float uShadow; uniform float uAlpha; uniform float uFlash;
-uniform vec4 uL; uniform vec3 uLC; uniform vec4 uClip;
+uniform vec4 uL; uniform vec3 uLC; uniform vec4 uClip; uniform vec2 uPx;
+vec4 tx(vec2 o){ return texture(uTex, clamp(vUv + o, uClip.xy, uClip.zw)); }
 void main(){
   if (vUv.x < uClip.x || vUv.x > uClip.z || vUv.y < uClip.y || vUv.y > uClip.w) discard;
   vec4 c = texture(uTex, vUv); if (c.a < 0.02) discard;
@@ -52,6 +53,13 @@ void main(){
   if (oc.b < 0.25) { float base = (floor(oc.r * 255.0 + 0.5) * 256.0 + floor(oc.g * 255.0 + 0.5)) * uOccK; if (base > uFoot + 6.0) discard; }
   if (uShadow > 0.0) { float a = c.a * uShadow; o = vec4(0.05 * a, 0.03 * a, 0.09 * a, a); return; }
   vec3 rgb = c.rgb / c.a;
+  // 선명하게: 이웃 4칸 평균과의 차이를 더한다(영상에서 뽑은 그림의 뭉개짐 보정)
+  vec4 n1 = tx(vec2(uPx.x, 0.0)), n2 = tx(vec2(-uPx.x, 0.0)), n3 = tx(vec2(0.0, uPx.y)), n4 = tx(vec2(0.0, -uPx.y));
+  float na = n1.a + n2.a + n3.a + n4.a;
+  if (na > 3.6) rgb = clamp(rgb + (rgb - (n1.rgb + n2.rgb + n3.rgb + n4.rgb) / na) * 0.55, 0.0, 1.0);
+  // 셀 셰이딩 선: 실루엣 안쪽 가장자리를 짙게(일러스트처럼 또렷한 외곽선)
+  float mn = min(min(tx(vec2(uPx.x * 1.8, 0.0)).a, tx(vec2(-uPx.x * 1.8, 0.0)).a), min(tx(vec2(0.0, uPx.y * 1.8)).a, tx(vec2(0.0, -uPx.y * 1.8)).a));
+  float edge = smoothstep(0.55, 0.05, mn) * smoothstep(0.45, 0.9, c.a);
   vec3 n = texture(uNrm, vUv).xyz * 2.0 - 1.0; n.x *= uFlip; n = normalize(n + vec3(0.0, 0.0, 0.001));
   vec3 L = normalize(uSunDir);
   float d = max(dot(n, L), 0.0);
@@ -61,9 +69,14 @@ void main(){
   col += vec3(1.0, 0.86, 0.7) * rim * 0.28;
   if (uL.w > 0.0) { vec2 dl = uL.xy - vW; float att = clamp(1.0 - length(dl) / uL.z, 0.0, 1.0); att *= att;
     col += rgb * uLC * att * uL.w * (0.35 + 0.65 * max(dot(n, normalize(vec3(dl, 120.0))), 0.0)); }
+  col = mix(col, col * 0.28 + vec3(0.07, 0.045, 0.09), edge * 0.85);
   col = mix(col, vec3(1.0), uFlash);
   o = vec4(col * c.a, c.a) * uAlpha;
 }`
+// 전경(카메라 바로 앞의 꽃·수풀·기둥): 흐리게(밉맵 치우침) + 조금 어둡게
+const FS_FG = `#version 300 es
+precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uTex; uniform float uBias; uniform float uA;
+void main(){ vec4 c = texture(uTex, vUv, uBias); o = vec4(c.rgb * 0.72, c.a) * uA; }`
 const FS_SHAPE = `#version 300 es
 precision highp float; in vec2 vUv; out vec4 o; uniform vec4 uC; uniform int uMode;
 void main(){ vec2 p = vUv * 2.0 - 1.0; float r = length(p); float a;
@@ -85,15 +98,18 @@ void main(){
   float f = smoothstep(0.2, 0.52, abs(sc.y - 0.55)) * uDof;   // 틸트시프트: 화면 위·아래를 흐리게
   c = mix(c, textureLod(uScene, tu, 1.6).rgb * 0.5 + textureLod(uScene, tu, 2.6).rgb * 0.5, f);
   vec3 b = textureLod(uScene, tu, 3.0).rgb * 0.45 + textureLod(uScene, tu, 4.5).rgb * 0.35 + textureLod(uScene, tu, 6.0).rgb * 0.2;
-  c += max(b - 0.8, 0.0) * 1.2 * uBloom;
+  c += max(b - 0.86, 0.0) * 1.0 * uBloom;
   float v = dot(sc * vec2(1.78, 1.0), normalize(vec2(0.78, -0.62)));   // 왼쪽 위에서 비스듬히 내려오는 햇살 줄기
   float band = pow(sin(v * 9.0 + uT * 0.15) * 0.5 + 0.5, 6.0) + pow(sin(v * 23.0 - uT * 0.1 + 1.7) * 0.5 + 0.5, 10.0) * 0.6;
   float fall = clamp(1.0 - length(sc * vec2(0.85, 1.1)), 0.0, 1.0);
-  c += vec3(1.0, 0.83, 0.62) * band * fall * 0.05 * uBloom;
+  c += vec3(1.0, 0.83, 0.62) * band * fall * 0.035 * uBloom;
+  // 색 보정: 노을빛 대비(그림자는 차갑고 깊게, 밝은 곳은 따뜻하게) · 분홍 안개 걷기
+  c *= 0.97;
+  c = mix(c, c * c * (3.0 - 2.0 * c), 0.42);                          // S자 대비
   float l = dot(c, vec3(0.299, 0.587, 0.114));
-  c = mix(c * vec3(0.97, 0.97, 1.03), c * vec3(1.02, 1.0, 0.97), smoothstep(0.25, 0.8, l));
-  c = mix(vec3(l), c, 1.06);
-  vec2 q = sc - 0.5; c *= 1.0 - dot(q, q) * 0.55;
+  c = mix(c * vec3(0.9, 0.93, 1.05), c * vec3(1.06, 1.0, 0.9), smoothstep(0.2, 0.75, l));
+  c = mix(vec3(l), c, 1.16);                                          // 채도
+  vec2 q = sc - 0.5; c *= 1.0 - dot(q, q) * 0.85;
   if (sc.y < uLetter || sc.y > 1.0 - uLetter) c = vec3(0.0);
   c = mix(c, vec3(1.0), uFlash);
   o = vec4(c * uFade, 1.0);
@@ -123,12 +139,14 @@ export class ExploreRenderer {
   /** 카메라 돌진 흐림 0~1, 번쩍임 0~1(연출용) */
   rush = 0
   flash = 0
-  private progs: Record<'map' | 'chr' | 'shape' | 'post', Prog>
+  private progs: Record<'map' | 'chr' | 'shape' | 'fg' | 'post', Prog>
   private vbo: WebGLBuffer
   private tiles = new Map<string, { t: Tex; x: number; y: number; w: number; h: number; used: number }>()
   private tileJobs = new Map<string, Promise<void>>()
   private aux: Tex | null = null
   private anim: Tex | null = null
+  private fgTex: Tex | null = null
+  private fgA = new Map<number, number>()
   private lowQ = false
   wind = 1
   private tex = new Map<string, Tex>()
@@ -143,7 +161,7 @@ export class ExploreRenderer {
     const gl = canvas.getContext('webgl2', { premultipliedAlpha: true, antialias: false, alpha: false })
     if (!gl) throw new Error('webgl2')
     this.gl = gl
-    this.progs = { map: compile(gl, VS, FS_MAP), chr: compile(gl, VS, FS_CHAR), shape: compile(gl, VS, FS_SHAPE), post: compile(gl, VS, FS_POST) }
+    this.progs = { map: compile(gl, VS, FS_MAP), chr: compile(gl, VS, FS_CHAR), shape: compile(gl, VS, FS_SHAPE), fg: compile(gl, VS, FS_FG), post: compile(gl, VS, FS_POST) }
     const vao = gl.createVertexArray()!; gl.bindVertexArray(vao)
     this.vbo = gl.createBuffer()!; gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo); gl.bufferData(gl.ARRAY_BUFFER, 16 * 4, gl.DYNAMIC_DRAW)
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0)
@@ -172,6 +190,7 @@ export class ExploreRenderer {
     const first = new Set<string>()
     for (const f of focus) for (const k of this.tilesNear(f.x, f.y, 1400, 800)) first.add(k)
     const files = [`${d}/aux.png`, `${d}/anim.webp`, ...kinds.map((k) => SPRITES[k].file), ...npcImgs]
+    if (zone.fg?.length && !low) this.img(zone.fgAtlas.file).then((i) => { this.fgTex = this.upload(i, { mip: true }) }).catch(() => {})
     let done = 0
     const total = files.length + first.size
     const step = () => onProgress?.(++done / total)
@@ -308,6 +327,7 @@ export class ExploreRenderer {
     gl.uniform1f(p.u('uShadow'), shadow); gl.uniform1f(p.u('uAlpha'), a.alpha ?? 1); gl.uniform1f(p.u('uFlash'), a.flash ?? 0)
     const um = Math.min(f.uv[0], f.uv[2]), uM = Math.max(f.uv[0], f.uv[2])
     gl.uniform4f(p.u('uClip'), um - 0.0001, f.uv[1] - 0.0001, uM + 0.0001, f.uv[5] + 0.0001)
+    gl.uniform2f(p.u('uPx'), 1.25 / T.w, 1.25 / T.h)
     const L = z.lamps.map((l) => ({ l, d: Math.hypot(l.x - a.x, l.y - a.y) })).sort((x, y) => x.d - y.d)[0]
     if (L && L.d < L.l.r) { gl.uniform4f(p.u('uL'), L.l.x, L.l.y, L.l.r, L.l.i); gl.uniform3f(p.u('uLC'), ...L.l.c) } else gl.uniform4f(p.u('uL'), 0, 0, 1, 0)
     if (shadow > 0) {
@@ -366,6 +386,8 @@ export class ExploreRenderer {
     // ③ 캐릭터(뒤 → 앞)
     frames.sort((p, q) => p.a.y - q.a.y)
     for (const { a, f } of frames) this.drawActor(a, f, 0)
+    // ③-2 전경: 카메라에 가까운 물체는 더 크게·더 빨리 움직인다(시차). 대원과 겹치면 옅어진다
+    this.drawFg(actors[0], dt)
     // ④ 꽃잎·빛먼지
     for (const p of this.petals) this.shape(1, p.x, p.y, p.s, p.s * 0.62, p.r, [p.c[0], p.c[1], p.c[2], 0.9])
     for (const m of this.motes) this.shape(0, m.x, m.y, m.s, m.s, 0, [1, 0.85, 0.6, 0.18 + Math.sin(m.ph * 2) * 0.1], true)
@@ -383,5 +405,25 @@ export class ExploreRenderer {
       this.quad([0, 0, W, 0, 0, H, W, H], [0, 1, 1, 1, 0, 0, 1, 0])
     }
   }
-  dispose() { const gl = this.gl; for (const x of [...this.tex.values(), ...this.nrm.values()]) gl.deleteTexture(x.t); for (const x of this.tiles.values()) gl.deleteTexture(x.t.t); this.tiles.clear(); if (this.aux) gl.deleteTexture(this.aux.t); if (this.anim) gl.deleteTexture(this.anim.t) }
+  private drawFg(me: Actor | undefined, dt: number) {
+    const z = this.zone, T = this.fgTex
+    if (!T || !z.fg?.length) return
+    const gl = this.gl, p = this.use(this.progs.fg), v = this.view, K = 1.32
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, T.t); gl.uniform1i(p.u('uTex'), 0); gl.uniform1f(p.u('uBias'), 3.2)
+    const hw = W / 2 / v.z, hh = H / 2 / v.z
+    z.fg.forEach((f, i) => {
+      const r = z.fgAtlas.rects[f.k]; if (!r) return
+      const w = f.w * K, h = (f.w * r[3] / r[2]) * K
+      const cx = v.x + (f.x - v.x) * K, by = v.y + (f.y - v.y) * K + hh * 0.18 // 화면 아래쪽으로 조금 더 내려 앞에 있는 느낌
+      if (cx + w / 2 < v.x - hw || cx - w / 2 > v.x + hw || by - h > v.y + hh || by < v.y - hh) return
+      const x0 = cx - w / 2, y0 = by - h, x1 = cx + w / 2
+      const over = me && me.x > x0 && me.x < x1 && me.y - z.charH < by && me.y > y0
+      const a = (this.fgA.get(i) ?? 1) + ((over ? 0.3 : 0.95) - (this.fgA.get(i) ?? 1)) * Math.min(1, dt * 6); this.fgA.set(i, a)
+      gl.uniform1f(p.u('uA'), a)
+      const u0 = r[0] / T.w, v0 = r[1] / T.h, u1 = (r[0] + r[2]) / T.w, v1 = (r[1] + r[3]) / T.h
+      const fl = f.flip ? -1 : 1
+      this.quad([x0, y0, x1, y0, x0, by, x1, by], fl > 0 ? [u0, v0, u1, v0, u0, v1, u1, v1] : [u1, v0, u0, v0, u1, v1, u0, v1])
+    })
+  }
+  dispose() { const gl = this.gl; for (const x of [...this.tex.values(), ...this.nrm.values()]) gl.deleteTexture(x.t); for (const x of this.tiles.values()) gl.deleteTexture(x.t.t); this.tiles.clear(); if (this.aux) gl.deleteTexture(this.aux.t); if (this.anim) gl.deleteTexture(this.anim.t); if (this.fgTex) gl.deleteTexture(this.fgTex.t) }
 }
