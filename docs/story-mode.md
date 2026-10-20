@@ -1,5 +1,7 @@
 # 스토리 탐색 모드 — 결정 사항과 제작 순서
 
+> 게임 전체 흐름(필드 탐험 → 시네마틱 컷씬 → 실시간 전투·퀘스트 → 다시 자유 탐험, 필드에서 다른 유저와 만남)은 [`docs/design/core-loop.md`](design/core-loop.md)가 기준이다.
+
 상위 요구사항: 사용자 제공 `AbilityKingdom_StoryMode_Technical_Art_Spec.md`(2026-10-18). 메인 로비는 건드리지 않는다.
 
 ## 확정 결정 (사용자 선택, 2026-10-18)

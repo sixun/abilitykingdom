@@ -1,5 +1,7 @@
 # 어빌리티킹덤 웹 프로토타입 (v0.4 · 원본 화면 재현 + 대기 모션)
 
+> **게임 방향(확정):** 2.5D 오픈월드 필드 탐험(NPC·다른 유저와 만남) → 시네마틱 컷씬 → 실시간 전투·퀘스트 → 다시 자유 탐험. 자세한 내용은 [`docs/design/core-loop.md`](docs/design/core-loop.md).
+
 v0.2에서는 `Ability-Kingdom-Complete-Assets` 패키지(CLAUDE-START-HERE.md)대로 **로비·영입·편성 세 화면을 원본 시안 그대로 다시 만들었습니다.**
 새 디자인으로 해석하지 않았습니다. 원본 조각(Original-Pixel-Slices)을 layout.json 좌표 그대로 배치하고, 동적으로 바뀌는 부분만 복원 배경·복원 캐릭터·글자 없는 SVG 스킨과 실제 텍스트로 덮습니다.
 
