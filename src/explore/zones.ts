@@ -14,7 +14,10 @@ export interface Zone {
   lamps: { x: number; y: number; r: number; i: number; c: [number, number, number] }[]
   npcs: Npc[]; spots: Spot[]
   quest: { title: string; goal: string }
-  regions: { name: string; x0: number; y0: number; x1: number; y1: number }[] // 먼저 맞는 것이 이름(걸어 들어가면 장소 이름이 뜬다)
+  regions: { name: string; en: string; code: string; x0: number; y0: number; x1: number; y1: number }[] // 먼저 맞는 것이 이름(처음 걸어 들어가면 구역 이름 연출)
+  /** 진입 연출에 쓰는 장 정보와 색(단색 카드) */
+  chapter: { no: string; title: string; en: string[]; card: { bg: string; ink: string } }
+  placeEn: string
   amb: string
   /** 구역 배경음악 */
   bgm: Bgm
@@ -46,10 +49,12 @@ export const ACADEMY: Zone = {
   ],
   quest: { title: '메인 사건', goal: '학교 내부로 이동하기' },
   regions: [
-    { name: '아래 정원', x0: 0, y0: 3020, x1: 99999, y1: 99999 },
-    { name: '벚꽃 연못', x0: 5350, y0: 0, x1: 99999, y1: 3020 },
-    { name: '정문 광장', x0: 0, y0: 0, x1: 99999, y1: 99999 },
+    { name: '아래 정원', en: 'LOWER GARDEN', code: 'AREA 02', x0: 0, y0: 3020, x1: 99999, y1: 99999 },
+    { name: '벚꽃 연못', en: 'BLOSSOM POND', code: 'AREA 03', x0: 5350, y0: 0, x1: 99999, y1: 3020 },
+    { name: '정문 광장', en: 'FRONT PLAZA', code: 'AREA 01', x0: 0, y0: 0, x1: 99999, y1: 99999 },
   ],
   amb: 'amb_academy',
   bgm: 'academy',
+  chapter: { no: '01', title: '끊어진 신호', en: ['BROKEN', 'SIGNAL'], card: { bg: '#e2364e', ink: '#1b2c78' } },
+  placeEn: 'FRONT PLAZA',
 }

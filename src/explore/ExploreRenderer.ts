@@ -72,11 +72,16 @@ void main(){ vec2 p = vUv * 2.0 - 1.0; float r = length(p); float a;
   else a = smoothstep(1.0, 0.0, r) * smoothstep(1.0, 0.4, r);
   o = vec4(uC.rgb * uC.a * a, uC.a * a); }`
 const FS_POST = `#version 300 es
-precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uScene; uniform float uT; uniform float uDof; uniform float uBloom; uniform float uLetter; uniform float uFade;
+precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uScene; uniform float uT; uniform float uDof; uniform float uBloom; uniform float uLetter; uniform float uFade; uniform float uRush; uniform float uFlash;
 void main(){
   vec2 tu = vUv;                       // 텍스처 좌표(아래가 0)
   vec2 sc = vec2(vUv.x, 1.0 - vUv.y);  // 화면 좌표(위가 0)
-  vec3 c = texture(uScene, tu).rgb;
+  vec3 c;
+  if (uRush > 0.002) {                 // 카메라 돌진: 화면 가운데로 빨려 드는 방사형 흐림(드론 FPV 느낌)
+    vec2 ctr = vec2(0.5, 0.47); vec3 acc = vec3(0.0); float wsum = 0.0;
+    for (int i = 0; i < 12; i++) { float k = float(i) / 11.0; float wi = 1.0 - k * 0.55; acc += texture(uScene, ctr + (tu - ctr) * (1.0 - k * uRush * 0.24)).rgb * wi; wsum += wi; }
+    c = acc / wsum;
+  } else c = texture(uScene, tu).rgb;
   float f = smoothstep(0.2, 0.52, abs(sc.y - 0.55)) * uDof;   // 틸트시프트: 화면 위·아래를 흐리게
   c = mix(c, textureLod(uScene, tu, 1.6).rgb * 0.5 + textureLod(uScene, tu, 2.6).rgb * 0.5, f);
   vec3 b = textureLod(uScene, tu, 3.0).rgb * 0.45 + textureLod(uScene, tu, 4.5).rgb * 0.35 + textureLod(uScene, tu, 6.0).rgb * 0.2;
@@ -90,6 +95,7 @@ void main(){
   c = mix(vec3(l), c, 1.06);
   vec2 q = sc - 0.5; c *= 1.0 - dot(q, q) * 0.55;
   if (sc.y < uLetter || sc.y > 1.0 - uLetter) c = vec3(0.0);
+  c = mix(c, vec3(1.0), uFlash);
   o = vec4(c * uFade, 1.0);
 }`
 
@@ -114,6 +120,9 @@ export class ExploreRenderer {
   view = { x: 0, y: 0, z: 0.5 }
   letter = 0
   fade = 1
+  /** 카메라 돌진 흐림 0~1, 번쩍임 0~1(연출용) */
+  rush = 0
+  flash = 0
   private progs: Record<'map' | 'chr' | 'shape' | 'post', Prog>
   private vbo: WebGLBuffer
   private tiles = new Map<string, { t: Tex; x: number; y: number; w: number; h: number; used: number }>()
@@ -370,7 +379,7 @@ export class ExploreRenderer {
       const pp = this.progs.post; gl.useProgram(pp.p)
       gl.uniform3f(pp.u('uView'), W / 2, H / 2, 1); gl.uniform2f(pp.u('uCam'), 0, 0)
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fb.t); gl.uniform1i(pp.u('uScene'), 0)
-      gl.uniform1f(pp.u('uT'), t); gl.uniform1f(pp.u('uDof'), 1); gl.uniform1f(pp.u('uBloom'), 1); gl.uniform1f(pp.u('uLetter'), this.letter); gl.uniform1f(pp.u('uFade'), this.fade)
+      gl.uniform1f(pp.u('uT'), t); gl.uniform1f(pp.u('uDof'), 1); gl.uniform1f(pp.u('uBloom'), 1); gl.uniform1f(pp.u('uLetter'), this.letter); gl.uniform1f(pp.u('uFade'), this.fade); gl.uniform1f(pp.u('uRush'), this.rush); gl.uniform1f(pp.u('uFlash'), this.flash)
       this.quad([0, 0, W, 0, 0, H, W, H], [0, 1, 1, 1, 0, 0, 1, 0])
     }
   }

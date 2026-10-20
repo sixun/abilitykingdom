@@ -317,3 +317,8 @@
 .story-field-btn small { position: absolute; left: 34px; top: 30px; font: 700 13px/1 var(--f-body); letter-spacing: .14em; color: #ffc4dc; }
 .story-field-btn b { position: absolute; left: 32px; top: 56px; font: 900 32px/1.1 var(--f-body); text-shadow: 0 3px 14px #000; }
 .story-field-btn em { position: absolute; right: 30px; top: 42px; padding: 12px 24px; border-radius: 4px; background: #ffd6e8; color: #20101a; font: 900 17px/1 var(--f-body); font-style: normal; }
+/* 시작 연출 동안 전투 UI는 숨기고(연출이 끝나면 차례로 올라온다), 화면은 살짝 어둡게 */
+.cb.ph-intro .cb-top, .cb.ph-intro .cb-cards, .cb.ph-intro .cb-marks, .cb.ph-intro .cb-dev, .cb.ph-intro .cb-boss { opacity: 0; pointer-events: none; }
+.cb.ph-intro .cb-gl { filter: brightness(.72) saturate(.9); }
+.cb .cb-top, .cb .cb-cards, .cb .cb-marks, .cb .cb-gl { transition: opacity .45s ease, filter .6s ease; }
+.cb.ph-fight .cb-cards { transition-delay: .15s; }

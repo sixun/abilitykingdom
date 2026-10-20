@@ -1,0 +1,87 @@
+/* 시네마틱 타이포그래피 — 화면 좌표 1280×720 기준(무대 안에서 쓴다) */
+.cn { position: absolute; inset: 0; z-index: 90; pointer-events: none; overflow: hidden; --heavy: 'Inter', 'Noto Sans KR', sans-serif; --thin: 'Inter', 'Noto Sans KR', sans-serif; }
+.cn.block { pointer-events: auto; }
+.cn > div { position: absolute; inset: 0; }
+.cn-fit { display: inline-block; white-space: nowrap; line-height: .86; }
+.cn-skip { position: absolute; right: 22px; bottom: 20px; z-index: 5; padding: 8px 14px; background: #0008; color: #fffc; border: 1px solid #fff4; font: 800 12px/1 var(--heavy); letter-spacing: .3em; pointer-events: auto; }
+.cn-skip:hover { color: #fff; border-color: #fff9; }
+.cn .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* 암전 */
+.cn-black { background: #000; }
+
+/* stack — 굵은 기울임을 쌓은 블록. 페이드 없이 줄마다 한 박자씩 끊어 들어오고, 끝에서 한 번에 끊긴다 */
+.cn-stack { display: flex; flex-direction: column; justify-content: flex-end; padding: 0 0 92px 64px; animation: cnCut var(--d) steps(1, end) both; }
+.cn-stack.at-tl { justify-content: flex-start; padding: 92px 0 0 64px; }
+.cn-stack.at-br { align-items: flex-end; text-align: right; padding: 0 64px 92px 0; }
+.cn-stack.at-c { justify-content: center; align-items: center; text-align: center; padding: 0; }
+.cn-stack b { display: block; font: italic 900 74px/.92 var(--heavy); letter-spacing: -.035em; color: #fff; text-shadow: 0 2px 30px #0009; animation: cnLine .001s calc(var(--i) * 70ms) both; }
+.cn-stack b:first-child { font-size: 56px; }
+.cn-stack em { display: block; margin-top: 8px; font: italic 300 40px/1 var(--thin); letter-spacing: -.01em; color: #ffffffe6; text-shadow: 0 2px 20px #0009; animation: cnLine .001s calc(var(--i) * 70ms + 60ms) both; }
+@keyframes cnLine { from { visibility: hidden; } to { visibility: visible; } }
+@keyframes cnCut { 0%, 99% { opacity: 1; } 100% { opacity: 0; } }
+
+/* mono — 화면을 꽉 채우는 거대한 단어. 1프레임 번쩍 → 크게 박히고 → 천천히 다가오다 → 아래로 잘려 나간다 */
+.cn-mono { display: flex; flex-direction: column; align-items: center; justify-content: center; background: radial-gradient(70% 60% at 50% 52%, #000a, #0005 70%, #0008); animation: cnMonoBg var(--d) linear both, cnShake .32s linear both; }
+.cn-mono .cn-flash { position: absolute; inset: 0; background: #fff; animation: cnFlash .22s ease-out both; mix-blend-mode: screen; }
+.cn-mono small { position: relative; font: italic 900 22px/1 var(--heavy); letter-spacing: .32em; color: var(--tint); margin-bottom: 10px; text-indent: .32em; animation: cnPop .25s .06s var(--ease-snap) both; }
+.cn-mono-word { position: relative; display: grid; place-items: center; }
+.cn-mono-word > * { grid-area: 1 / 1; }
+.cn-mono .main, .cn-mono .ghost { font-family: var(--heavy); font-weight: 900; font-style: italic; letter-spacing: -.045em; text-transform: uppercase; padding-right: .06em; }
+.cn-mono .main { color: #fff; text-shadow: 0 6px 40px #000a; animation: cnSlam var(--d) var(--ease-snap) both; }
+.cn-mono .ghost { color: transparent; -webkit-text-stroke: 2px var(--tint); opacity: 0; }
+.cn-mono .g1 { animation: cnGhost .6s .02s ease-out both; }
+.cn-mono .g2 { animation: cnGhost .8s .1s ease-out both; }
+.cn-mono .sub { position: relative; margin-top: 18px; padding: 8px 18px 9px; font: 900 22px/1 'Noto Sans KR', sans-serif; letter-spacing: .5em; text-indent: .5em; color: #111; background: var(--tint); animation: cnPop .3s .14s var(--ease-snap) both, cnOut var(--d) linear both; }
+@keyframes cnMonoBg { 0% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes cnFlash { 0% { opacity: .85; } 100% { opacity: 0; } }
+@keyframes cnSlam {
+  0% { transform: scale(1.32) skewX(-4deg); filter: blur(8px); opacity: 0; }
+  9% { transform: scale(.985); filter: blur(0); opacity: 1; }
+  14% { transform: scale(1); }
+  86% { transform: scale(1.045); clip-path: inset(0 0 0 0); }
+  100% { transform: scale(1.06); clip-path: inset(100% 0 0 0); }
+}
+@keyframes cnGhost { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.35); } }
+@keyframes cnPop { from { opacity: 0; transform: translateY(10px) scale(1.1); } }
+@keyframes cnOut { 0%, 86% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes cnShake {
+  0% { transform: translate(0, 0); } 15% { transform: translate(-9px, 5px); } 30% { transform: translate(8px, -6px); }
+  45% { transform: translate(-5px, 3px); } 60% { transform: translate(4px, -2px); } 80% { transform: translate(-2px, 1px); } 100% { transform: translate(0, 0); }
+}
+
+/* card — 단색 화면 + 큰 숫자. 왼쪽에서 한 번에 닦아 들어오고 끝은 끊는다 */
+.cn-card { background: var(--bg); display: grid; place-items: center; animation: cnWipe .2s cubic-bezier(.7, 0, .2, 1) both, cnCut var(--d) steps(1, end) both; }
+.cn-card-in { display: flex; flex-direction: column; align-items: flex-start; color: var(--ink); transform: skewX(-6deg); }
+.cn-card .big { font: italic 900 100px/.8 var(--heavy); letter-spacing: -.06em; padding-right: .05em; animation: cnCardBig var(--d) var(--ease-snap) both; }
+.cn-card .mid { margin-top: 6px; font: italic 900 100px/.86 var(--heavy); letter-spacing: -.04em; text-transform: uppercase; animation: cnCardBig var(--d) .05s var(--ease-snap) both; }
+.cn-card em { margin-top: 12px; font: italic 300 44px/1 var(--thin); letter-spacing: -.01em; opacity: .85; animation: cnPop .3s .16s ease both; }
+@keyframes cnWipe { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes cnCardBig { 0% { transform: translateX(-40px); opacity: 0; } 20% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(12px); } }
+
+/* brutal — 컨트롤식 구역 이름. 깜빡이며 켜지고, 가로를 꽉 채운 대문자, 끝에서 살짝 다가오며 사라진다 */
+.cn-brutal { display: flex; flex-direction: column; justify-content: center; align-items: center; background: linear-gradient(180deg, #000c, #0007 40%, #0007 60%, #000c); animation: cnBrutBg var(--d) linear both; }
+.cn-brutal code { position: absolute; left: 50px; bottom: 62px; font: 700 13px/1.5 ui-monospace, 'SFMono-Regular', Menlo, monospace; letter-spacing: .18em; color: #fffb; white-space: pre; animation: cnFlick .3s steps(4) both; }
+.cn-brutal .word { font-family: var(--heavy); font-weight: 900; font-style: normal; letter-spacing: -.055em; text-transform: uppercase; color: #f2efe8; padding-right: .04em; animation: cnFlick .26s steps(3) both, cnBrutWord var(--d) linear both; }
+.cn-brutal .sub { margin-top: 18px; font: 700 18px/1 'Noto Sans KR', sans-serif; letter-spacing: .9em; text-indent: .9em; color: #f2efe8cc; animation: cnFlick .3s .08s steps(3) both; }
+.cn-brutal::after { content: ''; position: absolute; left: 50px; right: 50px; bottom: 46px; height: 1px; background: #fff5; transform-origin: left; animation: cnRule var(--d) cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes cnFlick { 0% { opacity: 0; } 33% { opacity: 1; } 50% { opacity: .2; } 100% { opacity: 1; } }
+@keyframes cnBrutWord { 0% { transform: scale(1); } 80% { transform: scale(1.02); opacity: 1; filter: blur(0); } 100% { transform: scale(1.05); opacity: 0; filter: blur(6px); } }
+@keyframes cnBrutBg { 0% { opacity: 0; } 8% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes cnRule { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* ticker — 위아래 띠, 큰 글자가 서로 반대로 흐른다 */
+.cn-ticker .band { position: absolute; left: 0; right: 0; height: 62px; overflow: hidden; background: #000d; display: flex; align-items: center; }
+.cn-ticker .band span { white-space: nowrap; font: italic 900 40px/1 var(--heavy); letter-spacing: -.02em; color: #fff; will-change: transform; }
+.cn-ticker .top { top: 0; animation: cnBandT var(--d) cubic-bezier(.6, 0, .3, 1) both; }
+.cn-ticker .bot { bottom: 0; animation: cnBandB var(--d) cubic-bezier(.6, 0, .3, 1) both; }
+.cn-ticker .top span { animation: cnRunL 9s linear both; }
+.cn-ticker .bot span { animation: cnRunR 9s linear both; color: #111; }
+.cn-ticker .bot { background: #f2efe8; }
+@keyframes cnBandT { 0% { transform: translateY(-100%); } 8%, 90% { transform: translateY(0); } 100% { transform: translateY(-100%); } }
+@keyframes cnBandB { 0% { transform: translateY(100%); } 8%, 90% { transform: translateY(0); } 100% { transform: translateY(100%); } }
+@keyframes cnRunL { from { transform: translateX(0); } to { transform: translateX(-1400px); } }
+@keyframes cnRunR { from { transform: translateX(-1400px); } to { transform: translateX(0); } }
+
+/* 동작 줄이기: 움직임은 빼고 글자만 짧게 */
+.cn.reduce *, .cn.reduce > div { animation: none !important; }

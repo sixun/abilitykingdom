@@ -1,8 +1,9 @@
-import { useEffect, useReducer, useRef, useState, type PointerEvent as RPE } from 'react'
+import { useEffect, useMemo, useReducer, useRef, useState, type PointerEvent as RPE } from 'react'
 import '../../styles/explore.css'
 import { useNav } from '../../app/nav'
 import { audio } from '../../app/audio'
 import { RefStage } from '../../ui/ref'
+import { Cine, type Shot } from '../../ui/cine/Cine'
 import { useReduceMotion, useScreenActive } from '../../ui/motion'
 import { useGame } from '../../game/store'
 import { CHAR_BY_ID } from '../../game/data/characters'
@@ -30,12 +31,16 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const [glErr, setGlErr] = useState(false)
   const [who, setWho] = useState<Playable>('seren')
   const [run, setRun] = useState(false)
-  const [phase, setPhase] = useState<'load' | 'intro' | 'title' | 'play'>('load')
+  const [phase, setPhase] = useState<'load' | 'intro' | 'play'>('load')
   const [talk, setTalk] = useState<{ title: string; lines: Line[]; i: number } | null>(null)
   const [clues, setClues] = useState<string[]>([])
   const [toast, setToast] = useState<string | null>(null)
   const [place, setPlace] = useState(zone.place)
-  const [banner, setBanner] = useState<{ name: string; n: number } | null>(null)
+  const [banner, setBanner] = useState<{ r: Zone['regions'][number]; n: number } | null>(null)
+  const [ticker, setTicker] = useState(false)
+  // 연출 카메라: wide = 처음 보여 줄 곳 고정, drift = 천천히 밀고 들어감, follow = 대원에게 돌진(이후 따라감)
+  const camMode = useRef<'wide' | 'drift' | 'follow'>('wide')
+  const fxv = useRef({ rush: 0, flash: 0 })
   const seen = useRef(new Set<string>([zone.place]))
   const me = useRef<Actor>({ id: 'me', kind: 'seren', x: zone.start.x, y: zone.start.y, dir: 'S', moving: false, run: false, t: 0 })
   const npcs = useRef<Actor[]>(zone.npcs.map((n) => ({ id: n.id, kind: n.id.includes('girl') ? 'npc' : 'npc-s', img: n.img, x: n.x, y: n.y, dir: 'S', moving: false, run: false, t: Math.random() * 5 })))
@@ -56,26 +61,27 @@ export default function StoryField({ params }: { params: Record<string, unknown>
     r.quality = gs.settings.quality === 'low' ? 'low' : 'high'
     r.load(zone, PLAYABLE.filter((k) => SPRITES[k]), zone.npcs.map((n) => n.img), r.quality === 'low', setLoad, [zone.start, zone.intro])
       .then(() => { setLoad(1); setPhase('intro') }).catch(() => setGlErr(true))
-    audio.preload(['step', 'title', 'whoosh', 'select', 'swap', 'open', 'coin', 'save'])
+    audio.preload(['step', 'title', 'whoosh', 'select', 'swap', 'open', 'coin', 'save', 'shutter', 'boss_slam', 'slam'])
     const prevBgm = audio.currentBgm
     audio.bgm(zone.bgm); audio.ambience(zone.amb, 0.55) // 음악이 있으니 환경음은 낮춘다
     return () => { r.dispose(); audio.ambience(''); audio.bgm(prevBgm === zone.bgm ? 'lobby' : prevBgm) }
   }, [])
 
-  // 진입 연출: 정문을 비추다 → 대원 쪽으로 카메라가 내려오고 → 장소 이름이 찍힌다
-  useEffect(() => {
-    if (phase !== 'intro') return
-    if (reduce) { cam.current = { x: me.current.x, y: me.current.y - 120, z: 0.5 }; setPhase('title'); return }
-    audio.sfx('whoosh')
-    const id = setTimeout(() => setPhase('title'), 2300)
-    return () => clearTimeout(id)
-  }, [phase])
-  useEffect(() => {
-    if (phase !== 'title') return
-    audio.sfx('title')
-    const id = setTimeout(() => setPhase('play'), reduce ? 600 : 2600)
-    return () => clearTimeout(id)
-  }, [phase])
+  // 진입 연출(시네마틱 타이포): 암전 → 넓은 화면 위 장 제목 블록 → 거대한 구역 이름과 함께 카메라가 대원에게 돌진 → 단색 카드 → 위아래 띠
+  const entry = useMemo<Shot[]>(() => [
+    { k: 'black', d: 0.45, sfx: 'whoosh' },
+    { k: 'stack', d: 1.7, lines: [`CHAPTER ${zone.chapter.no}`, ...zone.chapter.en], sub: zone.chapter.title, sfx: 'shutter' },
+    { k: 'mono', d: 1.3, text: zone.areaEn.split(' ')[0], kicker: 'ABILITY KINGDOM · STORY', sub: zone.area, sfx: 'boss_slam' },
+    { k: 'card', d: 1.05, big: zone.chapter.no, mid: 'CHAPTER', sub: zone.placeEn.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()), bg: zone.chapter.card.bg, ink: zone.chapter.card.ink, sfx: 'shutter' },
+  ], [])
+  const onEntryShot = (i: number) => {
+    if (i === 1) camMode.current = 'drift'
+    if (i === 2) { camMode.current = 'follow'; fxv.current = { rush: 1, flash: 0.55 } }
+  }
+  const startPlay = () => {
+    camMode.current = 'follow'
+    setPhase('play'); setTicker(true)
+  }
 
   const nearest = () => {
     const m = me.current
@@ -161,17 +167,21 @@ export default function StoryField({ params }: { params: Record<string, unknown>
           const rg = zone.regions.find((g) => m.x >= g.x0 && m.x < g.x1 && m.y >= g.y0 && m.y < g.y1)
           if (rg && rg.name !== placeRef.current) {
             placeRef.current = rg.name; setPlace(rg.name)
-            if (!seen.current.has(rg.name)) { seen.current.add(rg.name); setBanner((b) => ({ name: rg.name, n: (b?.n ?? 0) + 1 })); audio.sfx('whoosh') }
+            if (!seen.current.has(rg.name)) { seen.current.add(rg.name); setBanner((b) => ({ r: rg, n: (b?.n ?? 0) + 1 })); fxv.current.flash = 0.25 }
           }
         }
         if (m.flash) m.flash = Math.max(0, m.flash - dt * 3)
         for (const n of npcs.current) n.t += dt
         // 카메라
-        const k = c.phase === 'intro' ? 1.3 : 5
-        const tz = c.phase === 'intro' ? 0.5 : 0.5
-        const want = c.phase === 'intro' || c.phase === 'title' || c.phase === 'play' ? { x: m.x, y: m.y - 130 } : { x: cam.current.x, y: cam.current.y }
+        const mode = c.phase === 'play' ? 'follow' : c.phase === 'load' ? 'wide' : camMode.current
+        const k = mode === 'wide' ? 0 : mode === 'drift' ? 0.5 : c.phase === 'play' ? 5 : 7.5
+        const tz = mode === 'follow' ? 0.5 : zone.intro.z - (mode === 'drift' ? 0.07 : 0)
+        const want = mode === 'follow' ? { x: m.x, y: m.y - 130 } : { x: zone.intro.x + 320, y: zone.intro.y + 150 }
         const cm = cam.current
-        cm.x += (want.x - cm.x) * Math.min(1, dt * k); cm.y += (want.y - cm.y) * Math.min(1, dt * k); cm.z += (tz - cm.z) * Math.min(1, dt * (c.phase === 'intro' ? 1.1 : 4))
+        cm.x += (want.x - cm.x) * Math.min(1, dt * k); cm.y += (want.y - cm.y) * Math.min(1, dt * k); cm.z += (tz - cm.z) * Math.min(1, dt * (mode === 'follow' ? 6 : 0.6))
+        // 돌진 흐림·번쩍임은 빠르게 가라앉는다
+        const fv = fxv.current; fv.rush *= Math.exp(-dt * 3.4); fv.flash *= Math.exp(-dt * 9)
+        r.rush = c.reduce ? 0 : fv.rush; r.flash = c.reduce ? 0 : fv.flash
         const hw = 640 / cm.z, hh = 360 / cm.z
         cm.x = Math.max(hw, Math.min(zone.W - hw, cm.x)); cm.y = Math.max(hh, Math.min(zone.H - hh, cm.y))
         r.view = { ...cm }
@@ -203,7 +213,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
 
   return (
     <div className="scr story-field">
-      <RefStage canvas={{ width: 1280, height: 720 }} className={`sf ${reduce ? 'ui-reduced' : ''} ph-${phase} ${talk ? 'talking' : ''}`}>
+      <RefStage canvas={{ width: 1280, height: 720 }} className={`sf ${reduce ? 'ui-reduced' : ''} ph-${phase} ${talk ? 'talking' : ''} ${ticker ? 'ticker-on' : ''}`}>
         <div className="sf-gl" ref={host}><canvas ref={canvas} width={1280} height={720} aria-label={`${zone.area} ${zone.place} 탐색 화면`} /></div>
         {glErr && <div className="sf-err">이 기기에서는 탐색 화면(WebGL2)을 그릴 수 없습니다.</div>}
         {phase === 'load' && !glErr && <div className="sf-load"><b>{zone.area}</b><i><em style={{ width: `${Math.round(load * 100)}%` }} /></i></div>}
@@ -215,7 +225,8 @@ export default function StoryField({ params }: { params: Record<string, unknown>
 
         {/* 진입 연출: 위아래 검은 띠 + 장소 이름 */}
         <i className="sf-letter top" aria-hidden /><i className="sf-letter bot" aria-hidden />
-        {phase === 'title' && <div className="sf-title" role="status"><small>{zone.areaEn}</small><b>{zone.place}</b><span>{zone.area}</span></div>}
+        {phase === 'intro' && <Cine shots={entry} onShot={onEntryShot} onDone={startPlay} skippable reduce={reduce} />}
+        {ticker && <Cine shots={[{ k: 'ticker', d: 3.4, top: `ABILITY KINGDOM — CHAPTER ${zone.chapter.no} — ${zone.chapter.en.join(' ')} —`, bot: `${zone.place} · ${zone.placeEn} · ${zone.area} · ${zone.areaEn} ·` }]} block={false} reduce={reduce} onDone={() => setTicker(false)} />}
 
         <div className="sf-hud">
           <div className="sf-top">
@@ -250,7 +261,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
           </button>
         )}
         {toast && <div className="sf-toast" role="status">{toast}</div>}
-        {banner && <div className="sf-region" key={banner.n} role="status" onAnimationEnd={() => setBanner(null)}><small>{zone.areaEn}</small><b>{banner.name}</b></div>}
+        {banner && <Cine key={banner.n} shots={[{ k: 'brutal', d: 1.8, text: banner.r.en, sub: banner.r.name, code: `${banner.r.code} // ${zone.areaEn}\n${zone.area} · ${banner.r.name}`, sfx: 'slam' }]} block={false} reduce={reduce} onDone={() => setBanner(null)} />}
       </RefStage>
     </div>
   )

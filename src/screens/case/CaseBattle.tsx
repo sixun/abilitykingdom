@@ -3,6 +3,7 @@ import '../../styles/case.css'
 import { useNav } from '../../app/nav'
 import { audio, SFX_BATTLE, type Sfx } from '../../app/audio'
 import { RefStage } from '../../ui/ref'
+import { Cine, type Shot } from '../../ui/cine/Cine'
 import { useReduceMotion, useScreenActive } from '../../ui/motion'
 import { game, useGame } from '../../game/store'
 import { CASE_NODE, CHAPTER1 } from '../../game/story/chapter1'
@@ -17,6 +18,8 @@ import { ITEM_BY_ID } from '../../game/data/catalog'
 // 사건 파일 전투(1장). 화면 = WebGL 캔버스(그림·빛·반사) + DOM 오버레이(체력·시전 게이지·카드·안내).
 // 조작: 카드 탭 = 액티브, 카드 위로 밀기(또는 카드의 작은 버프 단추) = 버프, 적 탭 = 집중 공격, 셔터 장치 탭 = 대원 보내기.
 // 키보드: 1~4 액티브, Q·W·E·R 버프, Esc 일시정지.
+// 보스 이름 영문(거대 타이포용)
+const BOSS_EN: Record<string, string> = { '스태틱': 'STATIC' }
 const fmt = (s: number) => { const v = Math.max(0, Math.ceil(s)); return `${String(Math.floor(v / 60)).padStart(2, '0')}:${String(v % 60).padStart(2, '0')}` }
 const BUFF_KEYS = ['q', 'w', 'e', 'r']
 const KIND_LABEL: Record<string, string> = { battle: '일반 전투', objective: '목표 전투', boss: '보스 전투' }
@@ -70,7 +73,16 @@ export default function CaseBattle({ params }: { params: Record<string, unknown>
     return () => r.dispose()
   }, [])
   useEffect(() => { audio.bgm('battle'); return () => { audio.bgm('menu'); audio.ambience('') } }, [])
-  useEffect(() => { if (phase === 'intro' && load >= 1) { const id = setTimeout(() => setPhase('fight'), reduce ? 300 : 1900); audio.sfx('title'); return () => clearTimeout(id) } }, [phase, load])
+  // 전투 시작 연출(시네마틱 타이포): 사건 번호·제목 블록 → 거대한 한 단어(보스면 보스 이름) → 전투
+  const introShots: Shot[] = node.kind === 'boss'
+    ? [{ k: 'stack', d: 1.3, lines: [`${CHAPTER1.no} — ${node.no}`, node.title], sub: node.place, sfx: 'shutter' },
+       { k: 'mono', d: 1.4, text: BOSS_EN[node.title] ?? 'BOSS', kicker: 'THREAT LEVEL 6 · RED', sub: def.goalText, sfx: 'boss_slam', tint: '#ff4d5e' }]
+    : [{ k: 'stack', d: 1.2, lines: [`${CHAPTER1.no} — ${node.no}`, node.title], sub: node.place, sfx: 'shutter' },
+       { k: 'mono', d: 1.2, text: 'BATTLE', kicker: `${CHAPTER1.no} · ${node.no}`, sub: def.goalText, sfx: 'boss_slam', tint: '#c8f53b' }]
+  // 보스 단계가 바뀌면 컨트롤식 큰 글자(조작은 막지 않음)
+  const [phaseCine, setPhaseCine] = useState<{ n: number; name: string } | null>(null)
+  const bossPhase = sim.current.units.find((u) => u.kind === 'boss')?.phase ?? 1
+  useEffect(() => { if (bossPhase > 1) setPhaseCine({ n: bossPhase, name: sim.current.units.find((u) => u.kind === 'boss')?.name ?? '' }) }, [bossPhase])
 
   useEffect(() => {
     let raf = 0, last = performance.now(), t = 0
@@ -135,7 +147,7 @@ export default function CaseBattle({ params }: { params: Record<string, unknown>
 
   return (
     <div className="scr case-battle">
-      <RefStage canvas={{ width: 1280, height: 720 }} className={`cb ${reduce ? 'ui-reduced' : ''} ${paused ? 'is-paused' : ''} bg-${def.bg}`}>
+      <RefStage canvas={{ width: 1280, height: 720 }} className={`cb ${reduce ? 'ui-reduced' : ''} ${paused ? 'is-paused' : ''} bg-${def.bg} ph-${phase}`}>
         <div className="cb-gl" ref={host}><canvas ref={canvas} width={1280} height={720} aria-label={`${node.no} ${node.title} 전투 화면`} /></div>
         <i className="cb-grade" style={{ background: BGS[def.bg].grade }} aria-hidden />
         <i className="cb-vignette" aria-hidden />
@@ -157,7 +169,11 @@ export default function CaseBattle({ params }: { params: Record<string, unknown>
             : f.k === 'break' ? <b key={f.id} className="cb-break" style={{ left: f.x, top: f.y }}>BREAK</b>
             : null)}
         </div>
-        {s.fx.filter((f) => f.k === 'banner').slice(-1).map((f) => <div key={f.id} className="cb-banner" style={{ animationDuration: `${f.dur}s` }}>{f.text}</div>)}
+        {s.fx.filter((f) => f.k === 'banner').slice(-1).map((f) => f.text?.startsWith('WAVE')
+          ? <Cine key={f.id} block={false} reduce={reduce} shots={[{ k: 'stack', d: f.dur, at: 'c', lines: ['WAVE', f.text.slice(5)] }]} />
+          : <div key={f.id} className="cb-banner" style={{ animationDuration: `${f.dur}s` }}>{f.text}</div>)}
+        {phaseCine && <Cine key={phaseCine.n} block={false} reduce={reduce} onDone={() => setPhaseCine(null)}
+          shots={[{ k: 'brutal', d: 1.7, text: `PHASE ${phaseCine.n}`, sub: `${phaseCine.name} · 출력 상승`, code: `THREAT LEVEL 6 // RED\n${CHAPTER1.no} · ${node.no} · ${node.place}`, sfx: 'slam' }]} />}
 
         {/* 위 HUD */}
         <div className="cb-top">
@@ -180,7 +196,8 @@ export default function CaseBattle({ params }: { params: Record<string, unknown>
         </div>
         {s.cutin && <div className={`cb-cutin ${s.cutin.buff ? 'buff' : ''}`} key={s.cutin.kind + s.cutin.name + s.cutin.buff}><img src={`ref/battle/face-${s.cutin.kind}.webp`} alt="" /><small>{s.cutin.buff ? 'BUFF' : 'ACTIVE'}</small><b>{s.cutin.name}</b></div>}
 
-        {phase === 'intro' && (
+        {phase === 'intro' && load >= 1 && <Cine shots={introShots} skippable reduce={reduce} onDone={() => setPhase('fight')} />}
+        {phase === 'intro' && load < 1 && (
           <div className="cb-intro" aria-live="polite">
             <small>{CHAPTER1.no} · {node.no}</small><b>{node.title}</b><span>{def.goalText}</span>
             {load < 1 ? <em className="load"><i style={{ width: `${load * 100}%` }} />조명·반사 준비 중</em> : <em>BATTLE START</em>}
