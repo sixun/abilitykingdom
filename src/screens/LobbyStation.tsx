@@ -14,6 +14,8 @@ import '../styles/motion.css'
 import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 import { BannerCarousel } from '../ui/BannerCarousel'
 import { QuickBtn, useLobbyQuick } from '../ui/LobbyQuick'
+import { ProfileIcon } from '../ui/ProfileIcon'
+import { commanderOf } from '../game/data/profile'
 import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx, Fx } from '../ui/ui-motion'
 import textless from '../game/data/ref-textless.json'
 
@@ -108,6 +110,8 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
           {/* 상단: 프로필·재화·공지/우편/메뉴·테마 */}
           <div className="mg mg-top" style={g('top')}>
             <RefLayers layout={L} ids={GROUPS.top} z={2} files={files} />
+            {/* 원형 프로필 사진: 팀장 정보에서 장착한 프로필 아이콘(대원증 사진과 같은 값) */}
+            <ProfileIcon id={commanderOf(s).iconId} className="lobby-pi" style={{ position: 'absolute', left: 31, top: 15, width: 76, height: 76, borderRadius: '50%', zIndex: 3, backgroundRepeat: 'no-repeat' }} />
             {W.diamond !== REF.diamond && (
               <TextlessPatch m={tl('gems-num')}><span className="abs rs-num" style={{ right: 8, top: 6 }}>{W.diamond}</span></TextlessPatch>
             )}

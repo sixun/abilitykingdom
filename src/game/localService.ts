@@ -1,7 +1,8 @@
 import type {
   GameState, TeamPreset, RecruitmentTransaction, Reward, Settings, EquipmentSlots, LobbyTheme, CurrencyId,
-  RecruitResultEntry, MissionMetric, OwnedCharacter,
+  RecruitResultEntry, MissionMetric, OwnedCharacter, CommanderProfile,
 } from './types'
+import { commanderOf, iconUnlocked, TITLES, PROFILE_BGS, SHOWCASE_SIZE, BIO_MAX } from './data/profile'
 import type { GameService, Result, ServiceError, BattleSession } from './service'
 import { GAME_CONFIG } from './config'
 import { CHAPTER1, CASE_NODE, CORE_NODE } from './story/chapter1'
@@ -493,6 +494,22 @@ export class LocalGameService implements GameService {
     this.commit((s) => { (kind === 'notice' ? s.seenNotices : s.seenEvents).push(id) })
   }
 
+  async updateCommander(patch: Partial<CommanderProfile>) {
+    const cur = commanderOf(this.state)
+    const next: CommanderProfile = { ...cur, ...patch }
+    const bad = (message: string) => fail<true>({ code: 'INVALID', message })
+    if (next.avatar !== 'm' && next.avatar !== 'f') return bad('팀장 아바타 값이 올바르지 않습니다.')
+    if (!iconUnlocked(this.state, next.iconId)) return bad('잠긴 아이콘입니다. 해당 대원을 영입하면 쓸 수 있습니다.')
+    next.bio = next.bio.replace(/\s+/g, ' ').trim().slice(0, BIO_MAX)
+    if (next.titleId && !TITLES.some((t) => t.id === next.titleId)) return bad('없는 칭호입니다.')
+    if (!PROFILE_BGS.some((b) => b.id === next.backgroundId)) return bad('없는 배경입니다.')
+    const sc = Array.from({ length: SHOWCASE_SIZE }, (_, i) => next.showcase[i] ?? null)
+    if (sc.some((id) => id && !this.state.owned[id])) return bad('보유하지 않은 대원은 대표 팀원으로 둘 수 없습니다.')
+    if (new Set(sc.filter(Boolean)).size !== sc.filter(Boolean).length) return bad('같은 대원을 두 칸에 둘 수 없습니다.')
+    next.showcase = sc
+    this.commit((s) => { s.commander = next }) // 전투 편성(teams)은 건드리지 않는다
+    return ok(true as const)
+  }
   setArenaDefense(teamId: string) { this.commit((s) => { s.content.arenaDefenseTeam = teamId }) }
   updateSettings(patch: Partial<Settings>) { this.commit((s) => { s.settings = { ...s.settings, ...patch } }) }
   /** 즐겨찾기 켜기/끄기(로컬 저장만, 재화·보유와 무관) */

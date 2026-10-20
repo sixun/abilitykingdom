@@ -29,14 +29,15 @@ import Battle from './screens/content/Battle'
 import CaseFile from './screens/case/CaseFile'
 import CaseBattle from './screens/case/CaseBattle'
 import StoryField from './screens/story/StoryField'
-import { Mail, Missions, Notices, Events, Attendance, Profile } from './screens/Ops'
+import { Mail, Missions, Notices, Events, Attendance } from './screens/Ops'
+import CommanderProfile from './screens/CommanderProfile'
 import Settings from './screens/Settings'
 
 const SCREENS: Record<ScreenName, (p: { params: Record<string, unknown> }) => ReactNode> = {
   boot: Boot, opening: Opening, lobby: Lobby, formation: Formation, characters: Characters, characterDetail: CharacterDetail,
   recruit: Recruit, recruitResult: RecruitResult, recruitHistory: RecruitHistory, shop: Shop, bag: Bag,
   story: Story, explore: Explore, wanted: Wanted, training: Training, arena: Arena, raid: Raid, prep: Prep, battle: Battle,
-  mail: Mail, missions: Missions, notices: Notices, events: Events, attendance: Attendance, profile: Profile, settings: Settings, pass: Pass, passSummer: PassSummer, battleTest: BattleTest, caseFile: CaseFile, caseBattle: CaseBattle, storyField: StoryField,
+  mail: Mail, missions: Missions, notices: Notices, events: Events, attendance: Attendance, profile: CommanderProfile, settings: Settings, pass: Pass, passSummer: PassSummer, battleTest: BattleTest, caseFile: CaseFile, caseBattle: CaseBattle, storyField: StoryField,
 }
 
 let keySeq = 1

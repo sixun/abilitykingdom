@@ -166,6 +166,22 @@ export interface Settings {
   charListTheme?: 'light' | 'dark'
 }
 
+/** 팀장(플레이어) 프로필 — 이 기기에만 저장된다(서버 계정 미연동). 이전 저장 데이터에는 없을 수 있다 */
+export interface CommanderProfile {
+  /** 팀장 기본 아바타: 남성형 / 여성형 */
+  avatar: 'm' | 'f'
+  /** 장착한 프로필 아이콘: 'cmd-m' | 'cmd-f' | 'char:<캐릭터 id>'. 로비 원형 사진·대원증 사진이 이 값을 함께 쓴다 */
+  iconId: string
+  /** 자기소개(최대 40자) */
+  bio: string
+  /** 대표 칭호 id(없으면 null) */
+  titleId: string | null
+  /** 개인 프로필 전시 배경 id('none' = 기본) */
+  backgroundId: string
+  /** 대표 팀원 5칸(전투 편성과 별개) */
+  showcase: (string | null)[]
+}
+
 export interface GameState {
   schema: number
   playerName: string
@@ -191,4 +207,6 @@ export interface GameState {
   favorites?: string[]
   /** 해금된 코어 슬롯 수(스토리 챕터 마지막 보스 첫 클리어마다 1). 이전 저장 데이터에는 없을 수 있다 */
   coreSlots?: number
+  /** 팀장 프로필(처음 프로필 화면에서 기본 아바타를 고르면 생긴다) */
+  commander?: CommanderProfile
 }

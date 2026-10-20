@@ -16,6 +16,8 @@ import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx,
 import layoutJson from '../game/data/ref-lobby.json'
 import LobbyStation from './LobbyStation'
 import { QuickBtn, useLobbyQuick } from '../ui/LobbyQuick'
+import { ProfileIcon } from '../ui/ProfileIcon'
+import { commanderOf } from '../game/data/profile'
 import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 
 // 소파 로비 원본(1456×818)을 원본 조각 23개로 재현.
@@ -112,6 +114,8 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
           {/* 상단 띠 */}
           <div className="mg mg-top" style={g('top')}>
             <RefLayers layout={L} ids={GROUP.top} z={1} />
+            {/* 원형 프로필 사진: 팀장 정보에서 장착한 프로필 아이콘 */}
+            <ProfileIcon id={commanderOf(s).iconId} style={{ position: 'absolute', left: 139, top: 19, width: 42, height: 42, borderRadius: '50%', zIndex: 2, backgroundRepeat: 'no-repeat', boxShadow: '0 0 0 2px #141414' }} />
             {W.stamina !== REF.stamina && pillPatch(912, 98, <>{W.stamina} / {GAME_CONFIG.staminaMax}</>, 'st')}
             {W.credit !== REF.credit && pillPatch(1075, 100, <Padded n={W.credit} />, 'cr')}
             {W.exchangeMedal !== REF.medal && pillPatch(1247, 100, <Padded n={W.exchangeMedal} />, 'md')}
