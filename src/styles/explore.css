@@ -87,3 +87,15 @@
 .sf-region small { display: block; font: 700 13px/1 var(--f-en); letter-spacing: .5em; color: #ffd6e8; }
 .sf-region b { display: inline-block; margin-top: 10px; padding: 0 28px 10px; border-bottom: 1.5px solid #ffffffaa; font: 900 44px/1.1 var(--f-body); letter-spacing: .1em; }
 @keyframes sfRegion { 0% { opacity: 0; transform: translateY(10px); filter: blur(6px); } 15% { opacity: 1; transform: none; filter: none; } 78% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
+
+/* 사건 자리 표시(다음 노드 하나) */
+.sf-ev { position: absolute; z-index: 6; width: 0; height: 0; pointer-events: none; }
+.sf-ev::before { content: ''; position: absolute; left: -46px; top: -20px; width: 92px; height: 40px; border-radius: 50%; border: 3px solid #c8f53b; box-shadow: 0 0 18px #c8f53b, inset 0 0 14px #c8f53b88; animation: sfEv 1.6s ease-out infinite; }
+.sf-ev.boss::before { border-color: #ff4d5e; box-shadow: 0 0 18px #ff4d5e, inset 0 0 14px #ff4d5e88; }
+.sf-ev b { position: absolute; left: 0; top: -150px; white-space: nowrap; translate: -50% 0; padding: 4px 10px; font: 900 15px/1 'Inter', sans-serif; color: #111; background: #c8f53b; clip-path: polygon(0 0, 100% 0, 100% 75%, 55% 75%, 50% 100%, 45% 75%, 0 75%); padding-bottom: 12px; animation: sfEvB 1.2s ease-in-out infinite alternate; }
+.sf-ev.boss b { background: #ff4d5e; color: #fff; }
+@keyframes sfEv { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
+@keyframes sfEvB { to { translate: -50% -8px; } }
+.sf-mini-in .ev { width: 12px; height: 12px; background: #c8f53b; border: 2px solid #111; transform: translate(-50%, -50%) rotate(45deg); border-radius: 2px; }
+.sf-gatefade { position: absolute; inset: 0; z-index: 85; background: #000; animation: sfGate .9s ease both; pointer-events: none; }
+@keyframes sfGate { 0% { opacity: 0; } 40%, 55% { opacity: 1; } 100% { opacity: 0; } }

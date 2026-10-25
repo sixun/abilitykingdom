@@ -30,9 +30,9 @@ check(await has(STATION), '새로고침 후에도 역 로비 유지')
 // 2) 25개 버튼 목적지 + 복귀 후 로비 유지
 const targets = [
   ['프로필', '.profile'], ['다이아', '.shop'], ['크레딧', '.modal h2:has-text("크레딧")'], ['공지', '.ops'], ['우편', '.ops'],
-  ['전체 메뉴', '.rs-menu'], ['픽업 영입', 'button.hit-pull10'], ['메인 목표', '.ct-story'], ['출석 이벤트', '.att'], ['메시지', '.modal h2:has-text("메시지")'],
+  ['전체 메뉴', '.rs-menu'], ['픽업 영입', 'button.hit-pull10'], ['메인 목표', '.story-field'], ['출석 이벤트', '.att'], ['메시지', '.modal h2:has-text("메시지")'],
   ['이벤트', '.ops'], ['쿠폰 이벤트', '.modal input[aria-label="쿠폰 코드"]'], ['코스튬', '.modal h2:has-text("코스튬")'], ['아레나', '.ct-arena'], ['레이드', '.ct-raid'],
-  ['현상수배', '.ct-wanted'], ['상점', '.shop'], ['훈련', '.ct-training'], ['도시 탐색', '.ct-explore'], ['스토리', '.ct-story'],
+  ['현상수배', '.ct-wanted'], ['상점', '.shop'], ['훈련', '.ct-training'], ['도시 탐색', '.ct-explore'], ['스토리', '.story-field'],
   ['캐릭터', '.chars'], ['편성', 'button.fm-save'], ['홈', STATION], ['가방', '.bag'], ['영입', 'button.hit-pull10'],
 ]
 for (const [label, dest] of targets) {
@@ -50,9 +50,9 @@ await page.mouse.click(300, 625); await W(650)
 check(await has('.ct-wanted'), '현상수배·상점 겹친 영역 클릭 = 현상수배')
 await back()
 
-// 4) 메인 목표 = 첫 미클리어 스테이지 상세(전투 자동 시작 안 함)
-await page.click('.screen-active button[aria-label^="메인 목표"]'); await W(700)
-check(await has('.ct-story') && !(await has('.battle')), '메인 목표 → 스토리 스테이지 상세, 전투 자동 시작 없음')
+// 4) 메인 목표 = 스토리 탐색 필드(전투 자동 시작 안 함)
+await page.click('.screen-active button[aria-label^="메인 목표"]'); await W(900)
+check(await has('.story-field') && !(await has('.battle')), '메인 목표 → 스토리 탐색 필드, 전투 자동 시작 없음')
 await back()
 
 // 5) 우편 수령 → 우편 알림 사라짐(원본 점 그림 재사용)

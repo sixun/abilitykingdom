@@ -23,21 +23,21 @@ const FS_MAP = `#version 300 es
 precision highp float; in vec2 vUv; in vec2 vW; out vec4 o;
 uniform sampler2D uTex; uniform sampler2D uAnim; uniform vec4 uTile; uniform vec2 uWorld; uniform float uT; uniform float uWind; uniform float uDim;
 float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+// 그림은 절대 일그러뜨리지 않는다(예전 UV 흔들기는 젤리처럼 보여 폐기).
+// 물 영역에만 위에 빛 무늬(물결 반사)와 반짝임을 더한다.
 void main(){
-  vec3 m = texture(uAnim, vW / uWorld).rgb;            // r 나뭇잎 · g 물 · b 천
-  vec2 d = vec2(0.0);
-  // 나뭇잎: 큰 물결(바람) + 잔떨림. 위치마다 위상이 달라 한꺼번에 움직이지 않는다
-  float gust = 0.65 + 0.35 * sin(uT * 0.45 + vW.x * 0.0006);
-  d += m.r * uWind * gust * vec2(sin(uT * 1.6 + vW.x * 0.004 + vW.y * 0.003) * 4.5 + sin(uT * 3.1 + vW.y * 0.02) * 1.2,
-                                  sin(uT * 2.3 + vW.x * 0.006) * 1.6);
-  // 물: 아래로 흐르는 일렁임
-  d += m.g * vec2(sin(vW.y * 0.09 - uT * 7.0) * 2.2 + sin(vW.x * 0.05 + uT * 3.0) * 1.0, sin(vW.x * 0.07 + uT * 5.0) * 1.4);
-  // 천·깃발: 위에서 아래로 번지는 물결
-  d += m.b * uWind * vec2(sin(vW.y * 0.035 - uT * 3.2) * 3.5, 0.0);
-  vec2 uv = (vW + d - uTile.xy) / uTile.zw;
+  vec2 uv = (vW - uTile.xy) / uTile.zw;
   vec3 c = texture(uTex, clamp(uv, vec2(0.0005), vec2(0.9995))).rgb;
-  c *= 1.0 + m.r * 0.07 * sin(uT * 2.0 + vW.x * 0.01 + vW.y * 0.013);                     // 잎 사이로 드는 빛
-  float sp = h21(floor((vW + vec2(0.0, uT * 38.0)) / 7.0)); c += m.g * smoothstep(0.985, 1.0, sp) * vec3(0.9, 0.95, 1.0);  // 물 반짝임
+  float wm = texture(uAnim, vW / uWorld).g;
+  if (wm > 0.02) {
+    vec2 p = vW * 0.03;
+    float a = sin(p.x * 1.7 + p.y * 0.9 - uT * 1.3) * sin(p.y * 2.3 - p.x * 0.6 + uT * 0.9);
+    float b = sin(p.x * 3.1 - p.y * 1.4 + uT * 1.9) * sin(p.y * 1.1 + uT * 0.7);
+    float caust = smoothstep(0.35, 0.95, a * 0.6 + b * 0.4 + 0.25);
+    c += wm * caust * vec3(0.07, 0.1, 0.12);
+    float tw = h21(floor(vW / 5.0) + floor(uT * 4.0));
+    c += wm * smoothstep(0.9965, 1.0, tw) * vec3(0.55, 0.6, 0.65);
+  }
   o = vec4(c * uDim, 1.0);
 }`
 const FS_CHAR = `#version 300 es
@@ -77,6 +77,34 @@ void main(){
 const FS_FG = `#version 300 es
 precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uTex; uniform float uBias; uniform float uA;
 void main(){ vec4 c = texture(uTex, vUv, uBias); o = vec4(c.rgb * 0.72, c.a) * uA; }`
+// 분수 물줄기·폭포·물보라·파문(그림 위에 겹쳐 그린다)
+const FS_WATER = `#version 300 es
+precision highp float; in vec2 vUv; out vec4 o; uniform int uMode; uniform float uT; uniform float uSeed; uniform float uA;
+float h(float n){ return fract(sin(n * 91.345 + uSeed * 17.0) * 43758.5453); }
+void main(){
+  float a; vec3 col = vec3(0.86, 0.94, 1.0);
+  if (uMode == 0) {            // 떨어지는 물줄기: 아래로 흐르는 밝은 줄무늬
+    float x = vUv.x, y = vUv.y;
+    float edge = smoothstep(0.0, 0.3, x) * smoothstep(1.0, 0.7, x);
+    float ci = floor(x * 5.0); float r = h(ci);
+    float f = fract(y * 2.4 - uT * (2.2 + r) + r * 7.0);
+    float st = smoothstep(0.0, 0.12, f) * smoothstep(0.75, 0.3, f);
+    a = edge * (0.22 + 0.55 * st) * smoothstep(0.0, 0.06, y);
+    col = mix(col, vec3(1.0), st);
+  } else if (uMode == 1) {     // 파문: 퍼져 나가는 고리
+    vec2 p = vUv * 2.0 - 1.0; float d = length(p); if (d > 1.0) discard;
+    a = 0.0;
+    for (int k = 0; k < 3; k++) { float ph = fract(uT * 0.7 + float(k) / 3.0 + uSeed); a += smoothstep(0.07, 0.0, abs(d - ph)) * (1.0 - ph); }
+    a *= 0.4;
+  } else {                     // 물보라: 끓는 듯한 거품
+    vec2 p = vUv * 2.0 - 1.0; float d = length(p);
+    float n = 0.5 + 0.5 * sin(atan(p.y, p.x) * 7.0 + uT * 9.0 + uSeed * 10.0) * sin(uT * 13.0 + d * 18.0);
+    a = smoothstep(1.0, 0.15, d) * (0.3 + 0.45 * n);
+    col = vec3(1.0);
+  }
+  a *= uA;
+  o = vec4(col * a, a);
+}`
 const FS_SHAPE = `#version 300 es
 precision highp float; in vec2 vUv; out vec4 o; uniform vec4 uC; uniform int uMode;
 void main(){ vec2 p = vUv * 2.0 - 1.0; float r = length(p); float a;
@@ -139,7 +167,7 @@ export class ExploreRenderer {
   /** 카메라 돌진 흐림 0~1, 번쩍임 0~1(연출용) */
   rush = 0
   flash = 0
-  private progs: Record<'map' | 'chr' | 'shape' | 'fg' | 'post', Prog>
+  private progs: Record<'map' | 'chr' | 'shape' | 'fg' | 'water' | 'post', Prog>
   private vbo: WebGLBuffer
   private tiles = new Map<string, { t: Tex; x: number; y: number; w: number; h: number; used: number }>()
   private tileJobs = new Map<string, Promise<void>>()
@@ -161,7 +189,7 @@ export class ExploreRenderer {
     const gl = canvas.getContext('webgl2', { premultipliedAlpha: true, antialias: false, alpha: false })
     if (!gl) throw new Error('webgl2')
     this.gl = gl
-    this.progs = { map: compile(gl, VS, FS_MAP), chr: compile(gl, VS, FS_CHAR), shape: compile(gl, VS, FS_SHAPE), fg: compile(gl, VS, FS_FG), post: compile(gl, VS, FS_POST) }
+    this.progs = { map: compile(gl, VS, FS_MAP), chr: compile(gl, VS, FS_CHAR), shape: compile(gl, VS, FS_SHAPE), fg: compile(gl, VS, FS_FG), water: compile(gl, VS, FS_WATER), post: compile(gl, VS, FS_POST) }
     const vao = gl.createVertexArray()!; gl.bindVertexArray(vao)
     this.vbo = gl.createBuffer()!; gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo); gl.bufferData(gl.ARRAY_BUFFER, 16 * 4, gl.DYNAMIC_DRAW)
     gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 16, 0)
@@ -379,6 +407,8 @@ export class ExploreRenderer {
     // 가로등 불빛: 은은하게 일렁이는 빛무리
     for (const l of this.zone.lamps) { const f = 0.85 + Math.sin(t * 7.3 + l.x) * 0.06 + Math.sin(t * 13.1) * 0.04
       this.shape(0, l.x, l.y, 260 * f, 260 * f, 0, [1, 0.72, 0.42, 0.32 * f], true); this.shape(0, l.x, l.y, 70, 70, 0, [1, 0.9, 0.7, 0.55 * f], true) }
+    // ①-2 분수·폭포(그림 위, 인물 아래)
+    this.drawWater(t, dt)
     // ② 그림자
     const frames = actors.map((a) => ({ a, f: this.frameOf(a) })).filter((x) => x.f) as { a: Actor; f: NonNullable<ReturnType<ExploreRenderer['frameOf']>> }[]
     for (const { a, f } of frames) this.shape(0, a.x + 6, a.y - 4, f.h * 0.42, f.h * 0.11, 0, [0.06, 0.03, 0.1, 0.42 * (a.alpha ?? 1)])
@@ -404,6 +434,43 @@ export class ExploreRenderer {
       gl.uniform1f(pp.u('uT'), t); gl.uniform1f(pp.u('uDof'), 1); gl.uniform1f(pp.u('uBloom'), 1); gl.uniform1f(pp.u('uLetter'), this.letter); gl.uniform1f(pp.u('uFade'), this.fade); gl.uniform1f(pp.u('uRush'), this.rush); gl.uniform1f(pp.u('uFlash'), this.flash)
       this.quad([0, 0, W, 0, 0, H, W, H], [0, 1, 1, 1, 0, 0, 1, 0])
     }
+  }
+  private drops: { x: number; y: number; vx: number; vy: number; floor: number; life: number }[] = []
+  private drawWater(t: number, dt: number) {
+    const z = this.zone, W2 = z.water
+    if (!W2) return
+    const gl = this.gl
+    const p = this.use(this.progs.water)
+    gl.uniform1f(p.u('uT'), t)
+    const q = (x0: number, y0: number, x1: number, y1: number, mode: number, seed: number, a = 1) => {
+      gl.uniform1i(p.u('uMode'), mode); gl.uniform1f(p.u('uSeed'), seed); gl.uniform1f(p.u('uA'), a)
+      this.quad([x0, y0, x1, y0, x0, y1, x1, y1], [0, 0, 1, 0, 0, 1, 1, 1])
+    }
+    let seed = 0
+    for (const f of W2.fountains) {
+      for (const tier of f.tiers) for (const x of tier.xs) {
+        seed += 1.37
+        q(x - 7, tier.y0, x + 7, tier.y1, 0, seed, 0.9)                      // 물줄기
+        q(x - 18, tier.y1 - 7, x + 18, tier.y1 + 7, 2, seed, 0.75)           // 떨어진 곳 물보라
+        q(x - 34, tier.y1 - 9, x + 34, tier.y1 + 9, 1, seed, 0.8)            // 파문
+      }
+    }
+    for (const f of W2.falls) {
+      seed += 2.1
+      q(f.x, f.y, f.x + f.w, f.y + f.h, 0, seed, 0.85)
+      q(f.x - 10, f.y + f.h - 16, f.x + f.w + 10, f.y + f.h + 18, 2, seed, 0.9)
+      q(f.x - 40, f.y + f.h - 10, f.x + f.w + 40, f.y + f.h + 30, 1, seed, 0.7)
+    }
+    // 꼭대기에서 솟는 물방울(가볍게 솟았다가 맨 위 그릇으로 떨어진다)
+    if (!this.lowQ) for (const f of W2.fountains) {
+      for (let k = 0; k < 2; k++) if (Math.random() < dt * 30) {
+        const ang = -Math.PI / 2 + (Math.random() - 0.5) * 1.6
+        const sp = 70 + Math.random() * 60
+        this.drops.push({ x: f.spout[0] + (Math.random() - 0.5) * 6, y: f.spout[1], vx: Math.cos(ang) * sp * 0.6, vy: Math.sin(ang) * sp, floor: f.tiers[0].y0, life: 2 })
+      }
+    }
+    this.drops = this.drops.filter((d) => { d.vy += 420 * dt; d.x += d.vx * dt; d.y += d.vy * dt; d.life -= dt; return d.y < d.floor && d.life > 0 })
+    for (const d of this.drops) this.shape(0, d.x, d.y, 5, 6, 0, [0.92, 0.97, 1, 0.85])
   }
   private drawFg(me: Actor | undefined, dt: number) {
     const z = this.zone, T = this.fgTex

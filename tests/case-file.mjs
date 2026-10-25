@@ -15,9 +15,8 @@ const fight = () => page.waitForFunction(() => window.__CB__?.phase() === 'fight
 const winNow = async () => { for (let i = 0; i < 8 && !(await page.evaluate(() => window.__CB__.sim().result)); i++) { await page.evaluate(() => { window.__CB__.killAll(); window.__CB__.advance(1.5) }); await W(300) } }
 const result = () => page.waitForSelector('.cb-overlay.result', { timeout: 30000 })
 
-// 1) 스토리 → 사건 파일
-await page.goto(BASE + '?screen=story'); await W(1500)
-await page.click('.screen-active button.story-case'); await W(1200)
+// 1) 사건 파일(개발용 화면 — 게임에서는 스토리 필드의 사건 자리로 진행). 전투·보상 규칙 검증
+await page.goto(BASE + '?screen=caseFile'); await W(1500)
 check(await page.locator('.screen-active .cf-cover h1:has-text("끊어진 신호")').count() === 1, '스토리 1장 → 사건 파일 열림')
 check(await page.locator('.screen-active .cf-node').count() === 8, '노드 8개')
 check(await page.locator('.screen-active .cf-node.locked').count() === 7, '처음엔 1-1만 열림')

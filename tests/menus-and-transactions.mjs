@@ -17,10 +17,10 @@ await page.goto(BASE + '?screen=lobby'); await W(2500)
 // 로비 링크 전부: 하단 10개 + 이벤트 3개 + 프로필 + 더보기 메뉴(원본에 없는 추가 진입점)
 const LOBBY = '.screen-active button[aria-label="더보기 메뉴"]'
 const targets = [
-  ['button[aria-label="스토리"]', '.ct-story'], ['button[aria-label="도시 탐색"]', '.ct-explore'], ['button[aria-label="현상수배"]', '.ct-wanted'],
+  ['button[aria-label="스토리"]', '.story-field'], ['button[aria-label="도시 탐색"]', '.ct-explore'], ['button[aria-label="현상수배"]', '.ct-wanted'],
   ['button[aria-label="훈련"]', '.ct-training'], ['button[aria-label="아레나"]', '.ct-arena'], ['button[aria-label="레이드"]', '.ct-raid'],
   ['button[aria-label="캐릭터"]', '.chars'], ['button[aria-label="상점"]', '.shop'], ['button[aria-label="소환(영입)"]', 'button.hit-pull10'],
-  ['button[aria-label="이벤트: 스토리"]', '.ct-story'], ['button[aria-label="이벤트: 도시 탐색"]', '.ct-explore'], ['button[aria-label="이벤트: 현상수배"]', '.ct-wanted'],
+  ['button[aria-label="이벤트: 스토리"]', '.story-field'], ['button[aria-label="이벤트: 도시 탐색"]', '.ct-explore'], ['button[aria-label="이벤트: 현상수배"]', '.ct-wanted'],
   ['button[aria-label="프로필"]', '.profile'],
   ['more:가방', '.bag'], ['more:우편함', '.ops'], ['more:미션', '.ops'], ['more:공지', '.ops'], ['more:이벤트', '.ops'], ['more:출석', '.att'], ['more:설정', '.settings'],
 ]
@@ -151,15 +151,19 @@ await back()
 
 // 콘텐츠 → 출전 준비 → 테스트 전투 → 결과
 s = await st(); const stam = s.wallet.stamina
-await page.click('.screen-active button[aria-label="스토리"]'); await W(700)
-check(await page.locator('.screen-active button.story-case').count() === 1, '스토리 1장 = 사건 파일 입구(인게임 1장)')
-await page.click('.story-chapters button >> nth=1'); await W(500)
+// 스토리는 2.5D 탐색 필드로 바로 들어간다(스테이지 목록 없음). 일반 출전 흐름은 현상수배로 확인
+await page.click('.screen-active button[aria-label="스토리"]'); await W(900)
+check(await page.locator('.screen-active .story-field').count() === 1, '스토리 = 탐색 필드로 바로 진입')
+check(await page.locator('.screen-active .story-case, .screen-active .story-line').count() === 0, '스토리 스테이지 목록 없음')
+await page.click('.screen-active .sf-back'); await W(900)
+await page.click('.screen-active button[aria-label="현상수배"]'); await W(700)
+await page.click('.poster >> nth=2'); await W(500)
 await page.click('.stage-panel .btn-primary'); await W(800)
-check(await page.locator('.screen-active .prep').count() === 1, '스토리 → 출전 준비')
+check(await page.locator('.screen-active .prep').count() === 1, '현상수배 → 출전 준비')
 await shot('prep')
 await page.click('.prep-enemy .btn-primary'); await W(900)
 check(await page.locator('.screen-active .battle').count() === 1, '출전 → 테스트 전투')
-s = await st(); check(s.wallet.stamina === stam - 8, '행동력 차감(2-1: 8)')
+s = await st(); check(s.wallet.stamina === stam - 8, '행동력 차감(스크린도어: 8)')
 await page.click('.bt-ctrl button[aria-label="배속"]')
 for (let i = 0; i < 4; i++) { await page.click('.bt-skill >> nth=' + i).catch(() => {}); await W(150) }
 await shot('battle')
@@ -168,7 +172,7 @@ await shot('battle-result')
 s = await st()
 const won = await page.locator('.bt-result.win').count() === 1
 check(s.content.battles.length === 1, `전투 결과 기록 (${won ? '승리' : '패배'})`)
-if (won) check(s.content.storyCleared.includes('2-1'), '스토리 2-1 클리어 기록')
+if (won) check(s.content.wantedCleared.includes('w3'), '현상수배 처리 기록')
 await page.click('.bt-result-actions button:has-text("로비 복귀")'); await W(900)
 check(await page.locator(LOBBY).count() === 1, '결과 → 로비 복귀')
 

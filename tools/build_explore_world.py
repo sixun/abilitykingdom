@@ -48,12 +48,10 @@ def poly_mask(polys):
     for pg in polys: d.polygon([(x / 4, y / 4) for x, y in pg], fill=255)
     return np.asarray(im) > 0
 force_walk, force_block = poly_mask(ov['walk']), poly_mask(ov['block'])
-# 나무 그늘이 길 위로 드리운 곳: 양쪽이 길이면 짧은 수풀 구간은 걸을 수 있게(벽·물은 그대로 막힘)
-yy, xx = np.mgrid[-12:13, -12:13]; disk = (xx * xx + yy * yy) <= 144
-bridge = ndimage.binary_closing(white, structure=disk) & red
-white = white | bridge | force_walk
+# 걷기 = 분할의 흰색(바닥)만 + 손보정 다각형. (예전의 '나무 그늘 이어 주기'는 나무·수풀까지 걷게 만들어 폐기)
+white = white | force_walk
 walk = ndimage.binary_opening(white, iterations=1)
-walk = ndimage.binary_closing(walk, iterations=2)
+walk = ndimage.binary_closing(walk, iterations=1)  # 가로등 기둥처럼 가는 물체가 메워지지 않게 1회만
 lab, n = ndimage.label(walk)
 sizes = ndimage.sum(walk, lab, range(1, n + 1))
 walk = np.isin(lab, [i + 1 for i, v in enumerate(sizes) if v > sizes.max() * 0.01])
@@ -62,7 +60,7 @@ obj = ~walk
 lab2, n2 = ndimage.label(obj)
 s2 = ndimage.sum(obj, lab2, range(1, n2 + 1))
 for i, v in enumerate(s2):
-    if v < 15: walk[lab2 == i + 1] = True
+    if v < 3: walk[lab2 == i + 1] = True  # 분할 잡티만 지운다(가로등·벤치 같은 작은 물체는 막힌 채로 둔다)
 obj = ~walk
 base = np.zeros((qh, qw), np.int32)
 for x in range(qw):

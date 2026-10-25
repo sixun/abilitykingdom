@@ -18,7 +18,7 @@ import RecruitResult from './screens/RecruitResult'
 import RecruitHistory from './screens/RecruitHistory'
 import Shop from './screens/Shop'
 import Bag from './screens/Bag'
-import Story from './screens/content/Story'
+// 스토리 = 2.5D 탐색 필드(예전 스테이지 목록 화면 content/Story.tsx는 쓰지 않음)
 import Explore from './screens/content/Explore'
 import Wanted from './screens/content/Wanted'
 import Training from './screens/content/Training'
@@ -36,7 +36,7 @@ import Settings from './screens/Settings'
 const SCREENS: Record<ScreenName, (p: { params: Record<string, unknown> }) => ReactNode> = {
   boot: Boot, opening: Opening, lobby: Lobby, formation: Formation, characters: Characters, characterDetail: CharacterDetail,
   recruit: Recruit, recruitResult: RecruitResult, recruitHistory: RecruitHistory, shop: Shop, bag: Bag,
-  story: Story, explore: Explore, wanted: Wanted, training: Training, arena: Arena, raid: Raid, prep: Prep, battle: Battle,
+  story: StoryField, explore: Explore, wanted: Wanted, training: Training, arena: Arena, raid: Raid, prep: Prep, battle: Battle,
   mail: Mail, missions: Missions, notices: Notices, events: Events, attendance: Attendance, profile: CommanderProfile, settings: Settings, pass: Pass, passSummer: PassSummer, battleTest: BattleTest, caseFile: CaseFile, caseBattle: CaseBattle, storyField: StoryField,
 }
 
@@ -115,7 +115,7 @@ export default function App() {
 
   // 브라우저 뒤로가기 키(Escape)
   useEffect(() => {
-    const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('.modal-back, .pr-overlay, .ss')) { const top = stack[stack.length - 1]; if (!['boot', 'opening', 'lobby', 'battle', 'battleTest', 'caseBattle', 'storyField'].includes(top.name)) nav.back() } }
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('.modal-back, .pr-overlay, .ss')) { const top = stack[stack.length - 1]; if (!['boot', 'opening', 'lobby', 'battle', 'battleTest', 'caseBattle', 'storyField', 'story'].includes(top.name)) nav.back() } }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
   }, [nav, stack])
