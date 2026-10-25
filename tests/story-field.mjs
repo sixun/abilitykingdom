@@ -18,19 +18,19 @@ await page.evaluate(() => window.__EX__.setPhase('play')); await W(800)
 check(await page.evaluate(() => window.__EX__.next()?.n.id) === 'c1-1', '첫 사건 자리 = 1-1')
 
 // 충돌: 분수대·벽 안으로는 못 들어간다, 광장 바닥은 걷는다
-check(await page.evaluate(() => window.__EX__.walkable(1300, 3150)) === true, '정문 광장 바닥 = 걷기')
-check(await page.evaluate(() => window.__EX__.walkable(545, 3360)) === false, '정문 광장 분수대 = 막힘')
+check(await page.evaluate(() => window.__EX__.walkable(1300, 2750)) === true, '정문 광장 바닥 = 걷기')
+check(await page.evaluate(() => window.__EX__.walkable(1072, 2880)) === false, '정문 광장 분수대 = 막힘')
 check(await page.evaluate(() => window.__EX__.walkable(1475, 1290)) === false, '본관 앞 분수대 = 막힘')
-check(await page.evaluate(() => window.__EX__.walkable(984, 2600)) === false, '닫힌 정문 = 막힘')
+check(await page.evaluate(() => window.__EX__.walkable(1180, 2400)) === false, '닫힌 정문 = 막힘')
 
 // 정문: 걸어서 뚫지 않고 상호작용으로 통과
-await page.evaluate(() => window.__EX__.set(984, 2900, 'N')); await W(500)
+await page.evaluate(() => window.__EX__.set(1100, 2660, 'N')); await W(500)
 await page.evaluate(() => window.__EX__.interact()); await W(1400)
 const [gx, gy] = await pos()
 check(gy < 2300, `정문 통과 → 안뜰 (${gx},${gy})`)
 
 // 1-1 이야기: 필드 위에서 열리고 끝나면 다음 사건
-await page.evaluate(() => window.__EX__.set(2100, 3160, 'N'))
+await page.evaluate(() => window.__EX__.set(1600, 2900, 'N'))
 check(await until(() => !!document.querySelector('.ss'), 8000), '1-1 자리 → 이야기 장면(필드 위)')
 await page.click('.ss button:has-text("건너뛰기")'); await W(1200)
 check(await until(() => window.__EX__.next()?.n.id === 'c1-2', 8000), '1-1 완료 → 다음 사건 1-2')
