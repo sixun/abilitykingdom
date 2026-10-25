@@ -123,7 +123,10 @@ void main(){
     for (int i = 0; i < 12; i++) { float k = float(i) / 11.0; float wi = 1.0 - k * 0.55; acc += texture(uScene, ctr + (tu - ctr) * (1.0 - k * uRush * 0.24)).rgb * wi; wsum += wi; }
     c = acc / wsum;
   } else c = texture(uScene, tu).rgb;
-  float f = smoothstep(0.2, 0.52, abs(sc.y - 0.55)) * uDof;   // 틸트시프트: 화면 위·아래를 흐리게
+  float f = smoothstep(0.32, 0.56, abs(sc.y - 0.55)) * uDof;   // 틸트시프트: 화면 위·아래를 흐리게
+  // 선명도: 그림 원본이 부드러워 언샤프 마스크를 약하게(화면 가운데일수록)
+  { vec3 blur = textureLod(uScene, tu, 1.2).rgb;
+  c = c + (c - blur) * 0.55 * (1.0 - f); }
   c = mix(c, textureLod(uScene, tu, 1.6).rgb * 0.5 + textureLod(uScene, tu, 2.6).rgb * 0.5, f);
   vec3 b = textureLod(uScene, tu, 3.0).rgb * 0.45 + textureLod(uScene, tu, 4.5).rgb * 0.35 + textureLod(uScene, tu, 6.0).rgb * 0.2;
   c += max(b - 0.86, 0.0) * 1.0 * uBloom;
@@ -431,7 +434,7 @@ export class ExploreRenderer {
       const pp = this.progs.post; gl.useProgram(pp.p)
       gl.uniform3f(pp.u('uView'), W / 2, H / 2, 1); gl.uniform2f(pp.u('uCam'), 0, 0)
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fb.t); gl.uniform1i(pp.u('uScene'), 0)
-      gl.uniform1f(pp.u('uT'), t); gl.uniform1f(pp.u('uDof'), 1); gl.uniform1f(pp.u('uBloom'), 1); gl.uniform1f(pp.u('uLetter'), this.letter); gl.uniform1f(pp.u('uFade'), this.fade); gl.uniform1f(pp.u('uRush'), this.rush); gl.uniform1f(pp.u('uFlash'), this.flash)
+      gl.uniform1f(pp.u('uT'), t); gl.uniform1f(pp.u('uDof'), 0.35); gl.uniform1f(pp.u('uBloom'), 1); gl.uniform1f(pp.u('uLetter'), this.letter); gl.uniform1f(pp.u('uFade'), this.fade); gl.uniform1f(pp.u('uRush'), this.rush); gl.uniform1f(pp.u('uFlash'), this.flash)
       this.quad([0, 0, W, 0, 0, H, W, H], [0, 1, 1, 1, 0, 0, 1, 0])
     }
   }

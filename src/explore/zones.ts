@@ -40,7 +40,7 @@ const P = (n: number) => `[임시용 스토리 대사 ${String(n).padStart(2, '0
 
 export const ACADEMY: Zone = {
   id: 'academy', area: '아카데미 구역', areaEn: 'ACADEMY DISTRICT', place: '정문 광장', dir: 'explore/academy', W: WORLD.W, H: WORLD.H, tile: WORLD.tile, cols: WORLD.cols, rows: WORLD.rows,
-  charH: 330,
+  charH: 222, // 벤치 길이·가로등 높이와 비교해 맞춘 키(예전 330은 가로등만큼 커서 배경이 장난감처럼 보였다)
   start: { x: 1536, y: 3268 },
   intro: { x: 1250, y: 2350, z: 0.46 }, // 넓게: 본관 앞뜰과 정문을 함께 보여 주고 대원에게 돌진
   // 늦은 오후 햇빛: 왼쪽 위에서. 그림자는 오른쪽 아래로

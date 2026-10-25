@@ -22,7 +22,9 @@ const MEMO: Record<string, Memo> = {}
 // 조작: 왼쪽 아래 조이스틱(끌기) 또는 WASD·방향키, Shift=달리기, E/Space=대화·조사, Tab=대원 교체
 const PLAYABLE = ['seren', 'ian'] as const
 type Playable = typeof PLAYABLE[number]
-const WALK = 320, RUN = 560, NEAR = 260
+// 캐릭터 키를 배경 물체(벤치·가로등·계단)에 맞춘 뒤 카메라를 당겼다: 화면 속 캐릭터 크기는 그대로, 배경이 커 보인다
+const CAM_Z = 0.74
+const WALK = 230, RUN = 400, NEAR = 200
 
 export default function StoryField({ params }: { params: Record<string, unknown> }) {
   const nav = useNav()
@@ -89,7 +91,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
           const m = me.current; const dx = m.x - a.x, dy = m.y - a.y, L = Math.hypot(dx, dy) || 1
           for (let k = 360; k >= 0; k -= 20) { const nx = a.x + dx / L * (L + k), ny = a.y + dy / L * (L + k); if (r.walkable(nx, ny)) { m.x = nx; m.y = ny; break } }
         }
-        cam.current = { x: me.current.x, y: me.current.y - 130, z: 0.5 }
+        cam.current = { x: me.current.x, y: me.current.y - 95, z: CAM_Z }
         setPhase('play')
       }).catch(() => setGlErr(true))
     audio.preload(['step', 'title', 'whoosh', 'select', 'swap', 'open', 'coin', 'save', 'shutter', 'boss_slam', 'slam'])
@@ -142,7 +144,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const goThrough = (to: { x: number; y: number }) => {
     if (busy.current) return
     busy.current = true; audio.sfx('shutter'); setGateFade(true)
-    setTimeout(() => { const m = me.current; m.x = to.x; m.y = to.y; cam.current = { x: to.x, y: to.y - 130, z: 0.5 } }, 420)
+    setTimeout(() => { const m = me.current; m.x = to.x; m.y = to.y; cam.current = { x: to.x, y: to.y - 95, z: CAM_Z } }, 420)
     setTimeout(() => { setGateFade(false); busy.current = false }, 900)
   }
   // 사건 조우: 연출 → 전투 화면(다녀오면 같은 자리) / 이야기·조사는 필드 위에서 바로
@@ -238,8 +240,8 @@ export default function StoryField({ params }: { params: Record<string, unknown>
         // 카메라
         const mode = c.phase === 'play' ? 'follow' : c.phase === 'load' ? 'wide' : camMode.current
         const k = mode === 'wide' ? 0 : mode === 'drift' ? 0.5 : c.phase === 'play' ? 5 : 7.5
-        const tz = mode === 'follow' ? 0.5 : zone.intro.z - (mode === 'drift' ? 0.07 : 0)
-        const want = mode === 'follow' ? { x: m.x, y: m.y - 130 } : { x: zone.intro.x + 320, y: zone.intro.y + 150 }
+        const tz = mode === 'follow' ? CAM_Z : zone.intro.z - (mode === 'drift' ? 0.07 : 0)
+        const want = mode === 'follow' ? { x: m.x, y: m.y - 95 } : { x: zone.intro.x + 320, y: zone.intro.y + 150 }
         const cm = cam.current
         cm.x += (want.x - cm.x) * Math.min(1, dt * k); cm.y += (want.y - cm.y) * Math.min(1, dt * k); cm.z += (tz - cm.z) * Math.min(1, dt * (mode === 'follow' ? 6 : 0.6))
         // 돌진 흐림·번쩍임은 빠르게 가라앉는다
