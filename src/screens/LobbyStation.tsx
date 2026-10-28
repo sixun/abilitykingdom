@@ -15,6 +15,7 @@ import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 import { BannerCarousel } from '../ui/BannerCarousel'
 import { QuickBtn, useLobbyQuick } from '../ui/LobbyQuick'
 import { ProfileIcon } from '../ui/ProfileIcon'
+import { HomeIcon } from '../ui/navicons/HomeIcon'
 import { commanderOf } from '../game/data/profile'
 import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx, Fx } from '../ui/ui-motion'
 import textless from '../game/data/ref-textless.json'
@@ -250,7 +251,8 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
               <Hit r={rectOf(L, 'formation')} label="편성" onClick={() => go('formation')} />
             </MotionItem>
             <MotionItem order={2} z={50} className="ui-nav-item">
-              <RefLayers layout={L} ids={['home']} z={2} files={files} />
+              {/* 홈: 그림 대신 코드로 다시 그린 움직이는 아이콘(구체 회전·테두리 빛) */}
+              <HomeIcon x={rectOf(L, 'home').x} y={rectOf(L, 'home').y} />
 
               <Hit r={rectOf(L, 'home')} label="홈 (현재 로비)" onClick={() => setPop(null)} />
             </MotionItem>
