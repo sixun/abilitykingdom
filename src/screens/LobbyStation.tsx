@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useNav, type ScreenName } from '../app/nav'
 import { audio } from '../app/audio'
 import { useGame, badges } from '../game/store'
 import { CHAR_BY_ID } from '../game/data/characters'
 import { BANNERS, STORY_CHAPTERS } from '../game/data/catalog'
 import { Modal, Btn, ConfirmDialog } from '../ui/components'
-import { RefLayers, Hit, TextlessPatch, rectOf, useNow, type RefLayout, type TextlessMeta } from '../ui/ref'
+import { Hit, TextlessPatch, rectOf, useNow, type RefLayout, type TextlessMeta } from '../ui/ref'
 import layoutJson from '../game/data/ref-station.json'
 import fitJson from '../game/data/motion-fit.json'
 import matteJson from '../game/data/ref-matte.json'
@@ -17,6 +17,7 @@ import { QuickBtn, useLobbyQuick } from '../ui/LobbyQuick'
 import { ProfileIcon } from '../ui/ProfileIcon'
 import { HomeIcon } from '../ui/navicons/HomeIcon'
 import { LiveNavIcon } from '../ui/navicons/LiveNavIcon'
+import { LiveRef } from '../ui/live/LiveRef'
 import { commanderOf } from '../game/data/profile'
 import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx, Fx } from '../ui/ui-motion'
 import textless from '../game/data/ref-textless.json'
@@ -60,8 +61,10 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
   const [pop, setPop] = useState<Pop>(null)
   const quick = useLobbyQuick()
   // 하단 메뉴 아이콘: 손가락을 대거나 마우스를 올리면 그 아이콘이 크게 한 번 움직인다
-  const [kicks, setKicks] = useState({ characters: 0, formation: 0, bag: 0, recruitment: 0 })
-  const kick = (k: keyof typeof kicks) => setKicks((v) => ({ ...v, [k]: v[k] + 1 }))
+  // 다른 버튼(src/ui/live)도 같은 방식: 원본 그림 자체가 움직인다
+  const [kicks, setKicks] = useState<Record<string, number>>({})
+  const kick = (k: string) => setKicks((v) => ({ ...v, [k]: (v[k] ?? 0) + 1 }))
+  const press = (k: string, el: ReactNode) => <span className="live-press" onPointerDown={() => kick(k)} onPointerEnter={() => kick(k)}>{el}</span>
   const [viewing, setViewing] = useState(false)
   const [toTitle, setToTitle] = useState(false)
   const [line, setLine] = useState<string | null>(null)
@@ -95,6 +98,13 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
   const tl = (k: string) => ({ ...T[k], file: TM[k] ?? T[k].file })
   // 알림 표시: 실제 상태가 있으면 원본 그림(표시 포함), 없으면 표시를 지운 판을 쓴다
   const badgeOn: Record<string, boolean> = { profile: false, notice: b.notice, menu: b.mission, events: b.event, training: false, exploration: false, story: false, formation: false, recruitment: false }
+  // 움직이는 버튼: 표시 없는 원본을 바탕으로 쓰고, 알림이 있으면 표시 있는 원본의 표시 부분만 얹는다
+  const alertOf: Record<string, boolean> = { notice: b.notice, menu: b.mission, events: b.event, mail: b.mail }
+  const live = (id: string) => {
+    const l = L.layers.find((q) => q.id === id)!
+    const plain = NOBADGE[id] ?? MATTE[id]
+    return <LiveRef id={id} src={plain} badgeSrc={NOBADGE[id] && alertOf[id] !== undefined ? MATTE[id] : undefined} alert={!!alertOf[id]} x={l.x} y={l.y} w={l.width} h={l.height} kick={kicks[id] ?? 0} />
+  }
   const files = { ...MATTE, ...Object.fromEntries(Object.entries(badgeOn).filter(([, on]) => !on).map(([id]) => [id, NOBADGE[id]])) }
 
   return (
@@ -114,7 +124,7 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
           <SceneCue title={scene ? scene.place : 'CITY LINE'} subtitle="ABILITY KINGDOM / LOBBY" />
           {/* 상단: 프로필·재화·공지/우편/메뉴·테마 */}
           <div className="mg mg-top" style={g('top')}>
-            <RefLayers layout={L} ids={GROUPS.top} z={2} files={files} />
+            {GROUPS.top.map((id) => <span key={id}>{live(id)}</span>)}
             {/* 원형 프로필 사진: 팀장 정보에서 장착한 프로필 아이콘(대원증 사진과 같은 값) */}
             <ProfileIcon id={commanderOf(s).iconId} className="lobby-pi" style={{ position: 'absolute', left: 31, top: 15, width: 76, height: 76, borderRadius: '50%', zIndex: 3, backgroundRepeat: 'no-repeat' }} />
             {W.diamond !== REF.diamond && (
@@ -143,12 +153,12 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
               <span>카페 로비</span>
             </div>
             <Hit r={{ x: 1268, y: 22, w: 126, h: 50 }} label="로비 테마 변경: 카페(소파) 로비로" sfx="none" onClick={() => { audio.sfx('swap'); onTheme() }} />
-            <Hit r={rectOf(L, 'profile')} label={`프로필: ${s.playerName}, 레벨 ${s.playerLevel}`} onClick={() => go('profile')} />
-            <Hit r={rectOf(L, 'currency-gems')} label={`다이아 ${W.diamond}, 충전`} onClick={() => go('shop', { tab: 'currency' })} />
-            <Hit r={rectOf(L, 'currency-coins')} label={`크레딧 ${W.credit.toLocaleString()}, 자세히`} onClick={() => setPop('coins')} />
-            <Hit r={rectOf(L, 'notice')} label={`공지${b.notice ? ', 읽지 않은 공지 있음' : ''}`} onClick={() => go('notices')} />
-            <Hit r={rectOf(L, 'mail')} label={`우편${b.mail ? ', 받을 보상 있음' : ''}`} onClick={() => go('mail')} />
-            <Hit r={rectOf(L, 'menu')} label="전체 메뉴" onClick={() => setPop((p) => (p === 'menu' ? null : 'menu'))} />
+            {press('profile', <Hit r={rectOf(L, 'profile')} label={`프로필: ${s.playerName}, 레벨 ${s.playerLevel}`} onClick={() => go('profile')} />)}
+            {press('currency-gems', <Hit r={rectOf(L, 'currency-gems')} label={`다이아 ${W.diamond}, 충전`} onClick={() => go('shop', { tab: 'currency' })} />)}
+            {press('currency-coins', <Hit r={rectOf(L, 'currency-coins')} label={`크레딧 ${W.credit.toLocaleString()}, 자세히`} onClick={() => setPop('coins')} />)}
+            {press('notice', <Hit r={rectOf(L, 'notice')} label={`공지${b.notice ? ', 읽지 않은 공지 있음' : ''}`} onClick={() => go('notices')} />)}
+            {press('mail', <Hit r={rectOf(L, 'mail')} label={`우편${b.mail ? ', 받을 보상 있음' : ''}`} onClick={() => go('mail')} />)}
+            {press('menu', <Hit r={rectOf(L, 'menu')} label="전체 메뉴" onClick={() => setPop((p) => (p === 'menu' ? null : 'menu'))} />)}
           </div>
 
           {/* 왼쪽: 픽업·아이콘·카드. 겹친 카드는 실제 앞뒤 순서대로 클릭(현상수배 > 훈련 > 상점) */}
@@ -165,92 +175,92 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
                     art: <img src="ref/pass/banner-summer.webp" alt="" draggable={false} className="bc-zoom" style={{ left: 0, top: -3, width: 353, height: 118 }} /> },
                 ]} />
             </MotionItem>
-            <MotionItem order={1} z={50} className="ui-side-card">
-              <RefLayers layout={L} ids={['messages']} z={2} files={files} />
+            <MotionItem order={1} z={50} className="ui-side-card" idle={false}>
+              {live('messages')}
 
-              <Hit r={rectOf(L, 'messages')} label="메시지" onClick={() => setPop('messages')} />
+              {press('messages', <Hit r={rectOf(L, 'messages')} label="메시지" onClick={() => setPop('messages')} />)}
             </MotionItem>
-            <MotionItem order={2} z={50} className="ui-side-card">
-              <RefLayers layout={L} ids={['events']} z={2} files={files} />
+            <MotionItem order={2} z={50} className="ui-side-card" idle={false}>
+              {live('events')}
               {b.event && <Fx r={{ x: 106, y: 364, w: 13, h: 12 }} className="ui-ping" z={22} />}
 
-              <Hit r={rectOf(L, 'events')} label={`이벤트${b.event ? ', 새 이벤트 있음' : ''}`} onClick={() => go('events')} />
+              {press('events', <Hit r={rectOf(L, 'events')} label={`이벤트${b.event ? ', 새 이벤트 있음' : ''}`} onClick={() => go('events')} />)}
             </MotionItem>
-            <MotionItem order={3} z={50} className="ui-side-card">
-              <RefLayers layout={L} ids={['coupon']} z={2} files={files} />
+            <MotionItem order={3} z={50} className="ui-side-card" idle={false}>
+              {live('coupon')}
 
-              <Hit r={rectOf(L, 'coupon')} label="쿠폰 이벤트" onClick={() => { setCoupon(''); setCouponMsg(''); setPop('coupon') }} />
+              {press('coupon', <Hit r={rectOf(L, 'coupon')} label="쿠폰 이벤트" onClick={() => { setCoupon(''); setCouponMsg(''); setPop('coupon') }} />)}
             </MotionItem>
-            <MotionItem order={4} z={50} className="ui-side-card">
-              <RefLayers layout={L} ids={['costume']} z={2} files={files} />
+            <MotionItem order={4} z={50} className="ui-side-card" idle={false}>
+              {live('costume')}
 
-              <Hit r={rectOf(L, 'costume')} label="코스튬" onClick={() => setPop('costume')} />
+              {press('costume', <Hit r={rectOf(L, 'costume')} label="코스튬" onClick={() => setPop('costume')} />)}
             </MotionItem>
-            <MotionItem order={5} z={53} className="ui-side-card">
-              <RefLayers layout={L} ids={['wanted']} z={2} files={files} />
+            <MotionItem order={5} z={53} className="ui-side-card" idle={false}>
+              {live('wanted')}
 
-              <Hit r={rectOf(L, 'wanted')} z={53} label="현상수배" onClick={() => go('wanted')} className="st-card" />
+              {press('wanted', <Hit r={rectOf(L, 'wanted')} z={53} label="현상수배" onClick={() => go('wanted')} className="st-card" />)}
             </MotionItem>
-            <MotionItem order={6} z={51} className="ui-side-card">
-              <RefLayers layout={L} ids={['shop']} z={2} files={files} />
+            <MotionItem order={6} z={51} className="ui-side-card" idle={false}>
+              {live('shop')}
 
-              <Hit r={{ x: 125, y: 638, w: 284, h: 62 }} z={51} label="상점" onClick={() => go('shop')} className="st-card" />
+              {press('shop', <Hit r={{ x: 125, y: 638, w: 284, h: 62 }} z={51} label="상점" onClick={() => go('shop')} className="st-card" />)}
             </MotionItem>
-            <MotionItem order={7} z={52} className="ui-side-card">
-              <RefLayers layout={L} ids={['training']} z={2} files={files} />
+            <MotionItem order={7} z={52} className="ui-side-card" idle={false}>
+              {live('training')}
 
-              <Hit r={{ x: 47, y: 705, w: 391, h: 207 }} z={52} label="훈련" onClick={() => go('training')} className="st-card" />
+              {press('training', <Hit r={{ x: 47, y: 705, w: 391, h: 207 }} z={52} label="훈련" onClick={() => go('training')} className="st-card" />)}
             </MotionItem>
           </div>
 
           {/* 오른쪽: 메인 목표·출석·아레나·레이드·도시 탐색·스토리 */}
           <div className="mg mg-right" style={g('right')}>
 
-            <MotionItem order={0} z={50} className="ui-side-card">
-              <RefLayers layout={L} ids={['quest']} z={2} files={files} />
+            <MotionItem order={0} z={50} className="ui-side-card" idle={false}>
+              {live('quest')}
               <TextlessPatch m={tl('quest-text')}>
               <span className="abs rs-quest" style={{ left: 8, top: 5 }}>{goal ? <><b>{goal.id}</b> 클리어하기</> : '모든 스토리 클리어'}</span>
             </TextlessPatch>
-              <Hit r={rectOf(L, 'quest')} label={goal ? `메인 목표: ${goal.id} 클리어하기` : '메인 목표 없음'} onClick={() => go('story', { stageId: goal?.id })} className="st-card" />
+              {press('quest', <Hit r={rectOf(L, 'quest')} label={goal ? `메인 목표: ${goal.id} 클리어하기` : '메인 목표 없음'} onClick={() => go('story', { stageId: goal?.id })} className="st-card" />)}
             </MotionItem>
-            <MotionItem order={1} z={50} className="ui-side-card">
-              <RefLayers layout={L} ids={['attendance']} z={2} files={files} />
+            <MotionItem order={1} z={50} className="ui-side-card" idle={false}>
+              {live('attendance')}
               <TextlessPatch m={tl('attendance-timer')}>
               <span className="abs rs-timer num-tab" style={{ left: 6, top: 3 }}>{untilMidnight(now)}</span>
             </TextlessPatch>
-              <Hit r={rectOf(L, 'attendance')} label={`출석 이벤트${b.attendance ? ', 오늘 보상 받기 가능' : ''}`} onClick={() => go('attendance')} className="st-card" />
+              {press('attendance', <Hit r={rectOf(L, 'attendance')} label={`출석 이벤트${b.attendance ? ', 오늘 보상 받기 가능' : ''}`} onClick={() => go('attendance')} className="st-card" />)}
             </MotionItem>
-            <MotionItem order={2} z={50} className="ui-side-card">
-              <RefLayers layout={L} ids={['arena']} z={2} files={files} />
+            <MotionItem order={2} z={50} className="ui-side-card" idle={false}>
+              {live('arena')}
 
-              <Hit r={rectOf(L, 'arena')} label="아레나" onClick={() => go('arena')} />
+              {press('arena', <Hit r={rectOf(L, 'arena')} label="아레나" onClick={() => go('arena')} />)}
             </MotionItem>
-            <MotionItem order={3} z={50} className="ui-side-card">
-              <RefLayers layout={L} ids={['raid']} z={2} files={files} />
+            <MotionItem order={3} z={50} className="ui-side-card" idle={false}>
+              {live('raid')}
 
-              <Hit r={rectOf(L, 'raid')} label="레이드" onClick={() => go('raid')} />
+              {press('raid', <Hit r={rectOf(L, 'raid')} label="레이드" onClick={() => go('raid')} />)}
             </MotionItem>
-            <MotionItem order={4} z={50} className="ui-side-card">
-              <RefLayers layout={L} ids={['exploration']} z={2} files={files} />
+            <MotionItem order={4} z={50} className="ui-side-card" idle={false}>
+              {live('exploration')}
 
-              <Hit r={{ x: 1238, y: 502, w: 396, h: 163 }} label="도시 탐색" onClick={() => go('explore')} className="st-card" />
+              {press('exploration', <Hit r={{ x: 1238, y: 502, w: 396, h: 163 }} label="도시 탐색" onClick={() => go('explore')} className="st-card" />)}
             </MotionItem>
-            <MotionItem order={5} z={51} className="ui-side-card">
-              <RefLayers layout={L} ids={['story']} z={2} files={files} />
+            <MotionItem order={5} z={51} className="ui-side-card" idle={false}>
+              {live('story')}
 
-              <Hit r={{ x: 1195, y: 665, w: 440, h: 233 }} z={51} label="스토리" onClick={() => go('story')} className="st-card" />
+              {press('story', <Hit r={{ x: 1195, y: 665, w: 440, h: 233 }} z={51} label="스토리" onClick={() => go('story')} className="st-card" />)}
             </MotionItem>
           </div>
 
           {/* 하단 메뉴(인물 위에 그려진 흰 아이콘·글자만 남긴 매트) */}
           <div className="mg mg-bottom" style={g('bottom')}>
             <MotionItem order={0} z={50} className="ui-nav-item" idle={false}>
-              <LiveNavIcon kind="characters" x={rectOf(L, 'characters').x} y={rectOf(L, 'characters').y} kick={kicks.characters} />
+              <LiveNavIcon kind="characters" x={rectOf(L, 'characters').x} y={rectOf(L, 'characters').y} kick={kicks.characters ?? 0} />
 
               <span onPointerDown={() => kick('characters')} onPointerEnter={() => kick('characters')}><Hit r={rectOf(L, 'characters')} label="캐릭터" onClick={() => go('characters')} /></span>
             </MotionItem>
             <MotionItem order={1} z={50} className="ui-nav-item" idle={false}>
-              <LiveNavIcon kind="formation" x={rectOf(L, 'formation').x} y={rectOf(L, 'formation').y} kick={kicks.formation} />
+              <LiveNavIcon kind="formation" x={rectOf(L, 'formation').x} y={rectOf(L, 'formation').y} kick={kicks.formation ?? 0} />
 
               <span onPointerDown={() => kick('formation')} onPointerEnter={() => kick('formation')}><Hit r={rectOf(L, 'formation')} label="편성" onClick={() => go('formation')} /></span>
             </MotionItem>
@@ -261,12 +271,12 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
               <Hit r={rectOf(L, 'home')} label="홈 (현재 로비)" onClick={() => setPop(null)} />
             </MotionItem>
             <MotionItem order={3} z={50} className="ui-nav-item" idle={false}>
-              <LiveNavIcon kind="bag" x={rectOf(L, 'bag').x} y={rectOf(L, 'bag').y} kick={kicks.bag} />
+              <LiveNavIcon kind="bag" x={rectOf(L, 'bag').x} y={rectOf(L, 'bag').y} kick={kicks.bag ?? 0} />
 
               <span onPointerDown={() => kick('bag')} onPointerEnter={() => kick('bag')}><Hit r={rectOf(L, 'bag')} label="가방" onClick={() => go('bag')} /></span>
             </MotionItem>
             <MotionItem order={4} z={50} className="ui-nav-item" idle={false}>
-              <LiveNavIcon kind="recruitment" x={rectOf(L, 'recruitment').x} y={rectOf(L, 'recruitment').y} kick={kicks.recruitment} />
+              <LiveNavIcon kind="recruitment" x={rectOf(L, 'recruitment').x} y={rectOf(L, 'recruitment').y} kick={kicks.recruitment ?? 0} />
 
               <span onPointerDown={() => kick('recruitment')} onPointerEnter={() => kick('recruitment')}><Hit r={rectOf(L, 'recruitment')} label="영입" onClick={() => go('recruit')} /></span>
             </MotionItem>

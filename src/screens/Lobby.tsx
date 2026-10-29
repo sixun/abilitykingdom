@@ -17,6 +17,7 @@ import layoutJson from '../game/data/ref-lobby.json'
 import LobbyStation from './LobbyStation'
 import { QuickBtn, useLobbyQuick } from '../ui/LobbyQuick'
 import { ProfileIcon } from '../ui/ProfileIcon'
+import { LiveRef } from '../ui/live/LiveRef'
 import { commanderOf } from '../game/data/profile'
 import { LOBBY_SCENES } from '../game/data/lobbyScenes'
 
@@ -91,6 +92,16 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
     </Patch>
   )
 
+  // 버튼 그림 자체가 움직인다(src/ui/live). 누르거나 마우스를 올리면 그 버튼이 바로 크게 한 번
+  const [kicks, setKicks] = useState<Record<string, number>>({})
+  const kick = (k: string) => setKicks((v) => ({ ...v, [k]: (v[k] ?? 0) + 1 }))
+  const press = (k: string, el: React.ReactNode) => <span className="live-press" onPointerDown={() => kick(k)} onPointerEnter={() => kick(k)}>{el}</span>
+  const live = (id: string) => {
+    const l = L.layers.find((q) => q.id === id)!
+    return <LiveRef id={`sofa:${id}`} src={MATTE[id] ?? l.file} x={l.x} y={l.y} w={l.width} h={l.height} z={1} kick={kicks[id] ?? 0} />
+  }
+  const LIVE_TOP = ['back', 'stamina', 'currency-coins', 'currency-gems']
+
   const g = (k: keyof typeof DELAY) => ({ animationDelay: `${DELAY[k]}ms` })
   return (
     <div className="scr">
@@ -113,7 +124,8 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
           <SceneCue title={scene ? scene.place : 'LOUNGE'} subtitle="ABILITY KINGDOM / LOBBY" />
           {/* 상단 띠 */}
           <div className="mg mg-top" style={g('top')}>
-            <RefLayers layout={L} ids={GROUP.top} z={1} />
+            <RefLayers layout={L} ids={GROUP.top.filter((id) => !LIVE_TOP.includes(id))} z={1} />
+            {LIVE_TOP.map((id) => <span key={id}>{live(id)}</span>)}
             {/* 원형 프로필 사진: 팀장 정보에서 장착한 프로필 아이콘 */}
             <ProfileIcon id={commanderOf(s).iconId} style={{ position: 'absolute', left: 139, top: 19, width: 42, height: 42, borderRadius: '50%', zIndex: 2, backgroundRepeat: 'no-repeat', boxShadow: '0 0 0 2px #141414' }} />
             {W.stamina !== REF.stamina && pillPatch(912, 98, <>{W.stamina} / {GAME_CONFIG.staminaMax}</>, 'st')}
@@ -139,34 +151,34 @@ function SofaLobby({ onTheme }: { params: Record<string, unknown>; onTheme: () =
             <QuickBtn kind="bgm" r={{ x: 636, y: 14, w: 56, h: 56 }} label="로비 배경음악 고르기" onClick={() => quick.open('bgm')} />
             <Hit r={{ x: 822, y: 20, w: 50, h: 44 }} label="더보기 메뉴" onClick={() => setMore((v) => !v)} />
             <Hit r={{ x: 700, y: 20, w: 112, h: 44 }} label="로비 테마 변경: 역 승강장 로비로" sfx="none" onClick={() => { audio.sfx('swap'); onTheme() }} />
-            <Hit r={rectOf(L, 'back')} label="타이틀 화면으로" onClick={() => setToTitle(true)} />
+            {press('back', <Hit r={rectOf(L, 'back')} label="타이틀 화면으로" onClick={() => setToTitle(true)} />)}
             <Hit r={rectOf(L, 'profile')} label="프로필" onClick={() => go('profile')} />
-            <Hit r={rectOf(L, 'stamina')} label={`행동력 ${W.stamina} / ${GAME_CONFIG.staminaMax}, 충전`} onClick={() => go('shop', { tab: 'currency' })} />
-            <Hit r={rectOf(L, 'currency-coins')} label={`크레딧 ${W.credit}`} onClick={() => go('shop', { tab: 'currency' })} />
-            <Hit r={rectOf(L, 'currency-gems')} label={`교환 메달 ${W.exchangeMedal}`} onClick={() => go('shop', { tab: 'exchange' })} />
+            {press('stamina', <Hit r={rectOf(L, 'stamina')} label={`행동력 ${W.stamina} / ${GAME_CONFIG.staminaMax}, 충전`} onClick={() => go('shop', { tab: 'currency' })} />)}
+            {press('currency-coins', <Hit r={rectOf(L, 'currency-coins')} label={`크레딧 ${W.credit}`} onClick={() => go('shop', { tab: 'currency' })} />)}
+            {press('currency-gems', <Hit r={rectOf(L, 'currency-gems')} label={`교환 메달 ${W.exchangeMedal}`} onClick={() => go('shop', { tab: 'exchange' })} />)}
           </div>
           {/* 왼쪽: 로비 캐릭터 변경 */}
           <div className="mg mg-left" style={g('left')}>
-            <RefLayers layout={L} ids={GROUP.left} z={1} files={MATTE} />
+            {live('character-switch')}
             <Fx r={{ x: 57, y: 585, w: 84, h: 53 }} className="ui-ring" z={2} />
-            <Hit r={rectOf(L, 'character-switch')} label="로비 캐릭터 변경" onClick={() => quick.open('char')} />
+            {press('character-switch', <Hit r={rectOf(L, 'character-switch')} label="로비 캐릭터 변경" onClick={() => quick.open('char')} />)}
           </div>
           {/* 오른쪽: 이벤트 패널 */}
           <div className="mg mg-right" style={g('right')}>
             <RefLayers layout={L} ids={['event-terminal']} z={1} files={MATTE} />
             {([{ id: 'event-story', screen: 'story', label: '스토리' }, { id: 'event-explore', screen: 'explore', label: '도시 탐색' }, { id: 'event-wanted', screen: 'wanted', label: '현상수배' }] as const).map((n, i) => (
-              <MotionItem key={n.id} order={i} className="ui-side-card">
-                <RefLayers layout={L} ids={[n.id]} z={1} files={MATTE} />
-                <Hit r={rectOf(L, n.id)} label={`이벤트: ${n.label}`} onClick={() => go(n.screen)} />
+              <MotionItem key={n.id} order={i} className="ui-side-card" idle={false}>
+                {live(n.id)}
+                {press(n.id, <Hit r={rectOf(L, n.id)} label={`이벤트: ${n.label}`} onClick={() => go(n.screen)} />)}
               </MotionItem>
             ))}
           </div>
           {/* 하단 메뉴 띠 */}
           <div className="mg mg-bottom" style={g('bottom')}>
             <RefLayers layout={L} ids={['navbar-remainder']} z={1} files={MATTE} />
-            {NAV.map((n, i) => <MotionItem key={n.id} order={i} className="ui-nav-item">
-              <RefLayers layout={L} ids={[n.id]} z={1} files={MATTE} />
-              <Hit r={rectOf(L, n.id)} label={n.label} onClick={() => go(n.screen)} className={`lb-nav-${n.screen}`} />
+            {NAV.map((n, i) => <MotionItem key={n.id} order={i} className="ui-nav-item" idle={false}>
+              {live(n.id)}
+              {press(n.id, <Hit r={rectOf(L, n.id)} label={n.label} onClick={() => go(n.screen)} className={`lb-nav-${n.screen}`} />)}
             </MotionItem>)}
           </div>
         </div>
