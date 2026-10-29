@@ -19,13 +19,12 @@ const back = async () => {
   await page.click('.screen-active .back-btn, .screen-active button[aria-label="돌아가기"], .screen-active button[aria-label="뒤로"]'); await W(700)
 }
 
-// 1) 테마 전환·저장
+// 1) 로비 = 역 로비 하나(카페(소파) 로비는 2026-10-29 폐기). 예전에 'sofa'로 저장된 기기도 역 로비로 열린다
 await page.goto(BASE + '?screen=lobby'); await W(2200)
-check(await has(SOFA), '기본 테마 = 카페(소파) 로비')
-await page.click('.screen-active button[aria-label^="로비 테마 변경"]'); await W(700)
-check(await has(STATION) && (await st()).lobby.theme === 'station', '버튼으로 역 로비 전환·저장')
-await page.reload(); await W(2200)
-check(await has(STATION), '새로고침 후에도 역 로비 유지')
+check(await has(STATION) && !(await has(SOFA)), '로비 = 역 로비(카페 로비 없음)')
+check(!(await has('.screen-active button[aria-label^="로비 테마 변경"]')), '로비 테마 전환 버튼 없음')
+await page.evaluate(() => window.__AK__.setLobbyTheme('sofa')); await page.reload(); await W(2200)
+check(await has(STATION), "'sofa'로 저장돼 있어도 역 로비")
 
 // 2) 25개 버튼 목적지 + 복귀 후 로비 유지
 const targets = [
@@ -67,11 +66,10 @@ check(mailLeft === 0 && !(await has('img[src*="badge-notice-sprite"]')), '우편
 await page.mouse.click(760, 480); await W(200)
 check(await has('.rs-line'), '정면 캐릭터 클릭 → 준비된 대사 표시(음성 없음)')
 
-// 7) 메뉴에서 카페 로비로 되돌리기
+// 7) 전체 메뉴에 카페 로비 항목 없음(폐기)
 await page.click(STATION); await W(250)
-await page.click('.rs-menu button:has-text("카페 로비로")'); await W(700)
-check(await has(SOFA) && (await st()).lobby.theme === 'sofa', '메뉴에서 카페 로비로 복귀')
-await page.click('.screen-active button[aria-label^="로비 테마 변경"]'); await W(700)
+check(!(await has('.rs-menu button:has-text("카페 로비로")')), '전체 메뉴에 카페 로비 항목 없음')
+await page.click(STATION); await W(250)
 
 // 8) 캐릭터 상세(라온: 현재 로비 캐릭터, 보유 Lv.40)
 await page.click('.screen-active button[aria-label^="캐릭터"]'); await W(700)

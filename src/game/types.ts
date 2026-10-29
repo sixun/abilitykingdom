@@ -65,7 +65,7 @@ export type LobbyTheme = 'sofa' | 'station'
 
 export interface LobbyPreference {
   characterId: string
-  /** 로비 테마(소파 카페 / 역 승강장). 없으면 sofa */
+  /** 로비 테마(소파 카페 / 역 승강장). 카페(소파) 로비는 폐기(2026-10-29) → 이 값은 보지 않고 항상 역 로비 */
   theme?: LobbyTheme
   background: 'lobby'
   entrancePolicy: 'first-and-change' | 'always' | 'never'

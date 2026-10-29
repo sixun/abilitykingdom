@@ -71,12 +71,12 @@ check((await page.locator('.cd2-name').textContent()).replace(/\s/g, '') === 'BA
 
 // 4) 로비: 전용 장면이면 장면 그림을 쓴다(인물 중복 없음). 보유하지 않은 캐릭터는 로비 설정 불가
 check((await page.evaluate(() => window.__AK__.setLobbyCharacter('kiyomi'))).ok === false, '미보유 신규 캐릭터는 로비 설정 거부')
-for (const [id, theme] of [['kiyomi', 'station'], ['kimono', 'sofa']]) {
+for (const [id, theme] of [['kiyomi', 'station'], ['kimono', 'station']]) {
   await page.evaluate(([i, t]) => window.__AK__.commit((s) => { s.lobby.characterId = i; s.lobby.theme = t }), [id, theme])
   await page.goto(BASE + '?screen=lobby'); await W(1500)
   check(await page.locator(`.screen-active img.mv.scene[src*="lobby/${id}"]`).count() === 1 && await page.locator('.screen-active video.mv').count() === 0, `${theme} 로비: ${id} 전용 장면, 기본 영상 없음`)
 }
-await page.evaluate(() => window.__AK__.commit((s) => { s.lobby.characterId = 'rion'; s.lobby.theme = 'sofa' }))
+await page.evaluate(() => window.__AK__.commit((s) => { s.lobby.characterId = 'rion'; s.lobby.theme = 'station' }))
 
 console.log('errors:', errs.length ? errs : 'none')
 console.log('FAILS', fails + (errs.length ? 1 : 0))

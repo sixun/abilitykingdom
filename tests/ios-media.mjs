@@ -12,16 +12,16 @@ try {
   const errors = []
   const media = []
   page.on('pageerror', (e) => errors.push(e.message))
-  page.on('request', (r) => { if (/\/motion\/sofa\.(mp4|webm)/.test(r.url())) media.push(r.url()) })
+  page.on('request', (r) => { if (/\/motion\/station\.(mp4|webm)/.test(r.url())) media.push(r.url()) })
   await page.goto('http://127.0.0.1:5191/?screen=lobby')
   await page.locator('.screen-active .mv').waitFor()
   await page.waitForTimeout(2500)
-  assert(media.some((url) => url.endsWith('/motion/sofa.mp4')))
+  assert(media.some((url) => url.endsWith('/motion/station.mp4')))
   assert(!media.some((url) => url.endsWith('.webm')))
   if (await page.locator('.screen-active video.mv').count()) {
     assert.equal(await page.locator('.screen-active video.mv').evaluate((v) => getComputedStyle(v).animationName), 'none')
   } else {
-    assert((await page.locator('.screen-active img.mv').getAttribute('src')).endsWith('sofa-poster.webp'))
+    assert((await page.locator('.screen-active img.mv').getAttribute('src')).endsWith('station-poster.webp'))
   }
   await page.getByRole('button', { name: '캐릭터', exact: true }).click()
   await page.locator('.screen-active .chars').waitFor()

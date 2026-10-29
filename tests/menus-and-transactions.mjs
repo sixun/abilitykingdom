@@ -14,14 +14,14 @@ const back = async () => { await page.click('.screen-active .back-btn, .screen-a
 
 await page.goto(BASE + '?screen=lobby'); await W(2500)
 
-// 로비 링크 전부: 하단 10개 + 이벤트 3개 + 프로필 + 더보기 메뉴(원본에 없는 추가 진입점)
-const LOBBY = '.screen-active button[aria-label="더보기 메뉴"]'
+// 로비 링크(역 로비. 카페 로비는 2026-10-29 폐기) + 전체 메뉴(원본에 없는 추가 진입점)
+const LOBBY = '.screen-active button[aria-label="전체 메뉴"]'
 const targets = [
   ['button[aria-label="스토리"]', '.story-field'], ['button[aria-label="도시 탐색"]', '.ct-explore'], ['button[aria-label="현상수배"]', '.ct-wanted'],
   ['button[aria-label="훈련"]', '.ct-training'], ['button[aria-label="아레나"]', '.ct-arena'], ['button[aria-label="레이드"]', '.ct-raid'],
-  ['button[aria-label="캐릭터"]', '.chars'], ['button[aria-label="상점"]', '.shop'], ['button[aria-label="소환(영입)"]', 'button.hit-pull10'],
-  ['button[aria-label="이벤트: 스토리"]', '.story-field'], ['button[aria-label="이벤트: 도시 탐색"]', '.ct-explore'], ['button[aria-label="이벤트: 현상수배"]', '.ct-wanted'],
-  ['button[aria-label="프로필"]', '.profile'],
+  ['button[aria-label="캐릭터"]', '.chars'], ['button[aria-label="상점"]', '.shop'], ['button[aria-label="영입"]', 'button.hit-pull10'],
+  ['button[aria-label^="메인 목표"]', '.story-field'], ['button[aria-label^="출석 이벤트"]', '.att'],
+  ['button[aria-label^="프로필"]', '.profile'],
   ['more:가방', '.bag'], ['more:우편함', '.ops'], ['more:미션', '.ops'], ['more:공지', '.ops'], ['more:이벤트', '.ops'], ['more:출석', '.att'], ['more:설정', '.settings'],
 ]
 for (const [btn, scr] of targets) {
@@ -41,10 +41,10 @@ check(await page.evaluate(() => !window.__v || window.__v === document.querySele
 await page.mouse.click(700, 300); await W(400)
 check(await page.locator(LOBBY).count() === 1, '감상 모드 해제')
 
-// 로비 캐릭터 선택: 보유 대원 모두 선택 가능(전용 장면이 없으면 거리 배경 + 전신 그림)
-await page.click('.screen-active button[aria-label="로비 캐릭터 변경"]'); await W(300)
+// 로비 캐릭터 선택: 보유 대원 모두 선택 가능(전용 장면이 없으면 역 로비 기본 장면)
+await page.click('.screen-active button[aria-label^="로비 캐릭터 고르기"]'); await W(300)
 check(await page.locator('.lb-picker-grid button').count() === Object.keys((await st()).owned).length && await page.locator('.lb-picker-grid button:disabled').count() === 0, '보유 대원 모두 로비 선택 가능')
-check(await page.locator('.screen-active .lb-fallback img.lb-fb-char[src*="rion_stand"]').count() === 1, '전용 장면 없는 대원(라온) = 배경판 + 전신 그림')
+check(await page.locator('.screen-active video.mv, .screen-active img.mv[src*="station-poster"]').count() >= 1, '전용 장면 없는 대원(라온) = 역 로비 기본 장면 유지(카페 로비의 배경판+전신 그림은 폐기)')
 await page.click('.modal .btn-dark:has-text("닫기")'); await W(300)
 let s = await st()
 check(s.lobby.characterId === 'rion' && s.teams[0].leaderId === 'rion', '로비 캐릭터와 팀 리더는 별도 저장')
@@ -75,7 +75,7 @@ await back(); await back()
 // 영입 10회 → 결과 → 스킵 → 요약 → 기록 재열람 동일
 s = await st()
 const t0 = s.wallet.ticket
-await page.click('.screen-active button[aria-label="소환(영입)"]'); await W(800)
+await page.click('.screen-active button[aria-label="영입"]'); await W(800)
 await page.click('.screen-active button.hit-pull10'); await W(900)
 await shot('rr-reveal')
 s = await st()

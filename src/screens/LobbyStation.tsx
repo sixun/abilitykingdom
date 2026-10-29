@@ -53,7 +53,7 @@ const untilMidnight = (now: number) => {
 
 type Pop = null | 'coins' | 'menu' | 'messages' | 'coupon' | 'costume'
 
-export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
+export default function LobbyStation() {
   const s = useGame()
   const nav = useNav()
   const b = badges(s)
@@ -122,7 +122,7 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
         <div className={`mg-wrap ${viewing ? 'hide' : ''}`} aria-hidden={viewing}>
           <MotionTicker text="ABILITY KINGDOM / CITY RESPONSE UNIT" className="ui-lobby-ticker" />
           <SceneCue title={scene ? scene.place : 'CITY LINE'} subtitle="ABILITY KINGDOM / LOBBY" />
-          {/* 상단: 프로필·재화·공지/우편/메뉴·테마 */}
+          {/* 상단: 프로필·재화·공지/우편/메뉴 */}
           <div className="mg mg-top" style={g('top')}>
             {GROUPS.top.map((id) => <span key={id}>{live(id)}</span>)}
             {/* 원형 프로필 사진: 팀장 정보에서 장착한 프로필 아이콘(대원증 사진과 같은 값) */}
@@ -144,15 +144,16 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
             {b.notice && <Fx r={{ x: 1451, y: 27, w: 13, h: 13 }} className="ui-ping" z={22} />}
             {b.mission && <Fx r={{ x: 1624, y: 27, w: 13, h: 13 }} className="ui-ping" z={22} />}
             {b.mail && <Fx r={{ x: 1540, y: 27, w: 13, h: 13 }} className="ui-ping" z={22} />}
-            {/* 로비 배경음악·캐릭터 고르기(추가 버튼, 재화 띠와 테마 버튼 사이 빈 곳) */}
+            {/* 로비 배경음악·캐릭터 고르기(추가 버튼, 재화 띠 오른쪽 빈 곳) */}
             <QuickBtn kind="bgm" r={{ x: 1132, y: 16, w: 58, h: 58 }} label="로비 배경음악 고르기" onClick={() => quick.open('bgm')} />
             <QuickBtn kind="char" r={{ x: 1198, y: 16, w: 58, h: 58 }} label={`로비 캐릭터 고르기 (지금: ${lobbyChar.name})`} onClick={() => quick.open('char')} />
-            {/* 로비 테마 전환(원본에 없는 추가 버튼, 얼굴·카드와 겹치지 않는 상단 빈 영역) */}
+            {/* 폐기(2026-10-29): 카페 로비로 가는 테마 전환 버튼. 카페 로비를 쓰지 않으므로 주석 처리
             <div className="rs-theme" style={{ left: 1268, top: 22, width: 126, height: 50 }} aria-hidden>
               <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 11a8 8 0 0 1 16 0v5H4z" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M2 16h20M7 16v3M17 16v3" stroke="currentColor" strokeWidth="2" /></svg>
               <span>카페 로비</span>
             </div>
             <Hit r={{ x: 1268, y: 22, w: 126, h: 50 }} label="로비 테마 변경: 카페(소파) 로비로" sfx="none" onClick={() => { audio.sfx('swap'); onTheme() }} />
+            */}
             {press('profile', <Hit r={rectOf(L, 'profile')} label={`프로필: ${s.playerName}, 레벨 ${s.playerLevel}`} onClick={() => go('profile')} />)}
             {press('currency-gems', <Hit r={rectOf(L, 'currency-gems')} label={`다이아 ${W.diamond}, 충전`} onClick={() => go('shop', { tab: 'currency' })} />)}
             {press('currency-coins', <Hit r={rectOf(L, 'currency-coins')} label={`크레딧 ${W.credit.toLocaleString()}, 자세히`} onClick={() => setPop('coins')} />)}
@@ -293,7 +294,7 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
               <button key={sc} onClick={() => { audio.sfx('tap'); go(sc) }}>{label}{d && <span className="dot" />}</button>
             ))}
             <button onClick={() => { audio.sfx('tap'); setPop(null); setViewing(true) }}>감상 모드</button>
-            <button onClick={() => { audio.sfx('swap'); setPop(null); onTheme() }}>카페 로비로</button>
+            {/* 폐기(2026-10-29): <button onClick={() => { audio.sfx('swap'); setPop(null); onTheme() }}>카페 로비로</button> */}
             <button onClick={() => { audio.sfx('tap'); setPop(null); setToTitle(true) }}>타이틀로</button>
           </div>
         )}

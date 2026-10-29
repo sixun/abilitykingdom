@@ -13,7 +13,7 @@ const st = () => page.evaluate(() => window.__AK__.getState())
 let fails = 0
 const check = (cond, msg) => { log(cond ? 'PASS' : 'FAIL', msg); if (!cond) fails++ }
 const W = (ms = 400) => page.waitForTimeout(ms)
-const LOBBY = '.screen-active button[aria-label="더보기 메뉴"]'
+const LOBBY = '.screen-active button[aria-label="전체 메뉴"]' // 로비 = 역 로비(카페 로비 폐기)
 const isLobby = async () => (await page.locator(LOBBY).count()) === 1
 const slotNames = () => page.$$eval('.screen-active button.fm-fig', (e) => e.map((x) => x.getAttribute('aria-label').replace(/^\d번 슬롯 /, '').replace(/ 선택$/, '')))
 

@@ -5,7 +5,7 @@ import { useReduceMotion, useScreenActive } from '../motion'
 // 원본 tools/navicons/. 좌표는 모두 원본 조각(1배) 기준.
 // - 평소: 몇 초에 한 번 짧게 '한 박자' 움직이고(아이콘마다 시작 시각을 엇갈림), 영입은 펜이 계속 사각거린다
 // - 누르거나(손가락을 대는 순간) 마우스를 올리면 바로 크게 한 번 움직인다
-// - 선 마스크(<종류>-lines.webp) 안에서만 빛이 훑고 지나간다
+// (빛 훑기 광택은 2026-10-29에 뺐다: 그림 속 부위가 실제로 움직이는 것만 남김)
 // 동작 줄이기·화면 비활성 때는 원본 그대로 한 장면.
 type Kind = 'characters' | 'formation' | 'bag' | 'recruitment'
 type Xf = { dx?: number; dy?: number; rot?: number; sx?: number; sy?: number; ox?: number; oy?: number }
@@ -13,7 +13,6 @@ type Part = { at: (b: number, t: number) => Xf } // b = 박자 진행 0~1(없으
 
 // 0→1→0 한 번 튀는 곡선
 const hop = (b: number, s = 0, e = 1) => (b < s || b > e ? 0 : Math.sin(((b - s) / (e - s)) * Math.PI))
-const ease = (b: number, s = 0, e = 1) => (b <= s ? 0 : b >= e ? 1 : (1 - Math.cos(((b - s) / (e - s)) * Math.PI)) / 2)
 
 const DEF: Record<Kind, { w: number; h: number; beat: number; offset: number; parts: Part[] }> = {
   // 세 사람이 왼쪽→가운데→오른쪽 차례로 폴짝(팀원이 모이는 느낌)
@@ -65,10 +64,8 @@ export function LiveNavIcon({ kind, x, y, z = 2, kick = 0 }: { kind: Kind; x: nu
     const dpr = Math.min(3, (window.devicePixelRatio || 1) * 1.5)
     c.width = W * dpr; c.height = H * dpr
     const g = c.getContext('2d')!; g.setTransform(dpr, 0, 0, dpr, 0, 0)
-    const tc = document.createElement('canvas'); tc.width = W * dpr; tc.height = H * dpr
-    const tmp = tc.getContext('2d')!; tmp.setTransform(dpr, 0, 0, dpr, 0, 0)
     let raf = 0, alive = true
-    Promise.all([load(`ui/nav/${kind}.webp`), load(`ui/nav/${kind}-lines.webp`), ...Array.from({ length: D.parts.length + 1 }, (_, i) => load(`ui/nav/${kind}-p${i}.webp`))]).then(([base, lines, text, ...parts]) => {
+    Promise.all([load(`ui/nav/${kind}.webp`), ...Array.from({ length: D.parts.length + 1 }, (_, i) => load(`ui/nav/${kind}-p${i}.webp`))]).then(([base, text, ...parts]) => {
       if (!alive) return
       const still = () => { g.clearRect(0, 0, W, H); g.drawImage(base, 0, 0, W, H) }
       if (reduce || !active) { still(); return }
@@ -89,17 +86,6 @@ export function LiveNavIcon({ kind, x, y, z = 2, kick = 0 }: { kind: Kind; x: nu
           g.drawImage(parts[i], 0, 0, W, H)
           g.restore()
         })
-        // 선 위로 지나가는 빛(박자 동안만, 평소엔 아주 은은하게)
-        const glow = b >= 0 ? hop(b) : 0
-        if (glow > 0.02) {
-          tmp.globalCompositeOperation = 'source-over'; tmp.clearRect(0, 0, W, H)
-          const xc = -20 + ease(b) * (W + 40)
-          const band = tmp.createLinearGradient(xc - 18, 0, xc + 18, 0)
-          band.addColorStop(0, 'rgba(200,230,255,0)'); band.addColorStop(0.5, `rgba(230,245,255,${0.85 * glow})`); band.addColorStop(1, 'rgba(200,230,255,0)')
-          tmp.fillStyle = band; tmp.fillRect(0, 0, W, 76)
-          tmp.globalCompositeOperation = 'destination-in'; tmp.drawImage(lines, 0, 0, W, H)
-          g.globalCompositeOperation = 'lighter'; g.drawImage(tc, 0, 0, W, H); g.globalCompositeOperation = 'source-over'
-        }
         raf = requestAnimationFrame(frame)
       }
       raf = requestAnimationFrame(frame)

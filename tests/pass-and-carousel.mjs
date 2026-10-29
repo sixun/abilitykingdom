@@ -51,10 +51,9 @@ await page.click('.screen-active button[aria-label^="REWARDS"]'); await W(500)
 check(await page.locator('.pp-tracks').count() === 1, 'REWARDS로 복귀')
 await page.click('.screen-active .pp-back'); await W(900)
 check(await page.locator('.screen-active .bc').count() === 1, '뒤로 → 역 로비')
-await page.evaluate(() => window.__AK__.setLobbyTheme('sofa')); await W(600)
-await page.click('.screen-active button[aria-label="더보기 메뉴"]'); await W(300)
+await page.click('.screen-active button[aria-label="전체 메뉴"]'); await W(300)
 await page.click('.rl-more button:has-text("패스")'); await W(1000)
-check(await page.locator('.screen-active .ui-pass').count() === 1, '카페 로비 더보기 메뉴 → 패스')
+check(await page.locator('.screen-active .ui-pass').count() === 1, '역 로비 전체 메뉴 → 패스')
 
 // 3) FP1 썸머 패스 화면
 await page.click('.screen-active .pp-back'); await W(900)

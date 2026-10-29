@@ -47,6 +47,9 @@ SPECS = {
     'currency-gems': (ST + 'currency-gems.webp', {
         'gem': dict(rect=(22, 6, 34, 48), crit='blue', fill='auto', holes=True, grow=2),
     }),
+    'currency-coins': (ST + 'currency-coins.webp', {
+        'card': dict(rect=(22, 11, 52, 40), crit='notdark', fill='auto', holes=True, grow=1),
+    }),
     # ── 역 로비 왼쪽 ──
     'messages': (ST + 'messages.webp', {
         'icon': dict(rect=(8, 0, 67, 64), crit='orangewhite', fill=None, holes=True),
@@ -81,41 +84,45 @@ SPECS = {
     'raid': (ST + 'raid.webp', {
         'shield': dict(rect=(38, 26, 56, 66), crit='white', fill='auto', holes=True, grow=1, seed=(66, 30)),
     }),
+    'story': (ST + 'story-nobadge.webp', {
+        'bldg': dict(rect=(44, 10, 92, 102), crit='bright', fill='auto', holes=True, grow=2),
+    }),
     'exploration': (ST + 'exploration-nobadge.webp', {
         'pin': dict(rect=(44, 44, 40, 58), crit='dark', fill='auto', holes=True, grow=1, seed=(69, 60)),
     }),
-    # ── 카페(소파) 로비 ──
-    'sofa:back': (LB + 'back.webp', {
-        'arrow': dict(rect=(4, 4, 76, 48), crit='red', fill='auto', holes=True, grow=2),
-    }),
-    'sofa:stamina': (LB + 'stamina.webp', {
-        'bat': dict(rect=(118, 0, 46, 50), crit='blue', fill='auto', holes=True, grow=2),
-    }),
-    'sofa:currency-coins': (LB + 'currency-coins.webp', {
-        'coin': dict(rect=(108, 0, 46, 50), crit='bright', fill='auto', holes=True, grow=2),
-    }),
-    'sofa:currency-gems': (LB + 'currency-gems.webp', {
-        'medal': dict(rect=(108, 0, 50, 48), crit='notdark', fill='auto', holes=True, grow=1),
-    }),
-    'sofa:character-switch': (LM + 'character-switch.webp', {
-        'person': dict(rect=(32, 8, 21, 30), crit='bright', fill='auto', grow=1),
-        'al': dict(rect=(18, 12, 14, 26), crit='bright', fill='auto', grow=1),
-        'ar': dict(rect=(53, 12, 15, 26), crit='bright', fill='auto', grow=1),
-    }),
-    'sofa:nav-story': (LM + 'nav-story.webp', {'book': dict(rect=(18, 24, 60, 46), crit='dark', fill='auto', holes=True, grow=1)}),
-    'sofa:nav-explore': (LM + 'nav-explore.webp', {'pin': dict(rect=(30, 4, 34, 46), crit='bright', fill='auto', holes=True, grow=1, seed=(46, 14))}),
-    'sofa:nav-wanted': (LM + 'nav-wanted.webp', {'scope': dict(rect=(18, 24, 60, 52), crit='bright', fill='auto', grow=1)}),
-    'sofa:nav-training': (LM + 'nav-training.webp', {'bell': dict(rect=(10, 24, 74, 50), crit='bright', fill='auto', grow=1)}),
-    'sofa:nav-arena': (LM + 'nav-arena.webp', {'swords': dict(rect=(18, 24, 66, 52), crit='bright', fill='auto', grow=1)}),
-    'sofa:nav-raid': (LM + 'nav-raid.webp', {'beast': dict(rect=(10, 4, 68, 58), crit='bright', fill='auto', holes=True, grow=1)}),
-    'sofa:nav-characters': (LM + 'nav-characters.webp', {'person': dict(rect=(20, 4, 52, 58), crit='bright', fill='auto', holes=True, grow=1)}),
-    'sofa:nav-formation': (LM + 'nav-formation.webp', {
-        'p0': dict(rect=(32, 20, 15, 38), crit='bright', fill='auto', grow=1),
-        'p1': dict(rect=(47, 12, 24, 46), crit='bright', fill='auto', grow=1),
-        'p2': dict(rect=(71, 20, 16, 38), crit='bright', fill='auto', grow=1),
-    }),
-    'sofa:nav-shop': (LM + 'nav-shop.webp', {'cart': dict(rect=(12, 8, 58, 54), crit='bright', fill='auto', holes=True, grow=1)}),
-    'sofa:nav-recruit': (LM + 'nav-recruit.webp', {'hex': dict(rect=(14, 4, 62, 58), crit='bright', fill='auto', holes=True, grow=1)}),
+    # ── 폐기(2026-10-29): 카페(소파) 로비. 카페 로비를 쓰지 않으므로 주석 처리 ──
+#     # ── 카페(소파) 로비 ──
+#     'sofa:back': (LB + 'back.webp', {
+#         'arrow': dict(rect=(4, 4, 76, 48), crit='red', fill='auto', holes=True, grow=2),
+#     }),
+#     'sofa:stamina': (LB + 'stamina.webp', {
+#         'bat': dict(rect=(118, 0, 46, 50), crit='blue', fill='auto', holes=True, grow=2),
+#     }),
+#     'sofa:currency-coins': (LB + 'currency-coins.webp', {
+#         'coin': dict(rect=(108, 0, 46, 50), crit='bright', fill='auto', holes=True, grow=2),
+#     }),
+#     'sofa:currency-gems': (LB + 'currency-gems.webp', {
+#         'medal': dict(rect=(108, 0, 50, 48), crit='notdark', fill='auto', holes=True, grow=1),
+#     }),
+#     'sofa:character-switch': (LM + 'character-switch.webp', {
+#         'person': dict(rect=(32, 8, 21, 30), crit='bright', fill='auto', grow=1),
+#         'al': dict(rect=(18, 12, 14, 26), crit='bright', fill='auto', grow=1),
+#         'ar': dict(rect=(53, 12, 15, 26), crit='bright', fill='auto', grow=1),
+#     }),
+#     'sofa:nav-story': (LM + 'nav-story.webp', {'book': dict(rect=(18, 24, 60, 46), crit='dark', fill='auto', holes=True, grow=1)}),
+#     'sofa:nav-explore': (LM + 'nav-explore.webp', {'pin': dict(rect=(30, 4, 34, 46), crit='bright', fill='auto', holes=True, grow=1, seed=(46, 14))}),
+#     'sofa:nav-wanted': (LM + 'nav-wanted.webp', {'scope': dict(rect=(18, 24, 60, 52), crit='bright', fill='auto', grow=1)}),
+#     'sofa:nav-training': (LM + 'nav-training.webp', {'bell': dict(rect=(10, 24, 74, 50), crit='bright', fill='auto', grow=1)}),
+#     'sofa:nav-arena': (LM + 'nav-arena.webp', {'swords': dict(rect=(18, 24, 66, 52), crit='bright', fill='auto', grow=1)}),
+#     'sofa:nav-raid': (LM + 'nav-raid.webp', {'beast': dict(rect=(10, 4, 68, 58), crit='bright', fill='auto', holes=True, grow=1)}),
+#     'sofa:nav-characters': (LM + 'nav-characters.webp', {'person': dict(rect=(20, 4, 52, 58), crit='bright', fill='auto', holes=True, grow=1)}),
+#     'sofa:nav-formation': (LM + 'nav-formation.webp', {
+#         'p0': dict(rect=(32, 20, 15, 38), crit='bright', fill='auto', grow=1),
+#         'p1': dict(rect=(47, 12, 24, 46), crit='bright', fill='auto', grow=1),
+#         'p2': dict(rect=(71, 20, 16, 38), crit='bright', fill='auto', grow=1),
+#     }),
+#     'sofa:nav-shop': (LM + 'nav-shop.webp', {'cart': dict(rect=(12, 8, 58, 54), crit='bright', fill='auto', holes=True, grow=1)}),
+#     'sofa:nav-recruit': (LM + 'nav-recruit.webp', {'hex': dict(rect=(14, 4, 62, 58), crit='bright', fill='auto', holes=True, grow=1)}),
 }
 
 
