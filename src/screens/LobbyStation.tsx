@@ -16,6 +16,7 @@ import { BannerCarousel } from '../ui/BannerCarousel'
 import { QuickBtn, useLobbyQuick } from '../ui/LobbyQuick'
 import { ProfileIcon } from '../ui/ProfileIcon'
 import { HomeIcon } from '../ui/navicons/HomeIcon'
+import { LiveNavIcon } from '../ui/navicons/LiveNavIcon'
 import { commanderOf } from '../game/data/profile'
 import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx, Fx } from '../ui/ui-motion'
 import textless from '../game/data/ref-textless.json'
@@ -58,6 +59,9 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
   const now = useNow(1000)
   const [pop, setPop] = useState<Pop>(null)
   const quick = useLobbyQuick()
+  // 하단 메뉴 아이콘: 손가락을 대거나 마우스를 올리면 그 아이콘이 크게 한 번 움직인다
+  const [kicks, setKicks] = useState({ characters: 0, formation: 0, bag: 0, recruitment: 0 })
+  const kick = (k: keyof typeof kicks) => setKicks((v) => ({ ...v, [k]: v[k] + 1 }))
   const [viewing, setViewing] = useState(false)
   const [toTitle, setToTitle] = useState(false)
   const [line, setLine] = useState<string | null>(null)
@@ -240,31 +244,31 @@ export default function LobbyStation({ onTheme }: { onTheme: () => void }) {
 
           {/* 하단 메뉴(인물 위에 그려진 흰 아이콘·글자만 남긴 매트) */}
           <div className="mg mg-bottom" style={g('bottom')}>
-            <MotionItem order={0} z={50} className="ui-nav-item">
-              <RefLayers layout={L} ids={['characters']} z={2} files={files} />
+            <MotionItem order={0} z={50} className="ui-nav-item" idle={false}>
+              <LiveNavIcon kind="characters" x={rectOf(L, 'characters').x} y={rectOf(L, 'characters').y} kick={kicks.characters} />
 
-              <Hit r={rectOf(L, 'characters')} label="캐릭터" onClick={() => go('characters')} />
+              <span onPointerDown={() => kick('characters')} onPointerEnter={() => kick('characters')}><Hit r={rectOf(L, 'characters')} label="캐릭터" onClick={() => go('characters')} /></span>
             </MotionItem>
-            <MotionItem order={1} z={50} className="ui-nav-item">
-              <RefLayers layout={L} ids={['formation']} z={2} files={files} />
+            <MotionItem order={1} z={50} className="ui-nav-item" idle={false}>
+              <LiveNavIcon kind="formation" x={rectOf(L, 'formation').x} y={rectOf(L, 'formation').y} kick={kicks.formation} />
 
-              <Hit r={rectOf(L, 'formation')} label="편성" onClick={() => go('formation')} />
+              <span onPointerDown={() => kick('formation')} onPointerEnter={() => kick('formation')}><Hit r={rectOf(L, 'formation')} label="편성" onClick={() => go('formation')} /></span>
             </MotionItem>
-            <MotionItem order={2} z={50} className="ui-nav-item">
-              {/* 홈: 그림 대신 코드로 다시 그린 움직이는 아이콘(구체 회전·테두리 빛) */}
+            <MotionItem order={2} z={50} className="ui-nav-item" idle={false}>
+              {/* 하단 메뉴: 원본 그림 자체가 움직이는 아이콘(src/ui/navicons) */}
               <HomeIcon x={rectOf(L, 'home').x} y={rectOf(L, 'home').y} />
 
               <Hit r={rectOf(L, 'home')} label="홈 (현재 로비)" onClick={() => setPop(null)} />
             </MotionItem>
-            <MotionItem order={3} z={50} className="ui-nav-item">
-              <RefLayers layout={L} ids={['bag']} z={2} files={files} />
+            <MotionItem order={3} z={50} className="ui-nav-item" idle={false}>
+              <LiveNavIcon kind="bag" x={rectOf(L, 'bag').x} y={rectOf(L, 'bag').y} kick={kicks.bag} />
 
-              <Hit r={rectOf(L, 'bag')} label="가방" onClick={() => go('bag')} />
+              <span onPointerDown={() => kick('bag')} onPointerEnter={() => kick('bag')}><Hit r={rectOf(L, 'bag')} label="가방" onClick={() => go('bag')} /></span>
             </MotionItem>
-            <MotionItem order={4} z={50} className="ui-nav-item">
-              <RefLayers layout={L} ids={['recruitment']} z={2} files={files} />
+            <MotionItem order={4} z={50} className="ui-nav-item" idle={false}>
+              <LiveNavIcon kind="recruitment" x={rectOf(L, 'recruitment').x} y={rectOf(L, 'recruitment').y} kick={kicks.recruitment} />
 
-              <Hit r={rectOf(L, 'recruitment')} label="영입" onClick={() => go('recruit')} />
+              <span onPointerDown={() => kick('recruitment')} onPointerEnter={() => kick('recruitment')}><Hit r={rectOf(L, 'recruitment')} label="영입" onClick={() => go('recruit')} /></span>
             </MotionItem>
           </div>
         </div>
