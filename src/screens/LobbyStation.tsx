@@ -18,6 +18,7 @@ import { ProfileIcon } from '../ui/ProfileIcon'
 import { HomeIcon } from '../ui/navicons/HomeIcon'
 import { LiveNavIcon } from '../ui/navicons/LiveNavIcon'
 import { LiveRef } from '../ui/live/LiveRef'
+import { LiveIcon, hasLiveIcon } from '../ui/live/LiveIcon'
 import { commanderOf } from '../game/data/profile'
 import { MotionStage as RefStage, MotionItem, MotionTicker, SceneCue, AmbientFx, Fx } from '../ui/ui-motion'
 import textless from '../game/data/ref-textless.json'
@@ -102,6 +103,8 @@ export default function LobbyStation() {
   const alertOf: Record<string, boolean> = { notice: b.notice, menu: b.mission, events: b.event, mail: b.mail }
   const live = (id: string) => {
     const l = L.layers.find((q) => q.id === id)!
+    // 장면 연기가 준비된 버튼(4배 아틀라스 + 직접 짠 연기, src/ui/live/scenes.ts)
+    if (hasLiveIcon(id)) return <LiveIcon id={id} x={l.x} y={l.y} alert={!!alertOf[id]} kick={kicks[id] ?? 0} />
     const plain = NOBADGE[id] ?? MATTE[id]
     return <LiveRef id={id} src={plain} badgeSrc={NOBADGE[id] && alertOf[id] !== undefined ? MATTE[id] : undefined} alert={!!alertOf[id]} x={l.x} y={l.y} w={l.width} h={l.height} kick={kicks[id] ?? 0} />
   }
