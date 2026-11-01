@@ -32,8 +32,8 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const active = useScreenActive()
   const reduce = useReduceMotion()
   // 구역: params.zone(없으면 아카데미 큰 지도). 출입구로 넘어오면 params.at 자리에서 연출 없이 시작
-  const zone: Zone = ZONES[String(params.zone ?? 'academy')] ?? ACADEMY
-  const at = params.at as { x: number; y: number; dir: Dir } | undefined
+  const zone: Zone = ZONES[String(params.zone ?? 'academy_gate')] ?? ACADEMY // 스토리 시작 = 아카데미 정문 진입로
+  const atParam = params.at as { x: number; y: number; dir: Dir } | undefined
   const camZ = zone.camZ ?? CAM_Z
   const camLift = zone.charH * 0.43 // 카메라가 발보다 조금 위(몸 가운데)를 본다
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -42,7 +42,9 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const [, tick] = useReducer((n: number) => n + 1, 0)
   const [load, setLoad] = useState(0)
   const [glErr, setGlErr] = useState(false)
-  const memo = at ? undefined : MEMO[zone.id]
+  // 전투 다녀오기 등으로 기억해 둔 자리가 있으면 그게 먼저(포탈로 들어올 때는 목적지 기억을 지우고 온다)
+  const memo = MEMO[zone.id]
+  const at = memo ? undefined : atParam
   const [who, setWho] = useState<Playable>((memo?.who as Playable) ?? (params.who as Playable) ?? 'seren')
   const [run, setRun] = useState(false)
   const [phase, setPhase] = useState<'load' | 'intro' | 'play'>('load')
@@ -70,6 +72,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const stars = gs.content.caseFile?.stars ?? {}
   const next = CHAPTER1.nodes.find((n) => !stars[n.id] && zone.events[n.id])
   const nextEv = next ? zone.events[next.id] : null
+  const chapNext = CHAPTER1.nodes.find((n) => !stars[n.id]) // 이 맵에 없는 사건이어도 퀘스트 칸에 보여 준다
   const [enc, setEnc] = useState<typeof next | null>(null)        // 조우 연출 중인 노드
   const [scene, setScene] = useState<typeof next | null>(null)    // 필드 위에서 여는 이야기·조사 장면
   const [gateFade, setGateFade] = useState(false)
@@ -83,6 +86,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
     try { r = new ExploreRenderer(canvas.current) } catch { setGlErr(true); return }
     rd.current = r
     r.quality = gs.settings.quality === 'low' ? 'low' : 'high'
+    r.grade = zone.raw ? 0 : 1
     r.load(zone, PLAYABLE.filter((k) => SPRITES[k]), zone.npcs.map((n) => n.img), r.quality === 'low', setLoad, at ? [at] : memo ? [memo] : [zone.start, zone.intro])
       .then(() => {
         setLoad(1)
@@ -157,7 +161,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const goZone = (p: Portal) => {
     if (busy.current) return
     busy.current = true; stick.current = null; keys.current.clear(); audio.sfx('shutter'); setGateFade(true)
-    setTimeout(() => { delete MEMO[zone.id]; nav.replace('story', { zone: p.to.zone, at: { x: p.to.x, y: p.to.y, dir: p.to.dir }, who: me.current.kind }) }, 420)
+    setTimeout(() => { delete MEMO[zone.id]; delete MEMO[p.to.zone]; nav.replace('story', { zone: p.to.zone, at: { x: p.to.x, y: p.to.y, dir: p.to.dir }, who: me.current.kind }) }, 420)
   }
   // 사건 조우: 연출 → 전투 화면(다녀오면 같은 자리) / 이야기·조사는 필드 위에서 바로
   const startEvent = (n: NonNullable<typeof next>) => {
@@ -304,7 +308,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
         {/* NPC 머리 위 말풍선 · 조사 표시 */}
         {phase === 'play' && zone.npcs.map((n) => <i key={n.id} className={`sf-bubble ${near?.x === n ? 'on' : ''}`} style={toScreen(n.x, n.y - zone.charH - 40)} aria-hidden>···</i>)}
         {phase === 'play' && zone.spots.filter((s) => s.kind === 'look').map((s) => <i key={s.id} className={`sf-spot ${clues.includes(s.clue ?? '') ? 'done' : ''} ${near?.x === s ? 'on' : ''}`} style={toScreen(s.x, s.y - 240)} aria-hidden />)}
-        {phase === 'play' && (zone.portals ?? []).map((p) => <i key={p.id} className="sf-portal" style={toScreen(p.x, p.y)} aria-hidden><b>{p.label}</b></i>)}
+        {phase === 'play' && (zone.portals ?? []).map((p) => <i key={p.id} className={`sf-portal ${p.x < zone.W * 0.15 ? 'edge-l' : ''}`} style={toScreen(p.x, p.y)} aria-hidden><b>{p.label}</b></i>)}
         {phase === 'play' && next && nextEv && <i className={`sf-ev ${next.kind}`} style={toScreen(nextEv.x, nextEv.y)} aria-hidden><b>{next.no}</b></i>}
         {near && <div className="sf-hint" style={toScreen(m.x, m.y - zone.charH - 70)}>{near.kind === 'npc' ? '대화' : (near.x as { label: string }).label}</div>}
 
@@ -318,7 +322,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
             <button type="button" className="sf-back" onClick={() => { audio.sfx('tap'); delete MEMO[zone.id]; nav.back() }} aria-label="뒤로">‹</button>
             <div className="sf-loc"><i aria-hidden>◆</i>{zone.area} - {place}</div>
           </div>
-          <div className="sf-quest"><small>{zone.quest.title}{Object.keys(zone.events).length ? ` · ${CHAPTER1.no}` : ''}</small><b>{Object.keys(zone.events).length ? (next ? `${next.no} ${next.title}` : '1장 완료') : zone.place}</b><span>{next && nextEv ? `${zone.regions.find((g) => nextEv.x >= g.x0 && nextEv.x < g.x1 && nextEv.y >= g.y0 && nextEv.y < g.y1)?.name ?? ''} — 지도의 ◆ 표시로 이동` : Object.keys(zone.events).length ? `단서 ${clues.length} / ${zone.spots.filter((s) => s.clue).length}` : zone.quest.goal}</span></div>
+          <div className="sf-quest"><small>{zone.quest.title} · {CHAPTER1.no}</small><b>{chapNext ? `${chapNext.no} ${chapNext.title}` : '1장 완료'}</b><span>{next && nextEv ? `${zone.regions.find((g) => nextEv.x >= g.x0 && nextEv.x < g.x1 && nextEv.y >= g.y0 && nextEv.y < g.y1)?.name ?? ''} — 지도의 ◆ 표시로 이동` : Object.keys(zone.events).length ? `단서 ${clues.length} / ${zone.spots.filter((s) => s.clue).length}` : zone.quest.goal}</span></div>
           <div className="sf-party" role="group" aria-label="탐색 대원">
             {PLAYABLE.filter((k) => SPRITES[k]).map((k) => (
               <button key={k} type="button" className={k === who ? 'on' : ''} aria-pressed={k === who} onClick={() => swap(k)}>

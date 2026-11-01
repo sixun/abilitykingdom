@@ -70,7 +70,9 @@ await page.screenshot({ path: `${OUT}/gate-arrive.png` })
 
 // 5) 기존 스토리 탐색(큰 지도)은 그대로
 await page.goto(`${BASE}?screen=story`); await ready()
-check(await zoneId() === 'academy', '기존 스토리 탐색은 아카데미 큰 지도 그대로')
+check(await zoneId() === 'academy_gate', '스토리 시작 = 정문 진입로')
+await page.goto(`${BASE}?screen=story&zone=academy`); await ready()
+check(await zoneId() === 'academy', '기존 큰 지도(1장 사건)도 그대로 열림')
 
 console.log('errors:', errs.length ? errs : 'none')
 console.log('FAILS', fails + (errs.length ? 1 : 0))

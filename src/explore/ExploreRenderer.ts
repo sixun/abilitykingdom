@@ -113,7 +113,7 @@ void main(){ vec2 p = vUv * 2.0 - 1.0; float r = length(p); float a;
   else a = smoothstep(1.0, 0.0, r) * smoothstep(1.0, 0.4, r);
   o = vec4(uC.rgb * uC.a * a, uC.a * a); }`
 const FS_POST = `#version 300 es
-precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uScene; uniform float uT; uniform float uDof; uniform float uBloom; uniform float uLetter; uniform float uFade; uniform float uRush; uniform float uFlash;
+precision highp float; in vec2 vUv; out vec4 o; uniform sampler2D uScene; uniform float uT; uniform float uDof; uniform float uBloom; uniform float uLetter; uniform float uFade; uniform float uRush; uniform float uFlash; uniform float uGrade;
 void main(){
   vec2 tu = vUv;                       // 텍스처 좌표(아래가 0)
   vec2 sc = vec2(vUv.x, 1.0 - vUv.y);  // 화면 좌표(위가 0)
@@ -123,6 +123,8 @@ void main(){
     for (int i = 0; i < 12; i++) { float k = float(i) / 11.0; float wi = 1.0 - k * 0.55; acc += texture(uScene, ctr + (tu - ctr) * (1.0 - k * uRush * 0.24)).rgb * wi; wsum += wi; }
     c = acc / wsum;
   } else c = texture(uScene, tu).rgb;
+  // uGrade 0: 그림 원래 색·조명 그대로(보정·흐림·빛줄기·비네트 없음) — 사용자 제공 배경 맵
+  if (uGrade > 0.5) {
   float f = smoothstep(0.32, 0.56, abs(sc.y - 0.55)) * uDof;   // 틸트시프트: 화면 위·아래를 흐리게
   // 선명도: 그림 원본이 부드러워 언샤프 마스크를 약하게(화면 가운데일수록)
   { vec3 blur = textureLod(uScene, tu, 1.2).rgb;
@@ -141,6 +143,7 @@ void main(){
   c = mix(c * vec3(0.9, 0.93, 1.05), c * vec3(1.06, 1.0, 0.9), smoothstep(0.2, 0.75, l));
   c = mix(vec3(l), c, 1.16);                                          // 채도
   vec2 q = sc - 0.5; c *= 1.0 - dot(q, q) * 0.85;
+  }
   if (sc.y < uLetter || sc.y > 1.0 - uLetter) c = vec3(0.0);
   c = mix(c, vec3(1.0), uFlash);
   o = vec4(c * uFade, 1.0);
@@ -170,6 +173,8 @@ export class ExploreRenderer {
   /** 카메라 돌진 흐림 0~1, 번쩍임 0~1(연출용) */
   rush = 0
   flash = 0
+  /** 1 = 화면 보정(대비·색·흐림·빛줄기·꽃잎) / 0 = 그림 원래 색 그대로 */
+  grade = 1
   private progs: Record<'map' | 'chr' | 'shape' | 'fg' | 'water' | 'post', Prog>
   private vbo: WebGLBuffer
   private tiles = new Map<string, { t: Tex; x: number; y: number; w: number; h: number; used: number }>()
@@ -422,8 +427,8 @@ export class ExploreRenderer {
     // ③-2 전경: 카메라에 가까운 물체는 더 크게·더 빨리 움직인다(시차). 대원과 겹치면 옅어진다
     this.drawFg(actors[0], dt)
     // ④ 꽃잎·빛먼지
-    for (const p of this.petals) this.shape(1, p.x, p.y, p.s, p.s * 0.62, p.r, [p.c[0], p.c[1], p.c[2], 0.9])
-    for (const m of this.motes) this.shape(0, m.x, m.y, m.s, m.s, 0, [1, 0.85, 0.6, 0.18 + Math.sin(m.ph * 2) * 0.1], true)
+    if (this.grade) for (const p of this.petals) this.shape(1, p.x, p.y, p.s, p.s * 0.62, p.r, [p.c[0], p.c[1], p.c[2], 0.9])
+    if (this.grade) for (const m of this.motes) this.shape(0, m.x, m.y, m.s, m.s, 0, [1, 0.85, 0.6, 0.18 + Math.sin(m.ph * 2) * 0.1], true)
     this.view.x = sv.x; this.view.y = sv.y
     // ⑤ 합성
     if (post) {
@@ -434,7 +439,7 @@ export class ExploreRenderer {
       const pp = this.progs.post; gl.useProgram(pp.p)
       gl.uniform3f(pp.u('uView'), W / 2, H / 2, 1); gl.uniform2f(pp.u('uCam'), 0, 0)
       gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, fb.t); gl.uniform1i(pp.u('uScene'), 0)
-      gl.uniform1f(pp.u('uT'), t); gl.uniform1f(pp.u('uDof'), 0.35); gl.uniform1f(pp.u('uBloom'), 1); gl.uniform1f(pp.u('uLetter'), this.letter); gl.uniform1f(pp.u('uFade'), this.fade); gl.uniform1f(pp.u('uRush'), this.rush); gl.uniform1f(pp.u('uFlash'), this.flash)
+      gl.uniform1f(pp.u('uT'), t); gl.uniform1f(pp.u('uDof'), 0.35); gl.uniform1f(pp.u('uBloom'), 1); gl.uniform1f(pp.u('uLetter'), this.letter); gl.uniform1f(pp.u('uFade'), this.fade); gl.uniform1f(pp.u('uRush'), this.rush); gl.uniform1f(pp.u('uFlash'), this.flash); gl.uniform1f(pp.u('uGrade'), this.grade)
       this.quad([0, 0, W, 0, 0, H, W, H], [0, 1, 1, 1, 0, 0, 1, 0])
     }
   }

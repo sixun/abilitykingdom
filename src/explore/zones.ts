@@ -33,6 +33,8 @@ export interface Zone {
   /** 카메라 배율(없으면 기본) · 미니맵 배율(월드 1px → 미니맵 px) */
   camZ?: number
   mini?: number
+  /** true = 그림 원래 색·조명 그대로(화면 보정·빛무리·꽃잎 없음) — 사용자 제공 배경 */
+  raw?: boolean
 }
 export interface Portal { id: string; label: string; x: number; y: number; r: number; to: { zone: string; x: number; y: number; dir: 'N' | 'NE' | 'E' | 'SE' | 'S' | 'SW' | 'W' | 'NW' } }
 
@@ -74,6 +76,8 @@ export const ACADEMY: Zone = {
     { id: 'bus', label: '버스 정류장', x: 7330, y: 2880, r: 240, kind: 'look', lines: [{ text: P(19) }] },
   ],
   quest: { title: '메인 사건', goal: '사건 현장으로 이동' },
+  // 스토리는 아카데미 정문 진입로(새 맵)에서 시작한다. 이 큰 지도(성수 거리·1장 사건)는 정문 진입로의 '도시 쪽 길'로 온다
+  portals: [{ id: 'to-gate', label: '아카데미 정문 진입로', x: 420, y: 2860, r: 80, to: { zone: 'academy_gate', x: 440, y: 1130, dir: 'E' } }],
   regions: [
     { name: '성수역 고가', en: 'SEONGSU STATION', code: 'AREA 06', x0: 6400, y0: 0, x1: 99999, y1: 2700 },
     { name: '성수 거리', en: 'SEONGSU STREET', code: 'AREA 05', x0: 4250, y0: 0, x1: 99999, y1: 99999 },
@@ -113,7 +117,7 @@ export const ACADEMY: Zone = {
 // 원본: ability_kingdom_academy_maps_8_and_plan.zip — 맵당 겹치는 카메라 화면 4장을 manifest 좌표로 복원한 1672×941 배경.
 // 게임 월드는 원본 ×2(3344×1882, AI 4배 업스케일을 줄여 씀). 아래 좌표는 원본 1672 좌표를 적고 G()로 2배 한다.
 // 걷기·가림 자료: tools/build_explore_maps8.py(바닥 분할 + 손보정 다각형 tools/explore/maps8/<맵>_overrides.json)
-// 지금은 개발용 확인 장면: 두 맵 사이 문은 '테스트 연결'이고 확정된 챕터 동선이 아니다. 대사는 자리표시.
+// 스토리 모드는 정문 진입로에서 시작한다. 정문↔복도 문과 도시 쪽 길↔큰 지도는 임시 연결(챕터 동선 미확정). 대사는 자리표시.
 const G = (x: number, y: number) => ({ x: x * 2, y: y * 2 })
 const gp = (id: string, label: string, x: number, y: number, r: number, lines: Line[], clue?: string): Spot => ({ id, label, ...G(x, y), r: r * 2, kind: 'look', lines, clue })
 const WG = WORLDS.academy_gate, WH = WORLDS.academy_hall
@@ -126,6 +130,8 @@ const BASE8 = {
   fgAtlas: { file: 'explore/fg.webp', rects: {} },
   amb: 'amb_academy',
   bgm: 'academy' as Bgm,
+  raw: true,
+  lamps: [] as Zone['lamps'], // 그림에 이미 그려진 등불 위에 빛무리를 덧칠하지 않는다
 }
 
 export const ACADEMY_GATE: Zone = {
@@ -133,16 +139,18 @@ export const ACADEMY_GATE: Zone = {
   id: 'academy_gate', area: '아카데미', areaEn: 'ACADEMY GATE', place: '정문 진입로', placeEn: 'MAIN GATE', dir: 'explore/academy_gate',
   W: WG.W, H: WG.H, cols: WG.cols, rows: WG.rows,
   start: G(230, 588),                       // 도시 쪽 보도에서 들어온다
-  intro: { x: WG.W / 2, y: WG.H / 2, z: 0.383 }, // 맵 전체를 한 번 보여 주고 대원에게 돌진
+  intro: { ...G(700, 300), z: 0.66 },       // 맵 전체가 아니라 카메라 한 화면: 정문·안내실을 보여 준 뒤 대원에게 돌진
   light: { amb: [0.84, 0.8, 0.84], sun: [0.24, 0.2, 0.14], dir: [-0.55, -0.62, 0.56], shadow: [0.55, 0.2] },
-  lamps: [G(175, 200), G(578, 80), G(1100, 192), G(1562, 352)].map((p) => ({ ...p, r: 300, i: 0.3, c: [1, 0.74, 0.44] as [number, number, number] })),
   spots: [
     gp('booth', '안내실', 965, 292, 48, [{ text: P(31) }, { text: P(32) }]),
     gp('board8', '게시판', 1372, 398, 48, [{ text: P(33) }], '정문 게시판의 공지'),
-    gp('city', '도시 쪽 길', 30, 566, 40, [{ text: P(34) }]),
   ],
-  portals: [{ id: 'to-hall', label: '수업동 복도로 (테스트 연결)', ...G(375, 182), r: 80, to: { zone: 'academy_hall', ...G(900, 384), dir: 'S' } }],
-  quest: { title: '개발용 확인', goal: '정문 진입로 둘러보기 · 정문 안쪽 길 = 수업동 복도(테스트 연결)' },
+  portals: [
+    { id: 'to-hall', label: '수업동 복도로 (테스트 연결)', ...G(375, 182), r: 80, to: { zone: 'academy_hall', ...G(900, 384), dir: 'S' } },
+    // 도시 쪽 길 → 기존 큰 지도(성수 거리·1장 사건 현장). 맵 동선 확정 전 임시 연결
+    { id: 'to-field', label: '도시 쪽 길 → 성수 거리', ...G(40, 575), r: 70, to: { zone: 'academy', x: 520, y: 2860, dir: 'E' } },
+  ],
+  quest: { title: '메인 사건', goal: '사건 현장: 왼쪽 아래 도시 쪽 길 → 성수 거리' },
   regions: [{ name: '정문 진입로', en: 'MAIN GATE', code: 'AC 01', x0: 0, y0: 0, x1: 99999, y1: 99999 }],
   chapter: { no: '01', title: '아카데미', en: ['ACADEMY', 'MAIN GATE'], card: { bg: '#1d2d6b', ink: '#e9c46a' } },
 }
@@ -152,17 +160,16 @@ export const ACADEMY_HALL: Zone = {
   id: 'academy_hall', area: '아카데미', areaEn: 'ACADEMY HALL', place: '수업동 복도', placeEn: 'CLASS HALL', dir: 'explore/academy_hall',
   W: WH.W, H: WH.H, cols: WH.cols, rows: WH.rows,
   start: G(720, 420),                       // 위층 복도 가운데
-  intro: { x: WH.W / 2, y: WH.H / 2, z: 0.383 },
+  intro: { ...G(720, 300), z: 0.66 },
   // 실내: 창으로 드는 오후 빛 + 벽등의 따뜻한 빛
   light: { amb: [0.88, 0.82, 0.8], sun: [0.18, 0.14, 0.1], dir: [-0.5, -0.6, 0.62], shadow: [0.45, 0.16] },
-  lamps: [G(65, 125), G(158, 212), G(436, 352), G(578, 478), G(390, 650), G(600, 780), G(820, 478), G(1188, 285), G(1520, 112), G(1045, 545)].map((p) => ({ ...p, r: 260, i: 0.32, c: [1, 0.72, 0.42] as [number, number, number] })),
   spots: [
     gp('a205', '강의실 A-205', 360, 246, 46, [{ text: P(35) }]),
     gp('lounge', '라운지', 690, 318, 50, [{ text: P(36) }]),
     gp('hallboard', '복도 게시판', 1470, 345, 46, [{ text: P(37) }], '복도 게시판의 시간표'),
   ],
   portals: [{ id: 'to-gate', label: '정문 진입로로 (테스트 연결)', ...G(905, 318), r: 76, to: { zone: 'academy_gate', ...G(386, 276), dir: 'S' } }],
-  quest: { title: '개발용 확인', goal: '수업동 복도 둘러보기 · 유리문 = 정문 진입로(테스트 연결)' },
+  quest: { title: '메인 사건', goal: '유리문 → 정문 진입로(테스트 연결)' },
   regions: [{ name: '수업동 복도', en: 'CLASS HALL', code: 'AC 05', x0: 0, y0: 0, x1: 99999, y1: 99999 }],
   chapter: { no: '01', title: '아카데미', en: ['ACADEMY', 'CLASS HALL'], card: { bg: '#1d2d6b', ink: '#e9c46a' } },
 }

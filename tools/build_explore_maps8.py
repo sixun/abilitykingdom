@@ -4,7 +4,7 @@
 그 안의 map_manifest.json 좌표로 복원한 1672×941 배경(reconstruct_maps.py, 겹침 픽셀 일치 검사 통과).
 이 폴더(tools/explore/maps8)에 둔 것:
   <맵>.png          복원 배경(원본 그대로, 1672×941)
-  <맵>_up.webp      AI 4배 업스케일(Creative Claw aura-sr) — 게임에는 2배(3344×1882)로 줄여 쓴다
+  <맵>_up.webp      AI 4배 업스케일(aura-sr) — 비교용. 게임은 원본을 그대로 2배(3344×1882)로 키워 쓴다
   <맵>_seg.jpg      바닥 분할(nano-banana-pro 4K, 흰색 = 서 있을 수 있는 바닥, 검정 = 그 밖의 물체)
   <맵>_overrides.json  손보정 다각형(원본 1672 좌표): walk = 걷기로 강제, block = 막기, nowalk = 바닥이지만 못 들어감(차도 등)
 출력(public/explore/<맵>): w_<열>_<행>.webp, low.webp, aux.png, anim.webp — 형식은 tools/build_explore_world.py 와 같다
@@ -40,7 +40,8 @@ def build(zone):
         os.remove(f'{out}/{f}')
     src = Image.open(f'{SRC}/{zone}.png').convert('RGB')
     W, H = src.width * S, src.height * S
-    up = Image.open(f'{SRC}/{zone}_up.webp').convert('RGB').resize((W, H), Image.LANCZOS)
+    # 원본 픽셀을 그대로 2배(기획: 제공 이미지의 재질·조명·색 유지). AI 업스케일(<맵>_up.webp)은 비교용으로만 둔다
+    up = src.resize((W, H), Image.LANCZOS)
     cols, rows = -(-W // T), -(-H // T)
     for r in range(rows):
         for c in range(cols):

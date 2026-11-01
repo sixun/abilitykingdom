@@ -102,3 +102,4 @@
 /* 다른 맵으로 가는 출입구 표시(바닥의 빛 고리 + 이름) */
 .sf-portal { position: absolute; width: 74px; height: 30px; transform: translate(-50%, -50%); border-radius: 50%; border: 2px solid #9fe3ff; box-shadow: 0 0 18px #6cc8ff, inset 0 0 12px #6cc8ff88; animation: sfPulse 1.8s ease-in-out infinite; pointer-events: none; z-index: 5; }
 .sf-portal b { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -10px); padding: 4px 10px; border-radius: 999px; background: #0d1020cc; border: 1px solid #9fe3ff77; color: #dff4ff; font: 800 13px/1 var(--f-body); white-space: nowrap; }
+.sf-portal.edge-l b { left: 0; transform: translate(-12px, -10px); }
