@@ -500,5 +500,7 @@ export class ExploreRenderer {
       this.quad([x0, y0, x1, y0, x0, by, x1, by], fl > 0 ? [u0, v0, u1, v0, u0, v1, u1, v1] : [u1, v0, u0, v0, u1, v1, u0, v1])
     })
   }
-  dispose() { const gl = this.gl; for (const x of [...this.tex.values(), ...this.nrm.values()]) gl.deleteTexture(x.t); for (const x of this.tiles.values()) gl.deleteTexture(x.t.t); this.tiles.clear(); if (this.aux) gl.deleteTexture(this.aux.t); if (this.anim) gl.deleteTexture(this.anim.t); if (this.fgTex) gl.deleteTexture(this.fgTex.t) }
+  dispose() { const gl = this.gl; for (const x of [...this.tex.values(), ...this.nrm.values()]) gl.deleteTexture(x.t); for (const x of this.tiles.values()) gl.deleteTexture(x.t.t); this.tiles.clear(); if (this.aux) gl.deleteTexture(this.aux.t); if (this.anim) gl.deleteTexture(this.anim.t); if (this.fgTex) gl.deleteTexture(this.fgTex.t)
+    // 맵을 옮겨 다니면 화면마다 새 WebGL 문맥이 생긴다 → 바로 반납(쌓이면 느려지고 휴대폰은 문맥 수 제한에 걸림)
+    gl.getExtension('WEBGL_lose_context')?.loseContext() }
 }

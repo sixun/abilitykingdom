@@ -108,5 +108,5 @@ def build(zone):
 
 
 if __name__ == '__main__':
-    for z in (sys.argv[1:] or ['academy_gate', 'academy_hall']):
+    for z in (sys.argv[1:] or ['academy_gate', 'academy_hall', 'academy_shopping', 'academy_approach', 'academy_central']):
         build(z)

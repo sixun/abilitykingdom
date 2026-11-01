@@ -17,11 +17,15 @@ check(await until(() => window.__EX__?.phase() === 'intro', 90000), '로비 스�
 await page.evaluate(() => window.__EX__.setPhase('play')); await W(800)
 // 스토리 시작 = 아카데미 정문 진입로(새 맵). 퀘스트 칸은 1장 다음 사건을 보여 준다
 check(await page.evaluate(() => window.__EX__.zone()) === 'academy_gate', '스토리 시작 = 아카데미 정문 진입로')
-check((await page.locator('.sf-quest b').textContent()).startsWith('1-1'), '퀘스트 칸 = 1-1(사건은 도시 쪽 길 너머)')
-// 도시 쪽 길(왼쪽 아래) 출입구로 걸어서 → 큰 지도(성수 거리·1장 사건)
+check((await page.locator('.sf-quest b').textContent()).startsWith('1-1'), '퀘스트 칸 = 1-1(사건은 상점가 너머)')
+// 도시 쪽 길(왼쪽 아래) 포탈로 걸어서 → 아카데미 앞 상점가
 await page.evaluate(() => window.__EX__.set(300, 1150, 'W')); await W(400)
-await page.keyboard.down('a'); await until(() => window.__EX__?.zone?.() === 'academy', 30000); await page.keyboard.up('a')
-check(await until(() => window.__EX__?.zone?.() === 'academy' && window.__EX__.phase() === 'play', 60000), '도시 쪽 길 → 큰 지도(진입 연출 없이)')
+await page.keyboard.down('a'); await until(() => window.__EX__?.zone?.() === 'academy_shopping', 30000); await page.keyboard.up('a')
+check(await until(() => window.__EX__?.zone?.() === 'academy_shopping' && window.__EX__.phase() === 'play', 60000), '도시 쪽 길 → 아카데미 앞 상점가(진입 연출 없이)')
+// 상점가 오른쪽 위 길 → 큰 지도(성수 거리·1장 사건)
+await page.evaluate(() => window.__EX__.set(2800, 300, 'E')); await W(600)
+await page.evaluate(() => { const p = window.__EX__.portals().find((q) => q.id === 'to-field'); window.__EX__.set(p.x, p.y, 'E') })
+check(await until(() => window.__EX__?.zone?.() === 'academy' && window.__EX__.phase() === 'play', 60000), '상점가 → 큰 지도(진입 연출 없이)')
 await W(800)
 check(await page.evaluate(() => window.__EX__.next()?.n.id) === 'c1-1', '첫 사건 자리 = 1-1')
 

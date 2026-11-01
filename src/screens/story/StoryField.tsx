@@ -179,9 +179,12 @@ export default function StoryField({ params }: { params: Record<string, unknown>
     setEnc(null); busy.current = false
     nav.push('caseBattle', { node: n.id })
   }
+  // 끝낸 사건은 저장이 반영되기 전에 같은 자리에서 다시 열리지 않게 기억해 둔다(예전엔 저장 전 한 프레임에 같은 장면이 다시 열렸다)
+  const doneEv = useRef(new Set<string>())
   const finishScene = async () => {
-    const n = scene!; setScene(null); busy.current = false
-    await game.clearCaseNode(n.id, 1); audio.sfx('save'); setToast(`사건 진행 · ${n.no} ${n.title}`)
+    const n = scene!; doneEv.current.add(n.id); setScene(null)
+    await game.clearCaseNode(n.id, 1); busy.current = false
+    audio.sfx('save'); setToast(`사건 진행 · ${n.no} ${n.title}`)
   }
   const nextLine = () => {
     audio.sfx('tap')
@@ -256,7 +259,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
         }
         // 사건 자리에 들어서면 조우
         const ev = evRef.current
-        if (c.phase === 'play' && !c.talk && !busy.current && ev && Math.hypot(m.x - ev.x, (m.y - ev.y) * 1.4) < ev.r) startEvent(ev.n)
+        if (c.phase === 'play' && !c.talk && !busy.current && ev && !doneEv.current.has(ev.n.id) && Math.hypot(m.x - ev.x, (m.y - ev.y) * 1.4) < ev.r) startEvent(ev.n)
         if (m.flash) m.flash = Math.max(0, m.flash - dt * 3)
         for (const n of npcs.current) n.t += dt
         // 카메라
@@ -283,7 +286,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
     return () => cancelAnimationFrame(raf)
   }, [])
 
-  useEffect(() => { (window as unknown as { __EX__: unknown }).__EX__ = { frames: () => frames.current, me: () => me.current, phase: () => cfg.current.phase, set: (x: number, y: number, d?: Dir) => { me.current.x = x; me.current.y = y; if (d) me.current.dir = d }, walkable: (x: number, y: number) => rd.current?.walkable(x, y), zone: () => zone.id, portals: () => zone.portals ?? [], view: () => rd.current?.view, swap, setPhase, interact, next: () => evRef.current } })
+  useEffect(() => { (window as unknown as { __EX__: unknown }).__EX__ = { frames: () => frames.current, me: () => me.current, phase: () => cfg.current.phase, set: (x: number, y: number, d?: Dir) => { me.current.x = x; me.current.y = y; if (d) me.current.dir = d }, walkable: (x: number, y: number) => rd.current?.walkable(x, y), zone: () => zone.id, state: () => ({ enc: enc?.id, scene: scene?.id, busy: busy.current, talk: !!talk }), portals: () => zone.portals ?? [], view: () => rd.current?.view, swap, setPhase, interact, next: () => evRef.current } })
 
   // 조이스틱
   const sDown = (e: RPE<HTMLDivElement>) => { e.currentTarget.setPointerCapture(e.pointerId); const b = e.currentTarget.getBoundingClientRect(); stick.current = { id: e.pointerId, ox: b.left + b.width / 2, oy: b.top + b.height / 2, dx: 0, dy: 0 }; sMove(e) }

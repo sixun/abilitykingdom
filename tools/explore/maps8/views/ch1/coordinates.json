@@ -1,0 +1,164 @@
+{
+  "origin": "top-left; x right; y down",
+  "maps": [
+    {
+      "map": "02_shopping",
+      "canvas_size": [
+        1672,
+        941
+      ],
+      "views": [
+        {
+          "file": "02_shopping/02_shopping_01.png",
+          "origin": [
+            0,
+            0
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        },
+        {
+          "file": "02_shopping/02_shopping_02.png",
+          "origin": [
+            632,
+            0
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        },
+        {
+          "file": "02_shopping/02_shopping_03.png",
+          "origin": [
+            632,
+            356
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        },
+        {
+          "file": "02_shopping/02_shopping_04.png",
+          "origin": [
+            0,
+            356
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        }
+      ]
+    },
+    {
+      "map": "04_approach",
+      "canvas_size": [
+        1672,
+        941
+      ],
+      "views": [
+        {
+          "file": "04_approach/04_approach_01.png",
+          "origin": [
+            0,
+            0
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        },
+        {
+          "file": "04_approach/04_approach_02.png",
+          "origin": [
+            632,
+            0
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        },
+        {
+          "file": "04_approach/04_approach_03.png",
+          "origin": [
+            632,
+            356
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        },
+        {
+          "file": "04_approach/04_approach_04.png",
+          "origin": [
+            0,
+            356
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        }
+      ]
+    },
+    {
+      "map": "05_central_hall",
+      "canvas_size": [
+        1672,
+        940
+      ],
+      "views": [
+        {
+          "file": "05_central_hall/05_central_hall_01.png",
+          "origin": [
+            0,
+            0
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        },
+        {
+          "file": "05_central_hall/05_central_hall_02.png",
+          "origin": [
+            632,
+            0
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        },
+        {
+          "file": "05_central_hall/05_central_hall_03.png",
+          "origin": [
+            632,
+            355
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        },
+        {
+          "file": "05_central_hall/05_central_hall_04.png",
+          "origin": [
+            0,
+            355
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -76,8 +76,8 @@ export const ACADEMY: Zone = {
     { id: 'bus', label: '버스 정류장', x: 7330, y: 2880, r: 240, kind: 'look', lines: [{ text: P(19) }] },
   ],
   quest: { title: '메인 사건', goal: '사건 현장으로 이동' },
-  // 스토리는 아카데미 정문 진입로(새 맵)에서 시작한다. 이 큰 지도(성수 거리·1장 사건)는 정문 진입로의 '도시 쪽 길'로 온다
-  portals: [{ id: 'to-gate', label: '아카데미 정문 진입로', x: 420, y: 2860, r: 80, to: { zone: 'academy_gate', x: 440, y: 1130, dir: 'E' } }],
+  // 스토리는 아카데미 정문 진입로(새 맵)에서 시작한다. 이 큰 지도(성수 거리·1장 사건)는 정문 진입로 → 아카데미 앞 상점가 → 오른쪽 위 길로 온다
+  portals: [{ id: 'to-shop', label: '아카데미 앞 상점가', x: 420, y: 2860, r: 80, to: { zone: 'academy_shopping', x: 3120, y: 220, dir: 'SW' } }],
   regions: [
     { name: '성수역 고가', en: 'SEONGSU STATION', code: 'AREA 06', x0: 6400, y0: 0, x1: 99999, y1: 2700 },
     { name: '성수 거리', en: 'SEONGSU STREET', code: 'AREA 05', x0: 4250, y0: 0, x1: 99999, y1: 99999 },
@@ -117,7 +117,8 @@ export const ACADEMY: Zone = {
 // 원본: ability_kingdom_academy_maps_8_and_plan.zip — 맵당 겹치는 카메라 화면 4장을 manifest 좌표로 복원한 1672×941 배경.
 // 게임 월드는 원본 ×2(3344×1882, AI 4배 업스케일을 줄여 씀). 아래 좌표는 원본 1672 좌표를 적고 G()로 2배 한다.
 // 걷기·가림 자료: tools/build_explore_maps8.py(바닥 분할 + 손보정 다각형 tools/explore/maps8/<맵>_overrides.json)
-// 스토리 모드는 정문 진입로에서 시작한다. 정문↔복도 문과 도시 쪽 길↔큰 지도는 임시 연결(챕터 동선 미확정). 대사는 자리표시.
+// 스토리 모드는 정문 진입로에서 시작한다. 연결(임시, 03번 맵 자리는 비어 있음):
+//   성수 거리(큰 지도) ↔ 02 상점가 ↔ 01 정문 진입로 ↔ 04 본관 접근로 ↔ 05 본관 중앙홀 ↔ 수업동 복도. 대사는 자리표시.
 const G = (x: number, y: number) => ({ x: x * 2, y: y * 2 })
 const gp = (id: string, label: string, x: number, y: number, r: number, lines: Line[], clue?: string): Spot => ({ id, label, ...G(x, y), r: r * 2, kind: 'look', lines, clue })
 const WG = WORLDS.academy_gate, WH = WORLDS.academy_hall
@@ -146,11 +147,10 @@ export const ACADEMY_GATE: Zone = {
     gp('board8', '게시판', 1372, 398, 48, [{ text: P(33) }], '정문 게시판의 공지'),
   ],
   portals: [
-    { id: 'to-hall', label: '수업동 복도로 (테스트 연결)', ...G(375, 182), r: 80, to: { zone: 'academy_hall', ...G(900, 384), dir: 'S' } },
-    // 도시 쪽 길 → 기존 큰 지도(성수 거리·1장 사건 현장). 맵 동선 확정 전 임시 연결
-    { id: 'to-field', label: '도시 쪽 길 → 성수 거리', ...G(40, 575), r: 70, to: { zone: 'academy', x: 520, y: 2860, dir: 'E' } },
+    { id: 'to-approach', label: '본관 접근로', ...G(375, 182), r: 80, to: { zone: 'academy_approach', ...G(1180, 820), dir: 'N' } },
+    { id: 'to-shop', label: '아카데미 앞 상점가', ...G(40, 575), r: 70, to: { zone: 'academy_shopping', ...G(70, 705), dir: 'E' } },
   ],
-  quest: { title: '메인 사건', goal: '사건 현장: 왼쪽 아래 도시 쪽 길 → 성수 거리' },
+  quest: { title: '메인 사건', goal: '사건 현장: 도시 쪽 길 → 상점가 → 성수 거리' },
   regions: [{ name: '정문 진입로', en: 'MAIN GATE', code: 'AC 01', x0: 0, y0: 0, x1: 99999, y1: 99999 }],
   chapter: { no: '01', title: '아카데미', en: ['ACADEMY', 'MAIN GATE'], card: { bg: '#1d2d6b', ink: '#e9c46a' } },
 }
@@ -168,10 +168,70 @@ export const ACADEMY_HALL: Zone = {
     gp('lounge', '라운지', 690, 318, 50, [{ text: P(36) }]),
     gp('hallboard', '복도 게시판', 1470, 345, 46, [{ text: P(37) }], '복도 게시판의 시간표'),
   ],
-  portals: [{ id: 'to-gate', label: '정문 진입로로 (테스트 연결)', ...G(905, 318), r: 76, to: { zone: 'academy_gate', ...G(386, 276), dir: 'S' } }],
-  quest: { title: '메인 사건', goal: '유리문 → 정문 진입로(테스트 연결)' },
-  regions: [{ name: '수업동 복도', en: 'CLASS HALL', code: 'AC 05', x0: 0, y0: 0, x1: 99999, y1: 99999 }],
+  portals: [{ id: 'to-central', label: '본관 중앙홀', ...G(905, 318), r: 76, to: { zone: 'academy_central', ...G(1225, 150), dir: 'SE' } }],
+  quest: { title: '메인 사건', goal: '유리문 → 본관 중앙홀' },
+  regions: [{ name: '수업동 복도', en: 'CLASS HALL', code: 'AC 06', x0: 0, y0: 0, x1: 99999, y1: 99999 }],
   chapter: { no: '01', title: '아카데미', en: ['ACADEMY', 'CLASS HALL'], card: { bg: '#1d2d6b', ink: '#e9c46a' } },
 }
 
-export const ZONES: Record<string, Zone> = { academy: ACADEMY, academy_gate: ACADEMY_GATE, academy_hall: ACADEMY_HALL }
+// ── 1챕터 맵 02·04·05(사용자 제공 카메라 화면 12장, 2026-11-01) ──
+const WS = WORLDS.academy_shopping, WA = WORLDS.academy_approach, WC = WORLDS.academy_central
+const zoneBase = (w: { W: number; H: number; cols: number; rows: number }) => ({ ...BASE8, W: w.W, H: w.H, cols: w.cols, rows: w.rows })
+
+export const ACADEMY_SHOPPING: Zone = {
+  ...zoneBase(WS),
+  id: 'academy_shopping', area: '아카데미', areaEn: 'ACADEMY STREET', place: '아카데미 앞 상점가', placeEn: 'SHOPPING STREET', dir: 'explore/academy_shopping',
+  start: G(70, 705), intro: { ...G(600, 300), z: 0.66 },
+  light: { amb: [0.86, 0.8, 0.8], sun: [0.2, 0.16, 0.11], dir: [-0.55, -0.62, 0.56], shadow: [0.5, 0.18] },
+  spots: [
+    gp('books', '서점', 240, 345, 48, [{ text: P(41) }]),
+    gp('store', '편의점', 620, 250, 46, [{ text: P(42) }]),
+    gp('uniform', '교복점', 1010, 245, 46, [{ text: P(43) }]),
+    gp('bakery', '빵집', 1300, 265, 46, [{ text: P(44) }], '빵집 앞 전단지'),
+  ],
+  portals: [
+    { id: 'to-gate', label: '아카데미 정문 진입로', ...G(15, 700), r: 40, to: { zone: 'academy_gate', x: 440, y: 1130, dir: 'E' } },
+    { id: 'to-field', label: '성수 거리 (사건 현장)', ...G(1640, 60), r: 40, to: { zone: 'academy', x: 520, y: 2860, dir: 'E' } },
+  ],
+  quest: { title: '메인 사건', goal: '사건 현장: 오른쪽 위 길 → 성수 거리' },
+  regions: [{ name: '아카데미 앞 상점가', en: 'SHOPPING STREET', code: 'AC 02', x0: 0, y0: 0, x1: 99999, y1: 99999 }],
+  chapter: { no: '01', title: '아카데미', en: ['ACADEMY', 'STREET'], card: { bg: '#1d2d6b', ink: '#e9c46a' } },
+}
+
+export const ACADEMY_APPROACH: Zone = {
+  ...zoneBase(WA),
+  id: 'academy_approach', area: '아카데미', areaEn: 'ACADEMY APPROACH', place: '본관 접근로', placeEn: 'MAIN APPROACH', dir: 'explore/academy_approach',
+  start: G(1180, 820), intro: { ...G(1000, 300), z: 0.66 },
+  light: { amb: [0.86, 0.8, 0.8], sun: [0.2, 0.16, 0.11], dir: [-0.55, -0.62, 0.56], shadow: [0.5, 0.18] },
+  spots: [
+    gp('pool', '반사 연못', 1000, 330, 50, [{ text: P(45) }]),
+    gp('bench', '쉼터 소파', 620, 600, 46, [{ text: P(46) }], '소파 위의 학생증'),
+  ],
+  portals: [
+    { id: 'to-gate', label: '정문 진입로', ...G(1180, 915), r: 50, to: { zone: 'academy_gate', ...G(386, 276), dir: 'S' } },
+    { id: 'to-central', label: '본관 중앙홀', ...G(1330, 120), r: 50, to: { zone: 'academy_central', ...G(1450, 820), dir: 'NW' } },
+  ],
+  quest: { title: '메인 사건', goal: '본관 유리문 → 중앙홀' },
+  regions: [{ name: '본관 접근로', en: 'MAIN APPROACH', code: 'AC 04', x0: 0, y0: 0, x1: 99999, y1: 99999 }],
+  chapter: { no: '01', title: '아카데미', en: ['ACADEMY', 'APPROACH'], card: { bg: '#1d2d6b', ink: '#e9c46a' } },
+}
+
+export const ACADEMY_CENTRAL: Zone = {
+  ...zoneBase(WC),
+  id: 'academy_central', area: '아카데미', areaEn: 'ACADEMY CENTRAL HALL', place: '본관 중앙홀', placeEn: 'CENTRAL HALL', dir: 'explore/academy_central',
+  start: G(1450, 820), intro: { ...G(700, 400), z: 0.66 },
+  light: { amb: [0.88, 0.82, 0.8], sun: [0.18, 0.14, 0.1], dir: [-0.5, -0.6, 0.62], shadow: [0.45, 0.16] },
+  spots: [
+    gp('desk', '안내 데스크', 520, 525, 50, [{ text: P(47) }, { text: P(48) }]),
+    gp('screen', '안내 화면', 900, 300, 46, [{ text: P(49) }], '중앙홀 안내 화면의 공지'),
+  ],
+  portals: [
+    { id: 'to-approach', label: '본관 접근로', ...G(1480, 925), r: 50, to: { zone: 'academy_approach', ...G(1300, 200), dir: 'S' } },
+    { id: 'to-hall', label: '위층 수업동 복도', ...G(1110, 20), r: 40, to: { zone: 'academy_hall', ...G(900, 384), dir: 'S' } },
+  ],
+  quest: { title: '메인 사건', goal: '큰 계단 위 → 수업동 복도' },
+  regions: [{ name: '본관 중앙홀', en: 'CENTRAL HALL', code: 'AC 05', x0: 0, y0: 0, x1: 99999, y1: 99999 }],
+  chapter: { no: '01', title: '아카데미', en: ['ACADEMY', 'CENTRAL HALL'], card: { bg: '#1d2d6b', ink: '#e9c46a' } },
+}
+
+export const ZONES: Record<string, Zone> = { academy: ACADEMY, academy_gate: ACADEMY_GATE, academy_hall: ACADEMY_HALL, academy_shopping: ACADEMY_SHOPPING, academy_approach: ACADEMY_APPROACH, academy_central: ACADEMY_CENTRAL }
