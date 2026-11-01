@@ -1,5 +1,5 @@
 {
-  "_doc": "VARCO TextToSound(NC AI)로 효과음 전부 새로 만들기. 키 = 게임 효과음 이름(src/app/sfx-manifest.json). prompt = 400바이트 이하, n = 한 번에 받을 후보 수(1~5), len = 게임에서 쓸 길이(초, 생성은 늘 10초라 잘라 씀), vars = 무작위로 돌려 쓸 조각 수, loop = 반복 배경음. 생성: .github/workflows/varco-sfx.yml (GitHub 비밀값 VARCO_OPENAPI_KEY), 결과는 sfx-varco 브랜치",
+  "_doc": "VARCO TextToSound(NC AI)로 효과음 전부 새로 만들기. 키 = 게임 효과음 이름(src/app/sfx-manifest.json). prompt = 400바이트 이하, n = 한 번에 받을 후보 수(1~5), len = 게임에서 쓸 길이(초, 생성은 늘 10초라 잘라 씀), vars = 무작위로 돌려 쓸 조각 수, loop = 반복 배경음. 생성: .github/workflows/varco-sfx.yml (GitHub 비밀값 VARCO_OPENAPI_KEY), 결과는 sfx-varco 브랜치. 첫 생성 2026-11-01",
   "tap": { "n": 5, "len": 0.15, "prompt": "Single short crisp UI button tap, soft glassy click with a tiny high sparkle, modern mobile game menu, dry, then silence" },
   "select": { "n": 5, "len": 0.35, "prompt": "Single bright UI select confirm sound, two quick rising digital blips with a light chime, modern anime game menu, then silence" },
   "swap": { "n": 3, "len": 0.6, "prompt": "Single quick UI swipe whoosh with a digital data shimmer, card sliding across a holographic screen, then silence" },
