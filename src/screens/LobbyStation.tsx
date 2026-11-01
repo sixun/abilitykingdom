@@ -293,8 +293,10 @@ export default function LobbyStation() {
             {([
               ['미션', 'missions', b.mission], ['패스', 'pass', false], ['썸머 패스', 'passSummer', false], ['1장 · 끊어진 신호', 'caseFile', false], ['전투 테스트', 'battleTest', false], ['출석', 'attendance', b.attendance], ['우편함', 'mail', b.mail], ['공지', 'notices', b.notice],
               ['이벤트', 'events', b.event], ['가방', 'bag', false], ['프로필', 'profile', false], ['설정', 'settings', false],
-            ] as [string, ScreenName, boolean][]).map(([label, sc, d]) => (
-              <button key={sc} onClick={() => { audio.sfx('tap'); go(sc) }}>{label}{d && <span className="dot" />}</button>
+              // 개발용 확인 장면: 아카데미 맵 2개(정문 진입로 · 수업동 복도). 둘 사이 문은 테스트 연결
+              ['맵 확인 · 정문 진입로', 'story', false, { zone: 'academy_gate' }], ['맵 확인 · 수업동 복도', 'story', false, { zone: 'academy_hall' }],
+            ] as [string, ScreenName, boolean, Record<string, unknown>?][]).map(([label, sc, d, prm]) => (
+              <button key={label} onClick={() => { audio.sfx('tap'); go(sc, prm) }}>{label}{d && <span className="dot" />}</button>
             ))}
             <button onClick={() => { audio.sfx('tap'); setPop(null); setViewing(true) }}>감상 모드</button>
             {/* 폐기(2026-10-29): <button onClick={() => { audio.sfx('swap'); setPop(null); onTheme() }}>카페 로비로</button> */}

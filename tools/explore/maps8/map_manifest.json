@@ -1,0 +1,111 @@
+{
+  "coordinate_system": "image pixels; origin top-left; x right; y down",
+  "maps": [
+    {
+      "id": "academy_gate",
+      "canvas_size": [
+        1672,
+        941
+      ],
+      "views": [
+        {
+          "file": "views/gate/academy_gate_view_01.png",
+          "origin": [
+            0,
+            356
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        },
+        {
+          "file": "views/gate/academy_gate_view_02.png",
+          "origin": [
+            0,
+            0
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        },
+        {
+          "file": "views/gate/academy_gate_view_03.png",
+          "origin": [
+            632,
+            0
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        },
+        {
+          "file": "views/gate/academy_gate_view_04.png",
+          "origin": [
+            632,
+            356
+          ],
+          "size": [
+            1040,
+            585
+          ]
+        }
+      ]
+    },
+    {
+      "id": "academy_hall",
+      "canvas_size": [
+        1672,
+        941
+      ],
+      "views": [
+        {
+          "file": "views/hall/hall_view_01.png",
+          "origin": [
+            0,
+            0
+          ],
+          "size": [
+            1036,
+            583
+          ]
+        },
+        {
+          "file": "views/hall/hall_view_02.png",
+          "origin": [
+            636,
+            0
+          ],
+          "size": [
+            1036,
+            583
+          ]
+        },
+        {
+          "file": "views/hall/hall_view_03.png",
+          "origin": [
+            636,
+            358
+          ],
+          "size": [
+            1036,
+            583
+          ]
+        },
+        {
+          "file": "views/hall/hall_view_04.png",
+          "origin": [
+            0,
+            358
+          ],
+          "size": [
+            1036,
+            583
+          ]
+        }
+      ]
+    }
+  ]
+}

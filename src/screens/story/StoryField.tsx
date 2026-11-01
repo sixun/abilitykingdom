@@ -8,7 +8,7 @@ import { useReduceMotion, useScreenActive } from '../../ui/motion'
 import { useGame } from '../../game/store'
 import { CHAR_BY_ID } from '../../game/data/characters'
 import { ExploreRenderer, SPRITES, DIRS, type Actor, type Dir } from '../../explore/ExploreRenderer'
-import { ACADEMY, type Line, type Zone } from '../../explore/zones'
+import { ACADEMY, ZONES, type Line, type Portal, type Zone } from '../../explore/zones'
 import { CHAPTER1 } from '../../game/story/chapter1'
 import { STAGES } from '../../game/combat/chapter1Stages'
 import { game } from '../../game/store'
@@ -31,16 +31,19 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const gs = useGame()
   const active = useScreenActive()
   const reduce = useReduceMotion()
-  const zone: Zone = ACADEMY
-  void params
+  // 구역: params.zone(없으면 아카데미 큰 지도). 출입구로 넘어오면 params.at 자리에서 연출 없이 시작
+  const zone: Zone = ZONES[String(params.zone ?? 'academy')] ?? ACADEMY
+  const at = params.at as { x: number; y: number; dir: Dir } | undefined
+  const camZ = zone.camZ ?? CAM_Z
+  const camLift = zone.charH * 0.43 // 카메라가 발보다 조금 위(몸 가운데)를 본다
   const canvas = useRef<HTMLCanvasElement>(null)
   const host = useRef<HTMLDivElement>(null)
   const rd = useRef<ExploreRenderer | null>(null)
   const [, tick] = useReducer((n: number) => n + 1, 0)
   const [load, setLoad] = useState(0)
   const [glErr, setGlErr] = useState(false)
-  const memo = MEMO[zone.id]
-  const [who, setWho] = useState<Playable>((memo?.who as Playable) ?? 'seren')
+  const memo = at ? undefined : MEMO[zone.id]
+  const [who, setWho] = useState<Playable>((memo?.who as Playable) ?? (params.who as Playable) ?? 'seren')
   const [run, setRun] = useState(false)
   const [phase, setPhase] = useState<'load' | 'intro' | 'play'>('load')
   const [talk, setTalk] = useState<{ title: string; lines: Line[]; i: number } | null>(null)
@@ -53,7 +56,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const camMode = useRef<'wide' | 'drift' | 'follow'>('wide')
   const fxv = useRef({ rush: 0, flash: 0 })
   const seen = useRef(new Set<string>(memo?.seen ?? [zone.place]))
-  const me = useRef<Actor>({ id: 'me', kind: memo?.who ?? 'seren', x: memo?.x ?? zone.start.x, y: memo?.y ?? zone.start.y, dir: memo?.dir ?? 'S', moving: false, run: false, t: 0 })
+  const me = useRef<Actor>({ id: 'me', kind: memo?.who ?? String(params.who ?? 'seren'), x: at?.x ?? memo?.x ?? zone.start.x, y: at?.y ?? memo?.y ?? zone.start.y, dir: at?.dir ?? memo?.dir ?? 'S', moving: false, run: false, t: 0 })
   const npcs = useRef<Actor[]>(zone.npcs.map((n) => ({ id: n.id, kind: n.id.includes('girl') ? 'npc' : 'npc-s', img: n.img, x: n.x, y: n.y, dir: 'S', moving: false, run: false, t: Math.random() * 5 })))
   const keys = useRef(new Set<string>())
   const stick = useRef<{ id: number; ox: number; oy: number; dx: number; dy: number } | null>(null)
@@ -80,9 +83,11 @@ export default function StoryField({ params }: { params: Record<string, unknown>
     try { r = new ExploreRenderer(canvas.current) } catch { setGlErr(true); return }
     rd.current = r
     r.quality = gs.settings.quality === 'low' ? 'low' : 'high'
-    r.load(zone, PLAYABLE.filter((k) => SPRITES[k]), zone.npcs.map((n) => n.img), r.quality === 'low', setLoad, memo ? [memo] : [zone.start, zone.intro])
+    r.load(zone, PLAYABLE.filter((k) => SPRITES[k]), zone.npcs.map((n) => n.img), r.quality === 'low', setLoad, at ? [at] : memo ? [memo] : [zone.start, zone.intro])
       .then(() => {
         setLoad(1)
+        // 출입구로 넘어옴: 연출 없이 도착 자리에서 바로
+        if (at) { camMode.current = 'follow'; cam.current = { x: at.x, y: at.y - camLift, z: camZ }; setPhase('play'); return }
         if (!memo) { setPhase('intro'); return }
         // 전투 등에서 돌아옴: 연출 없이 그 자리에서 이어서. 끝내지 못한 사건이면 한 걸음 물러서 바로 다시 걸리지 않게
         camMode.current = 'follow'
@@ -91,7 +96,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
           const m = me.current; const dx = m.x - a.x, dy = m.y - a.y, L = Math.hypot(dx, dy) || 1
           for (let k = 360; k >= 0; k -= 20) { const nx = a.x + dx / L * (L + k), ny = a.y + dy / L * (L + k); if (r.walkable(nx, ny)) { m.x = nx; m.y = ny; break } }
         }
-        cam.current = { x: me.current.x, y: me.current.y - 95, z: CAM_Z }
+        cam.current = { x: me.current.x, y: me.current.y - camLift, z: camZ }
         setPhase('play')
       }).catch(() => setGlErr(true))
     audio.preload(['step', 'title', 'whoosh', 'select', 'swap', 'open', 'coin', 'save', 'shutter', 'boss_slam', 'slam'])
@@ -144,8 +149,15 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const goThrough = (to: { x: number; y: number }) => {
     if (busy.current) return
     busy.current = true; audio.sfx('shutter'); setGateFade(true)
-    setTimeout(() => { const m = me.current; m.x = to.x; m.y = to.y; cam.current = { x: to.x, y: to.y - 95, z: CAM_Z } }, 420)
+    setTimeout(() => { const m = me.current; m.x = to.x; m.y = to.y; cam.current = { x: to.x, y: to.y - camLift, z: camZ } }, 420)
     setTimeout(() => { setGateFade(false); busy.current = false }, 900)
+  }
+  // 다른 맵으로: 화면을 덮은 뒤 목적지 맵을 새로 연다(도착 자리는 목적지 출입구 반경 밖 → 바로 되돌아가는 반복 없음)
+  const armed = useRef(new Set((zone.portals ?? []).filter((p) => Math.hypot(me.current.x - p.x, (me.current.y - p.y) * 1.4) > p.r * 1.3).map((p) => p.id)))
+  const goZone = (p: Portal) => {
+    if (busy.current) return
+    busy.current = true; stick.current = null; keys.current.clear(); audio.sfx('shutter'); setGateFade(true)
+    setTimeout(() => { delete MEMO[zone.id]; nav.replace('story', { zone: p.to.zone, at: { x: p.to.x, y: p.to.y, dir: p.to.dir }, who: me.current.kind }) }, 420)
   }
   // 사건 조우: 연출 → 전투 화면(다녀오면 같은 자리) / 이야기·조사는 필드 위에서 바로
   const startEvent = (n: NonNullable<typeof next>) => {
@@ -232,6 +244,12 @@ export default function StoryField({ params }: { params: Record<string, unknown>
             if (!seen.current.has(rg.name)) { seen.current.add(rg.name); setBanner((b) => ({ r: rg, n: (b?.n ?? 0) + 1 })); fxv.current.flash = 0.25 }
           }
         }
+        // 출입구: 반경 밖으로 한 번 나갔다가(잠금 풀림) 다시 들어서면 이동
+        if (c.phase === 'play' && !c.talk && !busy.current) for (const p of zone.portals ?? []) {
+          const d = Math.hypot(m.x - p.x, (m.y - p.y) * 1.4)
+          if (d > p.r * 1.3) armed.current.add(p.id)
+          else if (d < p.r && armed.current.has(p.id)) { goZone(p); break }
+        }
         // 사건 자리에 들어서면 조우
         const ev = evRef.current
         if (c.phase === 'play' && !c.talk && !busy.current && ev && Math.hypot(m.x - ev.x, (m.y - ev.y) * 1.4) < ev.r) startEvent(ev.n)
@@ -240,15 +258,15 @@ export default function StoryField({ params }: { params: Record<string, unknown>
         // 카메라
         const mode = c.phase === 'play' ? 'follow' : c.phase === 'load' ? 'wide' : camMode.current
         const k = mode === 'wide' ? 0 : mode === 'drift' ? 0.5 : c.phase === 'play' ? 5 : 7.5
-        const tz = mode === 'follow' ? CAM_Z : zone.intro.z - (mode === 'drift' ? 0.07 : 0)
-        const want = mode === 'follow' ? { x: m.x, y: m.y - 95 } : { x: zone.intro.x + 320, y: zone.intro.y + 150 }
+        const tz = mode === 'follow' ? camZ : zone.intro.z - (mode === 'drift' ? 0.07 * zone.intro.z / 0.46 : 0)
+        const want = mode === 'follow' ? { x: m.x, y: m.y - camLift } : { x: zone.intro.x + (zone.id === 'academy' ? 320 : 0), y: zone.intro.y + (zone.id === 'academy' ? 150 : 0) }
         const cm = cam.current
         cm.x += (want.x - cm.x) * Math.min(1, dt * k); cm.y += (want.y - cm.y) * Math.min(1, dt * k); cm.z += (tz - cm.z) * Math.min(1, dt * (mode === 'follow' ? 6 : 0.6))
         // 돌진 흐림·번쩍임은 빠르게 가라앉는다
         const fv = fxv.current; fv.rush *= Math.exp(-dt * 3.4); fv.flash *= Math.exp(-dt * 9)
         r.rush = c.reduce ? 0 : fv.rush; r.flash = c.reduce ? 0 : fv.flash
         const hw = 640 / cm.z, hh = 360 / cm.z
-        cm.x = Math.max(hw, Math.min(zone.W - hw, cm.x)); cm.y = Math.max(hh, Math.min(zone.H - hh, cm.y))
+        cm.x = zone.W > hw * 2 ? Math.max(hw, Math.min(zone.W - hw, cm.x)) : zone.W / 2; cm.y = zone.H > hh * 2 ? Math.max(hh, Math.min(zone.H - hh, cm.y)) : zone.H / 2
         r.view = { ...cm }
         if (host.current) { const b = host.current.getBoundingClientRect(); r.resize(b.width, window.devicePixelRatio || 1) }
         r.render([m, ...npcs.current], t, dt)
@@ -261,7 +279,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
     return () => cancelAnimationFrame(raf)
   }, [])
 
-  useEffect(() => { (window as unknown as { __EX__: unknown }).__EX__ = { frames: () => frames.current, me: () => me.current, phase: () => cfg.current.phase, set: (x: number, y: number, d?: Dir) => { me.current.x = x; me.current.y = y; if (d) me.current.dir = d }, walkable: (x: number, y: number) => rd.current?.walkable(x, y), swap, setPhase, interact, next: () => evRef.current } })
+  useEffect(() => { (window as unknown as { __EX__: unknown }).__EX__ = { frames: () => frames.current, me: () => me.current, phase: () => cfg.current.phase, set: (x: number, y: number, d?: Dir) => { me.current.x = x; me.current.y = y; if (d) me.current.dir = d }, walkable: (x: number, y: number) => rd.current?.walkable(x, y), zone: () => zone.id, portals: () => zone.portals ?? [], view: () => rd.current?.view, swap, setPhase, interact, next: () => evRef.current } })
 
   // 조이스틱
   const sDown = (e: RPE<HTMLDivElement>) => { e.currentTarget.setPointerCapture(e.pointerId); const b = e.currentTarget.getBoundingClientRect(); stick.current = { id: e.pointerId, ox: b.left + b.width / 2, oy: b.top + b.height / 2, dx: 0, dy: 0 }; sMove(e) }
@@ -286,6 +304,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
         {/* NPC 머리 위 말풍선 · 조사 표시 */}
         {phase === 'play' && zone.npcs.map((n) => <i key={n.id} className={`sf-bubble ${near?.x === n ? 'on' : ''}`} style={toScreen(n.x, n.y - zone.charH - 40)} aria-hidden>···</i>)}
         {phase === 'play' && zone.spots.filter((s) => s.kind === 'look').map((s) => <i key={s.id} className={`sf-spot ${clues.includes(s.clue ?? '') ? 'done' : ''} ${near?.x === s ? 'on' : ''}`} style={toScreen(s.x, s.y - 240)} aria-hidden />)}
+        {phase === 'play' && (zone.portals ?? []).map((p) => <i key={p.id} className="sf-portal" style={toScreen(p.x, p.y)} aria-hidden><b>{p.label}</b></i>)}
         {phase === 'play' && next && nextEv && <i className={`sf-ev ${next.kind}`} style={toScreen(nextEv.x, nextEv.y)} aria-hidden><b>{next.no}</b></i>}
         {near && <div className="sf-hint" style={toScreen(m.x, m.y - zone.charH - 70)}>{near.kind === 'npc' ? '대화' : (near.x as { label: string }).label}</div>}
 
@@ -299,7 +318,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
             <button type="button" className="sf-back" onClick={() => { audio.sfx('tap'); delete MEMO[zone.id]; nav.back() }} aria-label="뒤로">‹</button>
             <div className="sf-loc"><i aria-hidden>◆</i>{zone.area} - {place}</div>
           </div>
-          <div className="sf-quest"><small>{zone.quest.title} · {CHAPTER1.no}</small><b>{next ? `${next.no} ${next.title}` : '1장 완료'}</b><span>{next && nextEv ? `${zone.regions.find((g) => nextEv.x >= g.x0 && nextEv.x < g.x1 && nextEv.y >= g.y0 && nextEv.y < g.y1)?.name ?? ''} — 지도의 ◆ 표시로 이동` : `단서 ${clues.length} / ${zone.spots.filter((s) => s.clue).length}`}</span></div>
+          <div className="sf-quest"><small>{zone.quest.title}{Object.keys(zone.events).length ? ` · ${CHAPTER1.no}` : ''}</small><b>{Object.keys(zone.events).length ? (next ? `${next.no} ${next.title}` : '1장 완료') : zone.place}</b><span>{next && nextEv ? `${zone.regions.find((g) => nextEv.x >= g.x0 && nextEv.x < g.x1 && nextEv.y >= g.y0 && nextEv.y < g.y1)?.name ?? ''} — 지도의 ◆ 표시로 이동` : Object.keys(zone.events).length ? `단서 ${clues.length} / ${zone.spots.filter((s) => s.clue).length}` : zone.quest.goal}</span></div>
           <div className="sf-party" role="group" aria-label="탐색 대원">
             {PLAYABLE.filter((k) => SPRITES[k]).map((k) => (
               <button key={k} type="button" className={k === who ? 'on' : ''} aria-pressed={k === who} onClick={() => swap(k)}>
@@ -307,7 +326,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
               </button>
             ))}
           </div>
-          <Minimap zone={zone} me={m} npcs={zone.npcs} img={`${zone.dir}/low.webp`} view={r?.view} ev={nextEv} />
+          <Minimap k={zone.mini} zone={zone} me={m} npcs={zone.npcs} img={`${zone.dir}/low.webp`} view={r?.view} ev={nextEv} />
 
           <div className="sf-stick" onPointerDown={sDown} onPointerMove={sMove} onPointerUp={sUp} onPointerCancel={sUp} aria-label="이동 조이스틱(키보드: WASD·방향키)">
             <i style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }} />
@@ -336,8 +355,8 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   )
 }
 
-function Minimap({ zone, me, npcs, img, view, ev }: { zone: Zone; me: Actor; npcs: Zone['npcs']; img: string; view?: { x: number; y: number; z: number }; ev?: { x: number; y: number } | null }) {
-  const K = 0.072 // 미니맵 배율(월드 1px → 0.072px)
+function Minimap({ k, zone, me, npcs, img, view, ev }: { k?: number; zone: Zone; me: Actor; npcs: Zone['npcs']; img: string; view?: { x: number; y: number; z: number }; ev?: { x: number; y: number } | null }) {
+  const K = k ?? 0.072 // 미니맵 배율(월드 1px → 미니맵 px)
   return (
     <div className="sf-mini" aria-label="미니맵">
       <div className="sf-mini-in" style={{ transform: `translate(${Math.min(0, Math.max(260 - zone.W * K, -me.x * K + 130))}px, ${Math.min(0, Math.max(190 - zone.H * K, -me.y * K + 95))}px)` }}>
