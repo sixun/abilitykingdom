@@ -1,0 +1,52 @@
+name: VARCO 효과음 생성
+# tools/sfx/varco_prompts.json(또는 생성 스크립트)을 main에 올리면, 바뀐 프롬프트의 효과음만 VARCO TextToSound로 만들어
+# sfx-varco 브랜치(varco/<키>/<번호>.mp3, index.json, last_run.json)에 올린다. 게임 반영은 tools/build_sfx.py 가 따로 한다.
+# 필요한 비밀값: VARCO_OPENAPI_KEY (저장소 Settings → Secrets and variables → Actions). 키는 채팅·파일에 적지 않는다.
+on:
+  push:
+    branches: [main]
+    paths: [tools/sfx/varco_prompts.json, tools/varco_sfx.py, .github/workflows/varco-sfx.yml]
+  workflow_dispatch:
+    inputs:
+      only:
+        description: '이 키들만 다시 만들기(쉼표로 구분, 비우면 바뀐 것 전부)'
+        required: false
+        default: ''
+permissions:
+  contents: write
+concurrency:
+  group: varco-sfx
+  cancel-in-progress: false
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 이전 결과(sfx-varco 브랜치) 가져오기
+        run: |
+          git fetch origin sfx-varco || true
+          if git rev-parse --verify origin/sfx-varco >/dev/null 2>&1; then
+            git worktree add out origin/sfx-varco
+          else
+            git worktree add --detach out
+            cd out && git checkout --orphan sfx-varco && git rm -rfq . && cd ..
+          fi
+      - name: ffmpeg
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - name: 생성
+        env:
+          VARCO_OPENAPI_KEY: ${{ secrets.VARCO_OPENAPI_KEY }}
+        run: |
+          if [ -z "$VARCO_OPENAPI_KEY" ]; then
+            mkdir -p out/varco && echo '{"failed":{"_all":"VARCO_OPENAPI_KEY 비밀값이 없습니다"}}' > out/varco/last_run.json
+          else
+            python3 tools/varco_sfx.py out/varco "${{ github.event.inputs.only }}"
+          fi
+      - name: sfx-varco 브랜치에 올리기
+        run: |
+          cd out
+          git config user.name "varco-sfx-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -qm "VARCO 효과음 생성 $(date -u +%Y-%m-%dT%H:%MZ)" || echo "변경 없음"
+          git push origin HEAD:sfx-varco
