@@ -286,6 +286,52 @@ export class ExploreRenderer {
     return w.data[(iy * w.w + ix) * 4 + 2] > 200
   }
 
+  /** 걷는 길 찾기(A*, 걷기 칸을 2칸씩 묶은 격자). 목표가 막힌 곳이면 가장 가까운 걷는 칸으로. 찾으면 월드 좌표 경유점들 */
+  findPath(x0: number, y0: number, x1: number, y1: number): { x: number; y: number }[] | null {
+    const w = this.walk; if (!w) return null
+    const S = 2, k = w.w / this.zone.W
+    const GW = Math.floor(w.w / S), GH = Math.floor(w.h / S)
+    const ok = (cx: number, cy: number) => cx >= 0 && cy >= 0 && cx < GW && cy < GH && w.data[((cy * S) * w.w + cx * S) * 4 + 2] > 200
+    const cell = (x: number, y: number) => [Math.round(x * k / S), Math.round(y * k / S)]
+    const near = (c: number[]) => { // 가장 가까운 걷는 칸(나선 탐색)
+      if (ok(c[0], c[1])) return c
+      for (let r = 1; r < 60; r++) for (let dy = -r; dy <= r; dy++) for (const dx of [-r, r]) { if (ok(c[0] + dx, c[1] + dy)) return [c[0] + dx, c[1] + dy]; if (ok(c[0] + dy, c[1] + dx)) return [c[0] + dy, c[1] + dx] }
+      return null
+    }
+    const a = near(cell(x0, y0)), b = near(cell(x1, y1)); if (!a || !b) return null
+    const N = GW * GH, g = new Float32Array(N).fill(Infinity), from = new Int32Array(N).fill(-1), closed = new Uint8Array(N)
+    const heap: number[] = [], f = new Float32Array(N)
+    const push = (i: number) => { heap.push(i); let j = heap.length - 1; while (j > 0) { const p = (j - 1) >> 1; if (f[heap[p]] <= f[heap[j]]) break; [heap[p], heap[j]] = [heap[j], heap[p]]; j = p } }
+    const pop = () => { const top = heap[0], last = heap.pop()!; if (heap.length) { heap[0] = last; let j = 0; for (;;) { const l = j * 2 + 1, r = l + 1; let m = j; if (l < heap.length && f[heap[l]] < f[heap[m]]) m = l; if (r < heap.length && f[heap[r]] < f[heap[m]]) m = r; if (m === j) break; [heap[m], heap[j]] = [heap[j], heap[m]]; j = m } } return top }
+    const H = (i: number) => { const dx = Math.abs(i % GW - b[0]), dy = Math.abs(((i / GW) | 0) - b[1]); return Math.max(dx, dy) + 0.414 * Math.min(dx, dy) }
+    const si = a[1] * GW + a[0], gi = b[1] * GW + b[0]
+    g[si] = 0; f[si] = H(si); push(si)
+    let found = false, guard = 0
+    while (heap.length && guard++ < 900000) {
+      const i = pop(); if (closed[i]) continue; closed[i] = 1
+      if (i === gi) { found = true; break }
+      const cx = i % GW, cy = (i / GW) | 0
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dy) continue
+        const nx = cx + dx, ny = cy + dy; if (!ok(nx, ny)) continue
+        if (dx && dy && (!ok(cx + dx, cy) || !ok(cx, cy + dy))) continue // 모서리 끼기 금지
+        const ni = ny * GW + nx; if (closed[ni]) continue
+        const ng = g[i] + (dx && dy ? 1.414 : 1)
+        if (ng < g[ni]) { g[ni] = ng; f[ni] = ng + H(ni); from[ni] = i; push(ni) }
+      }
+    }
+    if (!found) return null
+    const cells: number[] = []; for (let i = gi; i !== -1; i = from[i]) cells.push(i)
+    cells.reverse()
+    const pts = cells.map((i) => ({ x: ((i % GW) * S + 0.5) / k, y: (((i / GW) | 0) * S + 0.5) / k }))
+    // 줄이기: 직선으로 걸어갈 수 있으면 중간 점을 뺀다
+    const clear = (p: { x: number; y: number }, q: { x: number; y: number }) => { const L = Math.hypot(q.x - p.x, q.y - p.y), n = Math.ceil(L / (6 / k)); for (let t = 1; t < n; t++) if (!this.walkable(p.x + (q.x - p.x) * t / n, p.y + (q.y - p.y) * t / n)) return false; return true }
+    const out = [{ x: x0, y: y0 }]
+    let i = 0
+    while (i < pts.length - 1) { let j = pts.length - 1; while (j > i + 1 && !clear(out[out.length - 1], pts[j])) j--; out.push(pts[j]); i = j }
+    return out.slice(1)
+  }
+
   resize(cssW: number, dpr: number) {
     const k = Math.min(this.quality === 'low' ? 1 : 1.6, dpr * (cssW / W))
     const w = Math.round(W * k), h = Math.round(H * k)
@@ -500,7 +546,7 @@ export class ExploreRenderer {
       this.quad([x0, y0, x1, y0, x0, by, x1, by], fl > 0 ? [u0, v0, u1, v0, u0, v1, u1, v1] : [u1, v0, u0, v0, u1, v1, u0, v1])
     })
   }
-  dispose() { const gl = this.gl; for (const x of [...this.tex.values(), ...this.nrm.values()]) gl.deleteTexture(x.t); for (const x of this.tiles.values()) gl.deleteTexture(x.t.t); this.tiles.clear(); if (this.aux) gl.deleteTexture(this.aux.t); if (this.anim) gl.deleteTexture(this.anim.t); if (this.fgTex) gl.deleteTexture(this.fgTex.t)
-    // 맵을 옮겨 다니면 화면마다 새 WebGL 문맥이 생긴다 → 바로 반납(쌓이면 느려지고 휴대폰은 문맥 수 제한에 걸림)
-    gl.getExtension('WEBGL_lose_context')?.loseContext() }
+  dispose() { const gl = this.gl; for (const x of [...this.tex.values(), ...this.nrm.values()]) gl.deleteTexture(x.t); for (const x of this.tiles.values()) gl.deleteTexture(x.t.t); this.tiles.clear(); if (this.aux) gl.deleteTexture(this.aux.t); if (this.anim) gl.deleteTexture(this.anim.t); if (this.fgTex) gl.deleteTexture(this.fgTex.t) }
+  /** 맵을 옮겨 다니면 화면마다 새 WebGL 문맥이 생긴다 → 화면이 사라질 때 반납(쌓이면 느려지고 휴대폰은 문맥 수 제한에 걸림) */
+  release() { this.gl.getExtension('WEBGL_lose_context')?.loseContext() }
 }

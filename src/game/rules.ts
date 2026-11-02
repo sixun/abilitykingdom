@@ -25,6 +25,11 @@ export function statsOf(def: CharacterDefinition, owned: OwnedCharacter, items: 
 
 const growth = (lv: number) => 1 + (lv - 1) * 0.045
 
+/** 팀장(계정) 레벨업에 필요한 경험치(임시 곡선) */
+export const playerExpToNext = (lv: number) => Math.round(1500 + lv * lv * 60)
+/** 팀장 경험치 획득(임시): 사건 첫 완료 · 탐색 단서 */
+export const PLAYER_EXP = { story: 1200, investigate: 1200, battle: 2600, boss: 6000, clue: 300 } as const
+
 /** 표시 배율: 원본 편성 화면의 기본 팀(지안·유진·하린·도윤 Lv.40)이 24,680이 되도록 맞춘 임시 값 */
 const POWER_SCALE = 0.795247
 export function powerOf(stats: { hp: number; atk: number; def: number }) {

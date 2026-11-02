@@ -17,7 +17,7 @@ check(await until(() => window.__EX__?.phase() === 'intro', 90000), '로비 스�
 await page.evaluate(() => window.__EX__.setPhase('play')); await W(800)
 // 스토리 시작 = 아카데미 정문 진입로(새 맵). 퀘스트 칸은 1장 다음 사건을 보여 준다
 check(await page.evaluate(() => window.__EX__.zone()) === 'academy_gate', '스토리 시작 = 아카데미 정문 진입로')
-check((await page.locator('.sf-quest b').textContent()).startsWith('1-1'), '퀘스트 칸 = 1-1(사건은 상점가 너머)')
+check((await page.locator('.screen-active .fh-quest small').textContent()).startsWith('1-1'), '메인 사건 알림판 = 1-1(사건은 상점가 너머)')
 // 도시 쪽 길(왼쪽 아래) 포탈로 걸어서 → 아카데미 앞 상점가
 await page.evaluate(() => window.__EX__.set(300, 1150, 'W')); await W(400)
 await page.keyboard.down('a'); await until(() => window.__EX__?.zone?.() === 'academy_shopping', 30000); await page.keyboard.up('a')

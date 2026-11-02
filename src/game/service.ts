@@ -26,6 +26,8 @@ export interface GameService {
   setActiveTeam(teamId: string): Promise<Result<true>>
   setLobbyCharacter(characterId: string): Promise<Result<true>>
   setLobbyTheme(theme: LobbyTheme): void
+  /** 팀장 경험치 더하기(넘치면 레벨업). 탐색 단서 등 */
+  grantPlayerExp(amount: number): { level: number; exp: number; up: number }
   markLobbyEntrance(characterId: string): void
 
   recruit(bannerId: string, count: number, requestId: string): Promise<Result<RecruitmentTransaction>>

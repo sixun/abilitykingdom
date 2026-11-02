@@ -12,6 +12,15 @@ import {
   STORY_CHAPTERS, DISTRICTS, WANTED, TRAININGS, RAIDS, ARENA_OPPONENTS,
 } from './data/catalog'
 import { expToNext, creditCostForLevel } from './rules'
+import { playerExpToNext, PLAYER_EXP } from './rules'
+
+/** 팀장 경험치를 더하고 넘친 만큼 레벨업. 오른 레벨 수를 돌려준다 */
+function addPlayerExp(s: GameState, amount: number) {
+  let exp = (s.playerExp ?? 0) + Math.max(0, Math.round(amount)), up = 0
+  while (exp >= playerExpToNext(s.playerLevel) && s.playerLevel < 99) { exp -= playerExpToNext(s.playerLevel); s.playerLevel += 1; up++ }
+  s.playerExp = exp
+  return up
+}
 
 const SAVE_KEY = 'ability-kingdom.save.v1'
 const SCHEMA = 2 // 원본 화면 기준 초기값으로 변경(v0.2)
@@ -246,6 +255,11 @@ export class LocalGameService implements GameService {
     this.commit((s) => { s.lobby.characterId = characterId })
     return ok(true as const)
   }
+  grantPlayerExp(amount: number) {
+    let up = 0
+    this.commit((s) => { up = addPlayerExp(s, amount) })
+    return { level: this.state.playerLevel, exp: this.state.playerExp ?? 0, up }
+  }
   setLobbyTheme(theme: LobbyTheme) {
     this.commit((s) => { s.lobby.theme = theme })
   }
@@ -444,6 +458,7 @@ export class LocalGameService implements GameService {
         s.content.caseFile = { stars: { ...(s.content.caseFile?.stars ?? {}), [nodeId]: best } }
         this.grant(s, rewards)
         if (coreUnlocked) s.coreSlots = (s.coreSlots ?? 0) + 1
+        if (first) addPlayerExp(s, PLAYER_EXP[node.kind as keyof typeof PLAYER_EXP] ?? PLAYER_EXP.battle)
         if (node.kind !== 'story' && node.kind !== 'investigate') { s.content.wins += 1; this.bump(s, 'battleWin') }
       })
       return ok({ first, rewards, coreUnlocked, stars: best })

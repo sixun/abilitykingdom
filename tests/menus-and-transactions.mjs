@@ -10,7 +10,11 @@ const shot = (n) => page.screenshot({ path: `test-results/e2-${n}.png` })
 let fails = 0
 const check = (c, m) => { console.log(c ? 'PASS' : 'FAIL', m); if (!c) fails++ }
 const W = (ms = 600) => page.waitForTimeout(ms)
-const back = async () => { await page.click('.screen-active .back-btn, .screen-active button[aria-label="돌아가기"], .screen-active button[aria-label="뒤로"]'); await W(700) }
+const back = async () => {
+  // 스토리 필드는 시안대로 뒤로 버튼 없이 전체 메뉴 → 로비로 나가기
+  if (await page.locator('.screen-active .story-field').count()) { await page.click('.screen-active .fh button[aria-label="전체 메뉴"]'); await W(300); await page.click('.screen-active .sf-back'); await W(900); return }
+  await page.click('.screen-active .back-btn, .screen-active button[aria-label="돌아가기"], .screen-active button[aria-label="뒤로"]'); await W(700)
+}
 
 await page.goto(BASE + '?screen=lobby'); await W(2500)
 
@@ -155,7 +159,7 @@ s = await st(); const stam = s.wallet.stamina
 await page.click('.screen-active button[aria-label="스토리"]'); await W(900)
 check(await page.locator('.screen-active .story-field').count() === 1, '스토리 = 탐색 필드로 바로 진입')
 check(await page.locator('.screen-active .story-case, .screen-active .story-line').count() === 0, '스토리 스테이지 목록 없음')
-await page.click('.screen-active .sf-back'); await W(900)
+await back()
 await page.click('.screen-active button[aria-label="현상수배"]'); await W(700)
 await page.click('.poster >> nth=2'); await W(500)
 await page.click('.stage-panel .btn-primary'); await W(800)

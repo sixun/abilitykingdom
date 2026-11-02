@@ -186,6 +186,8 @@ export interface GameState {
   schema: number
   playerName: string
   playerLevel: number
+  /** 팀장(계정) 경험치: 지금 레벨 안에서 쌓인 양. 없으면 0 */
+  playerExp?: number
   createdAt: number
   wallet: Record<CurrencyId, number>
   owned: Record<string, OwnedCharacter>

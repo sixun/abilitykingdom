@@ -5,8 +5,12 @@ import { audio } from '../../app/audio'
 import { RefStage } from '../../ui/ref'
 import { Cine, type Shot } from '../../ui/cine/Cine'
 import { useReduceMotion, useScreenActive } from '../../ui/motion'
-import { useGame } from '../../game/store'
+import { useGame, badges } from '../../game/store'
 import { CHAR_BY_ID } from '../../game/data/characters'
+import { ITEM_BY_ID } from '../../game/data/catalog'
+import { statsOf, playerExpToNext, PLAYER_EXP } from '../../game/rules'
+import type { OwnedCharacter } from '../../game/types'
+import { FieldHud, type ChatLine, type ChatTab, type HudModel, type Marker } from './FieldHud'
 import { ExploreRenderer, SPRITES, DIRS, type Actor, type Dir } from '../../explore/ExploreRenderer'
 import { ACADEMY, ZONES, type Line, type Portal, type Zone } from '../../explore/zones'
 import { CHAPTER1 } from '../../game/story/chapter1'
@@ -17,6 +21,27 @@ import StoryScene from '../case/StoryScene'
 // 화면을 떠났다 돌아올 때(전투 다녀오기) 이어서 시작하려고 기억해 두는 필드 상태(앱을 켜 둔 동안만)
 type Memo = { x: number; y: number; dir: Dir; who: string; clues: string[]; seen: string[]; place: string; away?: { id: string; x: number; y: number } }
 const MEMO: Record<string, Memo> = {}
+// 채팅 기록(맵을 옮겨도 이어지게 화면 밖에 둔다. 서버 연결 전이라 이 기기 안에서만)
+const CHAT: ChatLine[] = []
+const chatLog = (tab: ChatTab, text: string, who?: string) => { const last = CHAT[CHAT.length - 1]; if (last && last.text === text && last.who === who && Date.now() - last.at < 1500) return; CHAT.push({ tab, text, who, at: Date.now() }); if (CHAT.length > 120) CHAT.splice(0, CHAT.length - 120) }
+/** 받침에 따라 (으)로 */
+const ro = (w: string) => { const c = w.charCodeAt(w.length - 1); if (c < 0xac00 || c > 0xd7a3) return `${w}(으)로`; const j = (c - 0xac00) % 28; return w + (j === 0 || j === 8 ? '로' : '으로') }
+const DIR_DEG: Record<Dir, number> = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 }
+const ACTIVE_CD = 8, DODGE_CD = 2.5
+// 맵을 옮겨도(화면이 새로 열려도) 이어지는 HUD 상태: 쿨타임·각성 게이지·버프·탈것·채팅창·알림판
+const KEEP = { act: null as null | Record<string, unknown>, mounted: false, questShow: true, chatSmall: false, chatTab: 'world' as ChatTab, at: 0 }
+/** 이 맵에서 목표 맵으로 가는 첫 포탈(맵 연결 그래프 너비 탐색) */
+function portalToward(from: string, goal: string): Portal | null {
+  const prev = new Map<string, { z: string; p: Portal }>(); const q = [from]; const seen = new Set([from])
+  while (q.length) {
+    const z = q.shift()!; if (z === goal) break
+    for (const p of ZONES[z]?.portals ?? []) if (!seen.has(p.to.zone) && ZONES[p.to.zone]) { seen.add(p.to.zone); prev.set(p.to.zone, { z, p }); q.push(p.to.zone) }
+  }
+  if (!prev.has(goal)) return null
+  let cur = goal, step = prev.get(cur)!
+  while (step.z !== from) { cur = step.z; step = prev.get(cur)! }
+  return step.p
+}
 
 // 스토리 탐색(2.5D): 끊김 없는 구역 이동 · 8방향 걷기/달리기 · NPC 대화 · 조사 · 대원 교체 · 미니맵 · 진입 연출
 // 조작: 왼쪽 아래 조이스틱(끌기) 또는 WASD·방향키, Shift=달리기, E/Space=대화·조사, Tab=대원 교체
@@ -51,9 +76,25 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const [talk, setTalk] = useState<{ title: string; lines: Line[]; i: number } | null>(null)
   const [clues, setClues] = useState<string[]>(memo?.clues ?? [])
   const [toast, setToast] = useState<string | null>(null)
-  const [place, setPlace] = useState(memo?.place ?? zone.place)
+  const [, setPlace] = useState(memo?.place ?? zone.place)
   const [banner, setBanner] = useState<{ r: Zone['regions'][number]; n: number } | null>(null)
   const [ticker, setTicker] = useState(false)
+  // HUD: 채팅·퀘스트 알림판·탈것·대상·전투 동작 상태
+  const [chatTab, setChatTab] = useState<ChatTab>(KEEP.chatTab)
+  const [chatSmall, setChatSmall] = useState(KEEP.chatSmall)
+  const [, chatBump] = useReducer((n: number) => n + 1, 0)
+  const [questShow, setQuestShow] = useState(KEEP.questShow)
+  const [mounted, setMounted] = useState(KEEP.mounted)
+  const [targetId, setTargetId] = useState<string | null>(null)
+  const [fxs, setFxs] = useState<{ id: number; k: string; x: number; y: number; r?: number; dx?: number; text?: string }[]>([])
+  const fxId = useRef(0)
+  const act = useRef({ active: 0, dodge: 0, gauge: 0, awakenT: 0, shieldT: 0, expT: 0, dance: 0, dash: null as null | { vx: number; vy: number; t: number }, atk: 0, walked: 0 })
+  // 지난 화면에서 이어받기(지난 사이 흐른 시간만큼 쿨타임·버프를 줄인다)
+  if (KEEP.act && !act.current.walked && KEEP.at) { const gap = (performance.now() - KEEP.at) / 1000; const k = KEEP.act as typeof act.current; for (const key of ['active', 'dodge', 'awakenT', 'shieldT', 'expT'] as const) act.current[key] = Math.max(0, k[key] - gap); act.current.gauge = k.gauge; act.current.walked = 0.0001; KEEP.act = null }
+  useEffect(() => () => { KEEP.act = { ...act.current, dash: null, dance: 0 }; KEEP.at = performance.now() }, [])
+  useEffect(() => { Object.assign(KEEP, { mounted, questShow, chatSmall, chatTab }) }, [mounted, questShow, chatSmall, chatTab])
+  // 자동 이동: 경유점 · 목적(퀘스트 목표 / 지도에서 고른 곳 / 고른 대상에게 가서 말 걸기)
+  const auto = useRef<null | { kind: 'quest' | 'point' | 'npc'; pts: { x: number; y: number }[]; id?: string; stuck: number; lastD: number }>(null)
   // 연출 카메라: wide = 처음 보여 줄 곳 고정, drift = 천천히 밀고 들어감, follow = 대원에게 돌진(이후 따라감)
   const camMode = useRef<'wide' | 'drift' | 'follow'>('wide')
   const fxv = useRef({ rush: 0, flash: 0 })
@@ -106,7 +147,8 @@ export default function StoryField({ params }: { params: Record<string, unknown>
     audio.preload(['step', 'title', 'whoosh', 'select', 'swap', 'open', 'coin', 'save', 'shutter', 'boss_slam', 'slam'])
     const prevBgm = audio.currentBgm
     audio.bgm(zone.bgm); audio.ambience(zone.amb, 0.55) // 음악이 있으니 환경음은 낮춘다
-    return () => { r.dispose(); audio.ambience(''); audio.bgm(prevBgm === zone.bgm ? 'lobby' : prevBgm) }
+    const cv = canvas.current
+    return () => { r.dispose(); setTimeout(() => { if (!cv.isConnected) r.release() }, 0); audio.ambience(''); audio.bgm(prevBgm === zone.bgm ? 'lobby' : prevBgm) }
   }, [])
 
   // 진입 연출(시네마틱 타이포): 암전 → 넓은 화면 위 장 제목 블록 → 거대한 구역 이름과 함께 카메라가 대원에게 돌진 → 단색 카드 → 위아래 띠
@@ -146,7 +188,12 @@ export default function StoryField({ params }: { params: Record<string, unknown>
       const s = t.x as typeof zone.spots[number]
       if (s.kind === 'gate' && s.to) { goThrough(s.to); return }
       setTalk({ title: s.label, lines: s.lines, i: 0 })
-      if (s.clue && !clues.includes(s.clue)) { setClues((c) => [...c, s.clue!]); setTimeout(() => { audio.sfx('coin'); setToast(`단서 획득 · ${s.clue}`) }, 400) }
+      if (s.clue && !clues.includes(s.clue)) {
+        setClues((c) => [...c, s.clue!])
+        const xp = Math.round(PLAYER_EXP.clue * (act.current.expT > 0 ? 1.5 : 1))
+        game.grantPlayerExp(xp); chatLog('system', `단서 획득 · ${s.clue} (경험치 +${xp})`); chatBump()
+        setTimeout(() => { audio.sfx('coin'); setToast(`단서 획득 · ${s.clue}`) }, 400)
+      }
     }
   }
   // 문 통과: 화면을 덮었다가 반대편에서 연다(닫힌 철문을 걸어서 뚫고 지나가지 않게)
@@ -161,7 +208,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const goZone = (p: Portal) => {
     if (busy.current) return
     busy.current = true; stick.current = null; keys.current.clear(); audio.sfx('shutter'); setGateFade(true)
-    setTimeout(() => { delete MEMO[zone.id]; delete MEMO[p.to.zone]; nav.replace('story', { zone: p.to.zone, at: { x: p.to.x, y: p.to.y, dir: p.to.dir }, who: me.current.kind }) }, 420)
+    setTimeout(() => { delete MEMO[zone.id]; delete MEMO[p.to.zone]; nav.replace('story', { zone: p.to.zone, at: { x: p.to.x, y: p.to.y, dir: p.to.dir }, who: me.current.kind, auto: auto.current?.kind === 'quest' }) }, 420)
   }
   // 사건 조우: 연출 → 전투 화면(다녀오면 같은 자리) / 이야기·조사는 필드 위에서 바로
   const startEvent = (n: NonNullable<typeof next>) => {
@@ -184,7 +231,7 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const finishScene = async () => {
     const n = scene!; doneEv.current.add(n.id); setScene(null)
     await game.clearCaseNode(n.id, 1); busy.current = false
-    audio.sfx('save'); setToast(`사건 진행 · ${n.no} ${n.title}`)
+    audio.sfx('save'); setToast(`사건 진행 · ${n.no} ${n.title}`); chatLog('system', `사건 진행 · ${n.no} ${n.title}`); chatBump()
   }
   const nextLine = () => {
     audio.sfx('tap')
@@ -197,6 +244,109 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   }
   useEffect(() => { if (toast) { const id = setTimeout(() => setToast(null), 2200); return () => clearTimeout(id) } }, [toast])
 
+  // ───── HUD 동작 ─────
+  const mountedRef = useRef(false); mountedRef.current = mounted
+  const targetRef = useRef<string | null>(null); targetRef.current = targetId
+  const fx = (k: string, x: number, y: number, extra: { r?: number; dx?: number; text?: string } = {}, ms = 900) => {
+    const id = ++fxId.current
+    setFxs((v) => [...v, { id, k, x, y, ...extra }])
+    setTimeout(() => setFxs((v) => v.filter((f) => f.id !== id)), ms)
+  }
+  const free = () => cfg.current.phase === 'play' && !cfg.current.talk && !busy.current
+  const facing = () => { const d = DIR_DEG[me.current.dir] * Math.PI / 180; return { x: Math.sin(d), y: -Math.cos(d) } }
+  const doAttack = () => {
+    const A = act.current, m = me.current; if (!free() || A.atk > 0) return
+    A.atk = 0.32; A.gauge = Math.min(1, A.gauge + 0.05); A.dance = 0
+    const f = facing(); audio.sfx('slash')
+    fx('slash', m.x + f.x * 70, m.y - zone.charH * 0.45 + f.y * 50, { r: DIR_DEG[m.dir] - 60 }, 320)
+  }
+  const doActive = () => {
+    const A = act.current, m = me.current; if (!free() || A.active > 0) return
+    A.active = ACTIVE_CD; A.shieldT = 4; A.gauge = Math.min(1, A.gauge + 0.15)
+    audio.sfx('whoosh'); fx('burst', m.x, m.y - zone.charH * 0.4, {}, 750); m.flash = 0.8
+  }
+  const doAwaken = () => {
+    const A = act.current, m = me.current; if (!free() || A.gauge < 1) return
+    A.gauge = 0; A.awakenT = 20; A.expT = 60
+    audio.sfx('reveal5'); fx('awaken', m.x, m.y - zone.charH * 0.45, {}, 1000); fxv.current = { rush: 0.6, flash: 0.55 }; m.flash = 1
+    chatLog('system', '각성! 20초 동안 이동 속도 +20%, 60초 동안 탐색 경험치 +50%'); chatBump()
+  }
+  const doDodge = () => {
+    const A = act.current, m = me.current; if (!free() || A.dodge > 0) return
+    const f = facing(); A.dodge = DODGE_CD; A.dance = 0; auto.current = null
+    A.dash = { vx: f.x * 900, vy: f.y * 900 * 0.82, t: 0.2 }
+    audio.sfx('whoosh'); fx('dash', m.x, m.y - zone.charH * 0.35, { r: DIR_DEG[m.dir] - 90 }, 360)
+  }
+  const doDance = () => {
+    const A = act.current, m = me.current; if (!free()) return
+    if (A.dance > 0) { A.dance = 0; return }
+    A.dance = 3.2; auto.current = null; audio.sfx('select')
+    for (let i = 0; i < 6; i++) setTimeout(() => fx('note', m.x + (Math.random() - 0.5) * 80, m.y - zone.charH * (0.9 + Math.random() * 0.2), { dx: Math.round((Math.random() - 0.5) * 80), text: Math.random() < 0.5 ? '♪' : '♫' }, 1400), i * 420)
+  }
+  const startAuto = (kind: 'quest' | 'point' | 'npc', x: number, y: number, id?: string) => {
+    const r = rd.current, m = me.current; if (!r || !free()) return false
+    const pts = r.findPath(m.x, m.y, x, y)
+    if (!pts || !pts.length) { setToast('그곳으로 가는 길이 없습니다'); auto.current = null; return false }
+    auto.current = { kind, pts, id, stuck: 0, lastD: Infinity }; act.current.dance = 0
+    return true
+  }
+  // 퀘스트 목표: 이 맵에 다음 사건이 있으면 그 자리, 없으면 사건이 있는 맵 쪽 포탈
+  const questTarget = (): null | { x: number; y: number; goal: string } => {
+    if (next && nextEv) {
+      const rg = zone.regions.find((g) => nextEv.x >= g.x0 && nextEv.x < g.x1 && nextEv.y >= g.y0 && nextEv.y < g.y1)
+      return { x: nextEv.x, y: nextEv.y, goal: `${rg?.name ?? zone.place}의 ◆ ${next.no} 자리로 이동하기` }
+    }
+    if (!chapNext) return null
+    const goalZone = Object.keys(ZONES).find((z) => ZONES[z].events[chapNext.id])
+    const p = goalZone ? portalToward(zone.id, goalZone) : null
+    return p ? { x: p.x, y: p.y, goal: `${ro(p.label.replace(/\s*\(.*\)$/, ''))} 이동하기` } : null
+  }
+  const autoQuestRef = useRef(() => {})
+  autoQuestRef.current = () => {
+    if (auto.current?.kind === 'quest') { auto.current = null; audio.sfx('tap'); return }
+    const t = questTarget(); if (!t) { setToast('지금 진행할 사건이 없습니다'); return }
+    if (startAuto('quest', t.x, t.y)) audio.sfx('select')
+  }
+  const cycleTarget = () => {
+    const m = me.current
+    const list = [...zone.npcs.map((n) => ({ id: n.id, name: n.name, x: n.x, y: n.y })), ...zone.spots.filter((x) => x.kind === 'look').map((x) => ({ id: x.id, name: x.label, x: x.x, y: x.y }))]
+      .map((t) => ({ ...t, d: Math.hypot(t.x - m.x, t.y - m.y) })).filter((t) => t.d < 1600).sort((a, b) => a.d - b.d)
+    if (!list.length) { setTargetId(null); setToast('주변에 고를 대상이 없습니다'); return }
+    const i = list.findIndex((t) => t.id === targetId)
+    const nx = list[(i + 1) % list.length]
+    audio.sfx('select'); setTargetId(i === list.length - 1 ? null : nx.id)
+  }
+  const targetObj = () => {
+    if (!targetId) return null
+    const n = zone.npcs.find((x) => x.id === targetId); if (n) return { name: n.name, x: n.x, y: n.y }
+    const sp = zone.spots.find((x) => x.id === targetId); return sp ? { name: sp.label, x: sp.x, y: sp.y } : null
+  }
+  const doTalk = () => {
+    if (cfg.current.talk) { nextLine(); return }
+    if (nearest()) { interact(); return }
+    const t = targetObj(); if (t) startAuto('npc', t.x, t.y + 40, targetId!)
+  }
+  const doCamp = () => {
+    if (!free()) return
+    const home = ZONES.academy_gate
+    if (zone.id === home.id) { goThrough(home.start); chatLog('system', '귀환 · 정문 진입로 입구로 돌아왔습니다.'); chatBump(); return }
+    goZone({ id: 'camp', label: '귀환', x: me.current.x, y: me.current.y, r: 1, to: { zone: home.id, x: home.start.x, y: home.start.y, dir: 'E' } })
+  }
+  const leave = () => { delete MEMO[zone.id]; nav.back() }
+  // 맵에 들어오면 시스템 알림, 포탈로 오면서 자동 이동 중이었으면 이어서
+  useEffect(() => { chatLog('system', `${zone.place}에 들어왔습니다.`); chatBump() }, [])
+  const autoGo = useRef(!!params.auto)
+  useEffect(() => { if (phase === 'play' && autoGo.current) { autoGo.current = false; setTimeout(() => autoQuestRef.current(), 300) } }, [phase])
+  // 팀장 레벨업 연출
+  const prevLv = useRef(gs.playerLevel)
+  useEffect(() => {
+    if (gs.playerLevel > prevLv.current) {
+      const m = me.current; audio.sfx('reveal5'); fx('lvup', m.x, m.y - zone.charH - 40, { text: `LEVEL UP · Lv.${gs.playerLevel}` }, 1800)
+      chatLog('system', `팀장 레벨이 ${gs.playerLevel}(으)로 올랐습니다.`); chatBump()
+    }
+    prevLv.current = gs.playerLevel
+  }, [gs.playerLevel])
+
   // 키보드
   useEffect(() => {
     const dn = (e: KeyboardEvent) => {
@@ -205,6 +355,10 @@ export default function StoryField({ params }: { params: Record<string, unknown>
       if (k === 'shift') setRun(true)
       if (k === 'e' || k === ' ' || k === 'enter') { e.preventDefault(); interact() }
       if (k === 'tab') { e.preventDefault(); swap(who === 'seren' ? 'ian' : 'seren') }
+      if (k === 'j') doAttack()
+      if (k === 'k') doActive()
+      if (k === 'l') doDodge()
+      if (k === 'u') doAwaken()
       if (k === 'escape' && !cfg.current.talk && !busy.current) { delete MEMO[zone.id]; nav.back() }
     }
     const up = (e: KeyboardEvent) => { const k = e.key.toLowerCase(); keys.current.delete(k); if (k === 'shift') setRun(false) }
@@ -220,19 +374,48 @@ export default function StoryField({ params }: { params: Record<string, unknown>
       const c = cfg.current; const r = rd.current; const m = me.current
       if (c.active && r?.ready) {
         let ix = 0, iy = 0
+        const A = act.current
+        for (const key of ['active', 'dodge', 'awakenT', 'shieldT', 'expT', 'dance', 'atk'] as const) A[key] = Math.max(0, A[key] - dt)
         if (c.phase === 'play' && !c.talk && !busy.current) {
           const K = keys.current
           ix = (K.has('d') || K.has('arrowright') ? 1 : 0) - (K.has('a') || K.has('arrowleft') ? 1 : 0)
           iy = (K.has('s') || K.has('arrowdown') ? 1 : 0) - (K.has('w') || K.has('arrowup') ? 1 : 0)
           if (stick.current) { const s = stick.current; const L = Math.hypot(s.dx, s.dy); if (L > 10) { ix = s.dx / Math.max(L, 60); iy = s.dy / Math.max(L, 60) } }
         }
+        // 손으로 움직이면 자동 이동 멈춤 / 아니면 경유점 따라 걷기
+        if (auto.current && (ix || iy)) auto.current = null
+        const au = auto.current
+        if (au && !ix && !iy && c.phase === 'play' && !c.talk && !busy.current) {
+          while (au.pts.length && Math.hypot(au.pts[0].x - m.x, au.pts[0].y - m.y) < 26) au.pts.shift()
+          const wp = au.pts[0]
+          if (!wp) { auto.current = null; if (au.kind === 'npc') interact() }
+          else {
+            const dx = wp.x - m.x, dy = (wp.y - m.y) / 0.82, L = Math.hypot(dx, dy) || 1
+            ix = dx / L; iy = dy / L
+            const D = au.pts.reduce((acc, p, i, arr) => acc + (i ? Math.hypot(p.x - arr[i - 1].x, p.y - arr[i - 1].y) : Math.hypot(p.x - m.x, p.y - m.y)), 0)
+            if (D > au.lastD - 1) au.stuck += dt; else au.stuck = 0
+            au.lastD = D
+            if (au.stuck > 1.2) { const end = au.pts[au.pts.length - 1]; const np = r.findPath(m.x, m.y, end.x, end.y); if (np && np.length) { au.pts = np; au.stuck = 0 } else auto.current = null }
+          }
+        }
+        // 회피: 보는 방향으로 짧게 미끄러지듯 / 춤: 제자리에서 빙글
+        if (A.dash) {
+          A.dash.t -= dt
+          const nx = m.x + A.dash.vx * dt, ny = m.y + A.dash.vy * dt
+          if (r.walkable(nx, ny)) { m.x = nx; m.y = ny } else A.dash.t = 0
+          if (A.dash.t <= 0) A.dash = null
+          ix = 0; iy = 0
+        }
+        if (A.dance > 0) { ix = 0; iy = 0; m.dir = DIRS[Math.floor(A.dance * 6.5) % 8] as Dir }
         const mag = Math.min(1, Math.hypot(ix, iy))
         m.moving = mag > 0.15
-        m.run = c.run || mag > 0.98 && !!stick.current
+        m.run = c.run || mag > 0.98 && !!stick.current || !!auto.current
         if (m.moving) {
           const ang = Math.atan2(iy, ix)
           m.dir = DIRS[((Math.round(ang / (Math.PI / 4)) % 8) + 8) % 8] as Dir
-          const sp = (m.run ? RUN : WALK) * Math.max(0.5, mag) * dt
+          const boost = (mountedRef.current ? 1.35 : 1) * (A.awakenT > 0 ? 1.2 : 1)
+          const sp = (m.run || auto.current ? RUN : WALK) * boost * Math.max(0.5, mag) * dt
+          A.walked += sp; if (A.walked > 300) { A.walked = 0; A.gauge = Math.min(1, A.gauge + 0.01) }
           const nx = m.x + Math.cos(ang) * sp, ny = m.y + Math.sin(ang) * sp * 0.82
           if (r.walkable(nx, ny)) { m.x = nx; m.y = ny }
           else if (r.walkable(nx, m.y)) m.x = nx
@@ -286,11 +469,11 @@ export default function StoryField({ params }: { params: Record<string, unknown>
     return () => cancelAnimationFrame(raf)
   }, [])
 
-  useEffect(() => { (window as unknown as { __EX__: unknown }).__EX__ = { frames: () => frames.current, me: () => me.current, phase: () => cfg.current.phase, set: (x: number, y: number, d?: Dir) => { me.current.x = x; me.current.y = y; if (d) me.current.dir = d }, walkable: (x: number, y: number) => rd.current?.walkable(x, y), zone: () => zone.id, state: () => ({ enc: enc?.id, scene: scene?.id, busy: busy.current, talk: !!talk }), portals: () => zone.portals ?? [], view: () => rd.current?.view, swap, setPhase, interact, next: () => evRef.current } })
+  useEffect(() => { (window as unknown as { __EX__: unknown }).__EX__ = { frames: () => frames.current, me: () => me.current, phase: () => cfg.current.phase, set: (x: number, y: number, d?: Dir) => { me.current.x = x; me.current.y = y; if (d) me.current.dir = d }, walkable: (x: number, y: number) => rd.current?.walkable(x, y), zone: () => zone.id, hud: () => ({ ...act.current, auto: auto.current?.kind ?? null, mounted: mountedRef.current, target: targetRef.current }), findPath: (x: number, y: number) => rd.current?.findPath(me.current.x, me.current.y, x, y), autoQuest: () => autoQuestRef.current(), state: () => ({ enc: enc?.id, scene: scene?.id, busy: busy.current, talk: !!talk }), portals: () => zone.portals ?? [], view: () => rd.current?.view, swap, setPhase, interact, next: () => evRef.current } })
 
   // 조이스틱
   const sDown = (e: RPE<HTMLDivElement>) => { e.currentTarget.setPointerCapture(e.pointerId); const b = e.currentTarget.getBoundingClientRect(); stick.current = { id: e.pointerId, ox: b.left + b.width / 2, oy: b.top + b.height / 2, dx: 0, dy: 0 }; sMove(e) }
-  const sMove = (e: RPE<HTMLDivElement>) => { const s = stick.current; if (!s || s.id !== e.pointerId) return; const sc = e.currentTarget.getBoundingClientRect().width / 220; s.dx = (e.clientX - s.ox) / sc; s.dy = (e.clientY - s.oy) / sc }
+  const sMove = (e: RPE<HTMLDivElement>) => { const s = stick.current; if (!s || s.id !== e.pointerId) return; const sc = e.currentTarget.getBoundingClientRect().width / (e.currentTarget.offsetWidth || 190); s.dx = (e.clientX - s.ox) / sc; s.dy = (e.clientY - s.oy) / sc }
   const sUp = () => { stick.current = null }
 
   const m = me.current
@@ -298,8 +481,69 @@ export default function StoryField({ params }: { params: Record<string, unknown>
   const r = rd.current
   const toScreen = (x: number, y: number) => r ? { left: (x - r.view.x) * r.view.z + 640, top: (y - r.view.y) * r.view.z + 360 } : { left: -999, top: -999 }
   const st = stick.current
-  const knob = st ? (() => { const L = Math.hypot(st.dx, st.dy), k = Math.min(1, 70 / Math.max(1, L)); return { x: st.dx * k, y: st.dy * k } })() : { x: 0, y: 0 }
-  const owned = (k: string) => !!gs.owned[k]
+  const knob = st ? (() => { const L = Math.hypot(st.dx, st.dy), k = Math.min(1, 62 / Math.max(1, L)); return { x: st.dx * k, y: st.dy * k } })() : { x: 0, y: 0 }
+
+  const b = badges(gs)
+  const charOf = (id: string) => {
+    const def = CHAR_BY_ID[id]; const own = gs.owned[id]
+    const o: OwnedCharacter = own ?? ({ id, level: 40, obtainedAt: 0, dupes: 0, equipment: { weapon: null, gear: null, accessory: null } } as unknown as OwnedCharacter)
+    const st = def ? statsOf(def, o, ITEM_BY_ID) : { hp: 1 }
+    const face = ['seren', 'ian', 'kanna', 'rion'].includes(id) ? `ref/battle/face-${id}.webp` : (def?.assets.portrait ?? '')
+    return { id, name: def?.name ?? id, level: o.level, trial: !own, face, hp: st.hp, hpMax: st.hp, canSwap: !!SPRITES[id] && (PLAYABLE as readonly string[]).includes(id) }
+  }
+  // 파티 창: 탐색에서 바꿀 수 있는 대원 먼저, 나머지는 지금 편성의 대원(최대 2명)
+  const partyIds = () => {
+    const team = gs.teams.find((t) => t.id === gs.activeTeamId)
+    const ids = [...PLAYABLE.filter((k) => k !== who && SPRITES[k]), ...(team?.slots ?? []).filter((x): x is string => !!x && x !== who && !!CHAR_BY_ID[x])]
+    return [...new Set(ids)].slice(0, 2)
+  }
+  const hudModel = (): HudModel => {
+    const A = act.current, mm = me.current, qt = questTarget(), tg = targetObj()
+    const pxPerM = zone.charH / 1.7
+    const markers: Marker[] = [
+      ...zone.npcs.map((x) => ({ x: x.x, y: x.y, k: 'npc' as const })),
+      ...zone.spots.filter((x) => x.kind === 'look').map((x) => ({ x: x.x, y: x.y, k: 'spot' as const })),
+      ...(zone.portals ?? []).map((x) => ({ x: x.x, y: x.y, k: 'portal' as const })),
+      ...(nextEv ? [{ x: nextEv.x, y: nextEv.y, k: 'ev' as const }] : []),
+      ...(tg ? [{ x: tg.x, y: tg.y, k: 'target' as const }] : []),
+      ...(auto.current?.pts.length ? [{ ...auto.current.pts[auto.current.pts.length - 1], k: 'dest' as const }] : []),
+    ]
+    const buffs = [
+      ...(A.shieldT > 0 ? [{ id: 'rush', icon: 'buff0', name: '액티브 · 가속', desc: '이동 속도 +40%', left: A.shieldT, max: 4 }] : []),
+      ...(A.expT > 0 ? [{ id: 'exp', icon: 'buff1', name: '각성 · 경험치', desc: '탐색 경험치(단서) +50%', left: A.expT, max: 60 }] : []),
+      ...(A.awakenT > 0 ? [{ id: 'awaken', icon: 'buff2', name: '각성 · 신속', desc: '이동 속도 +20%', left: A.awakenT, max: 20 }] : []),
+      ...(mounted ? [{ id: 'mount', icon: 'buff3', name: '탈것', desc: '이동 속도 +35% · 다시 누르면 내림', left: 0, max: 0 }] : []),
+    ]
+    const nearT = nearest()
+    return {
+      zone, me: { x: mm.x, y: mm.y, dir: DIR_DEG[mm.dir] }, view: rd.current?.view,
+      lead: charOf(who), party: partyIds().map(charOf),
+      active: { left: A.active, max: ACTIVE_CD }, awaken: { gauge: A.gauge, on: A.awakenT > 0 }, dodge: { left: A.dodge, max: DODGE_CD },
+      buffs,
+      quest: { show: questShow, tag: chapNext ? `${chapNext.no} ${chapNext.title}` : '1장 완료', goal: qt?.goal ?? '1장의 모든 사건을 끝냈습니다', dist: qt ? Math.round(Math.hypot(qt.x - mm.x, qt.y - mm.y) / pxPerM) : null, auto: auto.current?.kind === 'quest', done: !qt },
+      wallet: { credit: gs.wallet.credit, diamond: gs.wallet.diamond },
+      badge: { event: b.event, menu: b.mail || b.mission || b.notice, quest: !!chapNext },
+      markers,
+      canTalk: !!nearT || !!tg, talkLabel: nearT ? (nearT.kind === 'npc' ? (nearT.x as { name: string }).name : (nearT.x as { label: string }).label) : tg ? `${tg.name}에게 가기` : '',
+      targetName: tg?.name ?? null, mounted, dancing: A.dance > 0,
+      chat: { tab: chatTab, lines: CHAT, small: chatSmall },
+      exp: { level: gs.playerLevel, cur: gs.playerExp ?? 0, need: playerExpToNext(gs.playerLevel) },
+      chapter: 'CH. 1',
+    }
+  }
+  const hudActions = {
+    go: (sc: Parameters<typeof nav.push>[0], p?: Record<string, unknown>) => { audio.sfx('tap'); auto.current = null; nav.push(sc, p) },
+    back: leave, swap: (id: string) => swap(id as Playable),
+    attack: doAttack, active: doActive, awaken: doAwaken, dodge: doDodge, talk: doTalk, dance: doDance, target: cycleTarget,
+    mount: () => { audio.sfx('swap'); setMounted((v) => { chatLog('system', v ? '탈것에서 내렸습니다.' : '탈것에 탔습니다. 이동 속도 +35%'); chatBump(); return !v }) },
+    camp: doCamp, autoQuest: () => autoQuestRef.current(),
+    moveTo: (x: number, y: number) => { if (startAuto('point', x, y)) audio.sfx('select') },
+    toggleQuest: () => { audio.sfx('tap'); setQuestShow((v) => !v) },
+    chatTab: (t: ChatTab) => { audio.sfx('tap'); setChatTab(t) }, chatSmall: () => setChatSmall((v) => !v),
+    say: (tab: ChatTab, text: string) => { chatLog(tab, text, gs.playerName); chatBump(); audio.sfx('tap') },
+    stick: { down: sDown, move: sMove, up: sUp, knob },
+    questList: CHAPTER1.nodes.map((n) => ({ id: n.id, no: n.no, title: n.title, place: n.place, state: (stars[n.id] ? 'done' : n === chapNext ? 'next' : 'lock') as 'done' | 'next' | 'lock' })),
+  }
 
   return (
     <div className="scr story-field">
@@ -320,30 +564,9 @@ export default function StoryField({ params }: { params: Record<string, unknown>
         {phase === 'intro' && <Cine shots={entry} onShot={onEntryShot} onDone={startPlay} skippable reduce={reduce} />}
         {ticker && <Cine shots={[{ k: 'ticker', d: 3.4, top: `ABILITY KINGDOM — CHAPTER ${zone.chapter.no} — ${zone.chapter.en.join(' ')} —`, bot: `${zone.place} · ${zone.placeEn} · ${zone.area} · ${zone.areaEn} ·` }]} block={false} reduce={reduce} onDone={() => setTicker(false)} />}
 
-        <div className="sf-hud">
-          <div className="sf-top">
-            <button type="button" className="sf-back" onClick={() => { audio.sfx('tap'); delete MEMO[zone.id]; nav.back() }} aria-label="뒤로">‹</button>
-            <div className="sf-loc"><i aria-hidden>◆</i>{zone.area} - {place}</div>
-          </div>
-          <div className="sf-quest"><small>{zone.quest.title} · {CHAPTER1.no}</small><b>{chapNext ? `${chapNext.no} ${chapNext.title}` : '1장 완료'}</b><span>{next && nextEv ? `${zone.regions.find((g) => nextEv.x >= g.x0 && nextEv.x < g.x1 && nextEv.y >= g.y0 && nextEv.y < g.y1)?.name ?? ''} — 지도의 ◆ 표시로 이동` : Object.keys(zone.events).length ? `단서 ${clues.length} / ${zone.spots.filter((s) => s.clue).length}` : zone.quest.goal}</span></div>
-          <div className="sf-party" role="group" aria-label="탐색 대원">
-            {PLAYABLE.filter((k) => SPRITES[k]).map((k) => (
-              <button key={k} type="button" className={k === who ? 'on' : ''} aria-pressed={k === who} onClick={() => swap(k)}>
-                <img src={`ref/battle/face-${k}.webp`} alt="" /><b>{CHAR_BY_ID[k]?.name ?? k}</b>{!owned(k) && <em>체험</em>}
-              </button>
-            ))}
-          </div>
-          <Minimap k={zone.mini} zone={zone} me={m} npcs={zone.npcs} img={`${zone.dir}/low.webp`} view={r?.view} ev={nextEv} />
-
-          <div className="sf-stick" onPointerDown={sDown} onPointerMove={sMove} onPointerUp={sUp} onPointerCancel={sUp} aria-label="이동 조이스틱(키보드: WASD·방향키)">
-            <i style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }} />
-          </div>
-          <div className="sf-acts">
-            <button type="button" className={`run ${run ? 'on' : ''}`} aria-pressed={run} aria-label="달리기(Shift)" onClick={() => { audio.sfx('select'); setRun((v) => !v) }}><RunIcon /></button>
-            <button type="button" className={`talk ${near?.kind === 'npc' ? 'ready' : ''}`} aria-label="대화(E)" disabled={near?.kind !== 'npc'} onClick={interact}><TalkIcon /></button>
-            <button type="button" className={`look ${near?.kind === 'spot' ? 'ready' : ''}`} aria-label="조사(E)" disabled={near?.kind !== 'spot'} onClick={interact}><LookIcon /></button>
-          </div>
-        </div>
+        {/* 필드 효과 */}
+        {fxs.map((f) => <i key={f.id} className={`fx-${f.k}`} style={{ ...toScreen(f.x, f.y), '--r': `${f.r ?? 0}deg`, '--dx': `${f.dx ?? 0}px` } as React.CSSProperties}>{f.text}</i>)}
+        {phase === 'play' && <FieldHud m={hudModel()} a={hudActions} />}
 
         {talk && (
           <button type="button" className="sf-talk" onClick={nextLine} aria-label="다음 대사">
@@ -361,23 +584,3 @@ export default function StoryField({ params }: { params: Record<string, unknown>
     </div>
   )
 }
-
-function Minimap({ k, zone, me, npcs, img, view, ev }: { k?: number; zone: Zone; me: Actor; npcs: Zone['npcs']; img: string; view?: { x: number; y: number; z: number }; ev?: { x: number; y: number } | null }) {
-  const K = k ?? 0.072 // 미니맵 배율(월드 1px → 미니맵 px)
-  return (
-    <div className="sf-mini" aria-label="미니맵">
-      <div className="sf-mini-in" style={{ transform: `translate(${Math.min(0, Math.max(260 - zone.W * K, -me.x * K + 130))}px, ${Math.min(0, Math.max(190 - zone.H * K, -me.y * K + 95))}px)` }}>
-        <img src={img} alt="" style={{ width: zone.W * K }} />
-        {view && <i className="cam" style={{ left: (view.x - 640 / view.z) * K, top: (view.y - 360 / view.z) * K, width: 1280 / view.z * K, height: 720 / view.z * K }} />}
-        {npcs.map((n) => <i key={n.id} className="npc" style={{ left: n.x * K, top: n.y * K }} />)}
-        {zone.spots.map((s) => <i key={s.id} className={`spot ${s.kind}`} style={{ left: s.x * K, top: s.y * K }} />)}
-        {ev && <i className="ev" style={{ left: ev.x * K, top: ev.y * K }} />}
-        <i className="me" style={{ left: me.x * K, top: me.y * K }} />
-      </div>
-      <b>{zone.area}</b>
-    </div>
-  )
-}
-const RunIcon = () => <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor" aria-hidden><circle cx="15" cy="4" r="2.2" /><path d="M10 8.5l4-1 3 3 3 .5-.4 1.9-3.8-.7-1.6-1.6-1 3.6 2.6 2.4-1 5.4h-2l.8-4.4-2.6-2-1.4 3.4-4.6 1.2-.5-1.9 3.6-1 2-6.2-1.6.4-1.4 2.6-1.8-.9z" /></svg>
-const TalkIcon = () => <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor" aria-hidden><path d="M12 4C6.5 4 2.5 7.4 2.5 11.6c0 2.2 1.1 4.2 3 5.6L5 21l4.1-2.3c.9.2 1.9.3 2.9.3 5.5 0 9.5-3.4 9.5-7.6S17.5 4 12 4z" /><circle cx="8" cy="11.6" r="1.3" fill="#1d2230" /><circle cx="12" cy="11.6" r="1.3" fill="#1d2230" /><circle cx="16" cy="11.6" r="1.3" fill="#1d2230" /></svg>
-const LookIcon = () => <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden><circle cx="10.5" cy="10.5" r="6" /><path d="M15 15l5.5 5.5" /></svg>
