@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type PointerEvent as RPE, type ReactNode } from 'react'
 import '../../styles/field-hud.css'
 import type { Zone } from '../../explore/zones'
+import SPRITES from 'virtual:hud-sprites'
 
 // 스토리 탐색 필드 HUD — 사용자 시안(tools/hud/field_hud_mock.png, 1672×941)을 그대로 옮긴 배치.
-// 좌표는 시안 픽셀 그대로 쓰고, 화면(1280×720)에는 통째로 줄여 얹는다. 버튼·아이콘 그림은 시안에서 잘라낸 것(public/ui/hud, tools/hud/slice_hud.py).
+// 좌표는 시안 픽셀 그대로 쓰고, 화면(1280×720)에는 통째로 줄여 얹는다. 버튼·아이콘 그림은 시안에서 잘라낸 것(src/assets/hud, tools/hud/slice_hud.py).
+// 그림은 묶음 안에 data URL 로 넣는다(아티팩트 파일 개수 한도 512 때문에 따로 파일을 늘리지 않음).
 // 글자·수치·막대·패널은 실제 값으로 그린다. 기능은 StoryField 가 넘겨주는 상태·동작을 그대로 쓴다(이 파일은 그리기만).
 export type ChatTab = 'world' | 'party' | 'whisper' | 'system'
 export type ChatLine = { tab: ChatTab; who?: string; text: string; at: number }
@@ -57,7 +59,7 @@ export type HudActions = {
 
 const n = (v: number) => v.toLocaleString('en-US')
 const TAB: Record<ChatTab, string> = { world: '월드', party: '파티', whisper: '귓속말', system: '시스템' }
-const img = (k: string) => `ui/hud/${k}.webp`
+const img = (k: string) => SPRITES[k] ?? ''
 
 /** 시안의 버튼: 그림 + 아래 이름표 */
 function Btn({ k, x, y, w, h, label, lx, ly, onClick, dot, disabled, children, aria, className = '' }: { k?: string; x: number; y: number; w: number; h: number; label?: string; lx?: number; ly?: number; onClick: () => void; dot?: boolean; disabled?: boolean; children?: ReactNode; aria?: string; className?: string }) {

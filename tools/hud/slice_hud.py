@@ -1,6 +1,6 @@
 """필드 HUD 아이콘·장식 잘라내기.
 사용자 시안(field_hud_mock.png, 1672×941)을 nano-banana-pro 4K로 'HUD만 남기고 글자·배경 제거(자홍 배경)' 시킨 hud_b.jpg에서
-자홍색을 빼고(hud_b_key.png), 버튼·아이콘마다 잘라 public/ui/hud/<이름>.webp 로 저장한다(2배 크기).
+자홍색을 빼고(hud_b_key.png), 버튼·아이콘마다 잘라 src/assets/hud/<이름>.webp 로 저장한다(2배 크기).
 - 자홍이 섞여 보라색으로 탁해진 어두운 판은 남색(시안의 색)으로 돌리고, 버튼 안쪽은 불투명하게 채운다.
 좌표는 시안 1672 기준 (x0, y0, x1, y1). 실행: python3 tools/hud/slice_hud.py"""
 import colorsys, os, json
@@ -9,7 +9,7 @@ from PIL import Image
 from scipy import ndimage
 
 SRC = os.path.join(os.path.dirname(__file__), 'hud_b_key.png')
-OUT = os.path.join(os.path.dirname(__file__), '../../public/ui/hud')
+OUT = os.path.join(os.path.dirname(__file__), '../../src/assets/hud')
 K = 5504 / 1672
 BOX = {
     'portrait': (8, 0, 200, 160), 'side-tab': (16, 332, 64, 508),
